@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记忆漩涡 MemoryVortex · 交互原型</title>
+<style>
+/* ============ 设计 Token（对应灰阶线框图） ============ */
+:root{
+  --ink:#333333;        /* 主描边/主文字 */
+  --muted:#666666;      /* 次级图标 */
+  --sub:#8A8A8A;        /* 辅助文字 */
+  --line:#D9D9D9;       /* 卡片描边 */
+  --line-strong:#CCCCCC;
+  --line-light:#E8E8E8;
+  --divider:#E8E8E8;
+  --card:#FAFAFA;       /* 卡片底 */
+  --fill:#F5F5F5;       /* 选中底 */
+  --fill-dark:#F0F0F0;
+  --btn:#E3E3E3;        /* 灰按钮 */
+  --danger:#B03A3A;
+  --white:#FFFFFF;
+  --font:'Sarasa Gothic SC','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-num:'Inter','Sarasa Gothic SC','PingFang SC',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:#E9E9E9;font-family:var(--font);color:var(--ink);}
+
+/* ============ 舞台与手机外壳 ============ */
+.stage{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:32px 16px;}
+.phone{width:390px;height:844px;background:var(--white);border-radius:44px;border:1px solid var(--line-strong);
+  box-shadow:0 24px 60px rgba(0,0,0,.12);overflow:hidden;position:relative;flex-shrink:0;}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--white);}
+.screen.active{display:flex;}
+.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* ============ 原型导航面板（非产品 UI） ============ */
+.proto-nav{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:16px;width:190px;flex-shrink:0;}
+.proto-nav h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--ink);}
+.proto-nav button{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:9px;
+  padding:6px 10px;font-size:12px;color:var(--sub);cursor:pointer;font-family:var(--font);margin-bottom:2px;}
+.proto-nav button:hover{background:var(--fill);}
+.proto-nav button.on{background:var(--ink);color:#fff;}
+.proto-nav .tip{font-size:11px;color:var(--sub);line-height:1.6;margin-top:10px;border-top:1px solid var(--line-light);padding-top:10px;}
+
+/* ============ 公共组件 ============ */
+/* 状态栏 */
+.statusbar{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 32px 10px 36px;flex-shrink:0;}
+.statusbar .time{font-family:var(--font-num);font-size:15px;font-weight:600;letter-spacing:.2px;}
+.statusbar .icons{display:flex;align-items:center;gap:6px;}
+.sig{display:flex;align-items:flex-end;gap:2px;height:11px;}
+.sig i{width:3px;background:var(--ink);border-radius:1px;display:block;}
+.sig i:nth-child(1){height:4px;}.sig i:nth-child(2){height:6px;}
+.sig i:nth-child(3){height:8px;}.sig i:nth-child(4){height:11px;}
+.batt{width:25px;height:12px;border:1px solid var(--ink);border-radius:3.5px;position:relative;padding:1.5px;}
+.batt::after{content:'';position:absolute;right:-4px;top:3.5px;width:2px;height:4px;background:var(--ink);border-radius:0 1px 1px 0;}
+.batt i{display:block;height:100%;width:78%;background:var(--ink);border-radius:1.5px;}
+
+/* 顶部导航 */
+.navbar{height:46px;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;}
+.navbar .back{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.navbar .title{flex:1;text-align:center;font-size:16px;font-weight:600;}
+.navbar .right{min-width:34px;text-align:right;font-size:14px;color:var(--muted);cursor:pointer;}
+
+/* 主按钮 */
+.btn-primary{height:54px;background:var(--ink);color:#fff;border-radius:27px;font-size:16px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--font);border:none;width:100%;}
+.btn-primary:active{opacity:.85;}
+.btn-mid{height:48px;width:128px;background:var(--ink);color:#fff;border-radius:24px;font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--font);border:none;}
+
+/* 步骤条 */
+.steps{display:flex;gap:8px;padding:0 20px 14px;}
+.steps i{flex:1;height:4px;border-radius:2px;background:#E0E0E0;}
+.steps i.on{background:var(--ink);}
+
+/* 卡片 */
+.card{background:var(--white);border:1px solid #DEDEDE;border-radius:14px;}
+.card-gray{background:var(--card);border-radius:14px;}
+
+/* chip */
+.chip{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:16px;font-size:12px;
+  background:var(--fill);color:var(--sub);cursor:pointer;white-space:nowrap;}
+.chip.sel{background:var(--ink);color:#fff;font-weight:500;}
+
+/* 开关 */
+.switch{width:44px;height:24px;border-radius:12px;background:var(--ink);position:relative;cursor:pointer;flex-shrink:0;transition:background .15s;}
+.switch .knob{position:absolute;top:3px;left:23px;width:18px;height:18px;border-radius:9px;background:#fff;transition:left .15s;}
+.switch.off{background:#D5D5D5;}
+.switch.off .knob{left:3px;}
+
+/* TabBar */
+.tabbar{flex-shrink:0;padding:10px 16px 22px;}
+.tabbar .pill{height:66px;background:var(--fill);border:1px solid #B8B8B8;border-radius:36px;display:flex;padding:7px;}
+.tabbar .tab{flex:1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--sub);cursor:pointer;font-size:10px;font-weight:500;}
+.tabbar .tab svg{width:20px;height:20px;stroke:var(--sub);}
+.tabbar .tab.on{background:var(--btn);color:var(--ink);}
+.tabbar .tab.on svg{stroke:var(--ink);}
+
+/* 单选圆点 */
+.radio{width:18px;height:18px;border-radius:9px;border:1.5px solid var(--line-strong);flex-shrink:0;position:relative;background:#fff;}
+.radio.on{border-color:var(--ink);}
+.radio.on::after{content:'';position:absolute;inset:3.5px;border-radius:5px;background:var(--ink);}
+
+/* 占位图 */
+.ph{background:#EFEFEF;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#C9C9C9;}
+
+/* ============ S01 启动-场景选择 ============ */
+#s01 .wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:66px 20px 30px;overflow-y:auto;}
+.logo-vortex{width:52px;height:60px;border:2px solid var(--ink);border-radius:26px;position:relative;margin-bottom:18px;}
+.logo-vortex::after{content:'';position:absolute;left:50%;top:10px;transform:translateX(-50%);width:18px;height:18px;
+  border-radius:9px;border:2px solid var(--ink);border-bottom:none;}
+#s01 h1{font-size:30px;font-weight:700;letter-spacing:2px;}
+#s01 .en{font-family:var(--font-num);font-size:13px;color:var(--sub);letter-spacing:3px;margin:6px 0 10px;}
+#s01 .tagline{font-size:15px;color:var(--muted);}
+#s01 .question{font-size:15px;font-weight:600;margin:38px 0 14px;align-self:flex-start;padding-left:4px;}
+.scene-card{width:100%;height:66px;display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--white);
+  border:1px solid var(--line);border-radius:14px;margin-bottom:10px;cursor:pointer;}
+.scene-card .info{flex:1;}
+.scene-card .name{font-size:15px;font-weight:600;}
+.scene-card .desc{font-size:12px;color:var(--sub);margin-top:3px;}
+#s01 .btn-primary{margin-top:auto;}
+
+/* ============ S02 引导 ============ */
+#s02 .top{display:flex;justify-content:flex-end;padding:14px 20px 0;}
+#s02 .skip{font-size:14px;color:var(--sub);cursor:pointer;}
+#s02 .wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 24px 34px;overflow-y:auto;}
+#s02 .hero{width:230px;height:230px;border-radius:18px;border:1px solid var(--line);margin:8px 0 26px;}
+#s02 h1{font-size:24px;font-weight:700;}
+#s02 .sub{font-size:14px;color:var(--sub);margin:10px 0 30px;}
+.feat{width:100%;display:flex;align-items:center;gap:14px;padding:13px 16px;margin-bottom:10px;
+  background:var(--card);border-radius:12px;}
+.feat .ic{width:34px;height:34px;border-radius:8px;background:var(--fill-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.feat .t{font-size:14px;font-weight:500;}
+.dots{display:flex;gap:8px;margin:22px 0;}
+.dots i{width:8px;height:8px;border-radius:4px;background:#DCDCDC;}
+.dots i.on{background:var(--ink);width:22px;}
+
+/* ============ S03 我的记忆线 ============ */
+#s03 .head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 6px;}
+#s03 .head h1{font-size:20px;font-weight:700;}
+#s03 .head .acts{display:flex;gap:16px;color:var(--muted);cursor:pointer;}
+.then-card{margin:10px 20px;height:72px;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:var(--card);border-radius:14px;cursor:pointer;}
+.then-card .date{width:44px;height:44px;background:var(--ink);border-radius:10px;color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-family:var(--font-num);}
+.then-card .date b{font-size:17px;font-weight:600;line-height:1;}
+.then-card .date span{font-size:10px;margin-top:2px;}
+.then-card .tt{font-size:14px;font-weight:600;}
+.then-card .td{font-size:11px;color:var(--sub);margin-top:4px;}
+.chips{display:flex;gap:8px;padding:12px 20px 4px;}
+.group-title{font-size:12px;color:var(--sub);font-weight:500;padding:14px 20px 8px;}
+.mem-card{margin:0 20px 12px;padding:12px;display:flex;gap:12px;border:1px solid var(--line);border-radius:14px;cursor:pointer;background:#fff;}
+.mem-card .pic{width:92px;height:96px;flex-shrink:0;}
+.mem-card .body{flex:1;min-width:0;display:flex;flex-direction:column;}
+.mem-card .row1{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub);}
+.tag-mini{padding:2px 8px;border-radius:9px;background:var(--fill-dark);color:var(--sub);font-size:10px;white-space:nowrap;}
+.mem-card .feel{font-size:13px;line-height:1.6;margin:8px 0;word-break:break-all;}
+.voice{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:12px;padding:7px 12px;height:30px;}
+.voice .play{width:16px;height:16px;border-radius:8px;background:var(--ink);flex-shrink:0;position:relative;}
+.voice .play::after{content:'';position:absolute;left:5px;top:4.5px;border:3.5px solid transparent;border-left:5px solid #fff;}
+.voice .wave{flex:1;display:flex;align-items:center;gap:2.5px;height:14px;}
+.voice .wave i{width:2px;background:#ADADAD;border-radius:1px;}
+.voice .dur{font-family:var(--font-num);font-size:11px;color:var(--sub);}
+.mem-card .row3{display:flex;align-items:center;gap:6px;margin-top:9px;}
+.emo-tag{padding:2px 9px;border-radius:10px;background:var(--ink);color:#fff;font-size:10px;}
+.mem-card2{margin:0 20px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;cursor:pointer;}
+.mem-card2 .r1{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub);}
+.mem-card2 .feel{font-size:13px;margin:8px 0;}
+.mem-card2 .emos{display:flex;gap:6px;}
+.mem-card2 .emos span{font-size:11px;color:var(--muted);}
+.mem-card2 .r3{font-size:11px;color:var(--sub);margin-top:8px;}
+
+/* ============ S04 创建-选媒体 ============ */
+#s04 .content{padding:14px 20px 20px;display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.grid{display:flex;flex-wrap:wrap;gap:13px;overflow-y:auto;flex:1;align-content:flex-start;}
+.cell{width:108px;height:108px;border-radius:10px;position:relative;cursor:pointer;flex-shrink:0;}
+.cell .ph{width:100%;height:100%;border-radius:10px;}
+.cell.sel .ph{outline:2px solid var(--ink);outline-offset:-2px;}
+.cell .badge{position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:9px;background:var(--ink);color:#fff;
+  font-family:var(--font-num);font-size:11px;display:none;align-items:center;justify-content:center;}
+.cell.sel .badge{display:flex;}
+.cell.cam{border:1px dashed #CFCFCF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:12px;}
+#s04 .foot{display:flex;align-items:center;justify-content:space-between;padding-top:16px;}
+#s04 .count{font-size:12px;color:var(--sub);}
+
+/* ============ S05 创建-写感受 ============ */
+#s05 .content{padding:14px 20px 20px;overflow-y:auto;flex:1;}
+.sec-title{font-size:13px;font-weight:600;margin-bottom:10px;}
+.thumbs{display:flex;gap:8px;margin-bottom:18px;}
+.thumbs .t{width:48px;height:48px;position:relative;}
+.thumbs .more{width:48px;height:48px;border-radius:6px;background:var(--fill);display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--sub);font-family:var(--font-num);}
+.textarea{width:100%;height:100px;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;
+  font-family:var(--font);resize:none;outline:none;color:var(--ink);margin-bottom:20px;background:#fff;}
+.textarea::placeholder{color:#B9B9B9;}
+.emotions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
+.record-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:22px;}
+.record-btn{width:84px;height:84px;border-radius:42px;background:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.record-btn:active{transform:scale(.94);}
+.record-hint{font-size:12px;color:var(--sub);margin-top:10px;}
+.filters{display:flex;gap:10px;margin-bottom:26px;}
+.filters .f{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.filters .f.on{outline:2px solid var(--ink);outline-offset:-1px;}
+
+/* ============ S06 创建-设置时间 ============ */
+#s06 .content{padding:14px 20px 20px;overflow-y:auto;flex:1;}
+#s06 .center-tip{text-align:center;font-size:14px;font-weight:600;margin:6px 0 16px;}
+.opt{height:62px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:12px;
+  padding:0 16px;margin-bottom:10px;cursor:pointer;background:#fff;}
+.opt.on{border-color:var(--ink);}
+.opt .ot{font-size:14px;font-weight:500;}
+.opt .od{font-size:11px;color:var(--sub);margin-top:3px;}
+.opt .radio{margin-left:auto;}
+.wheels{display:flex;gap:10px;height:150px;margin:4px 0 20px;position:relative;border:1px solid var(--line);border-radius:12px;
+  background:#fff;overflow:hidden;padding:0;}
+.wheel{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;position:relative;}
+.wheel::-webkit-scrollbar{width:2px;}
+.wheel::-webkit-scrollbar-thumb{background:#E0E0E0;border-radius:1px;}
+.wheel .it{height:50px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
+  font-family:var(--font-num);font-size:12px;color:#999;}
+.wheel .it.cur{background:var(--fill-dark);border-radius:8px;margin:0 8px;width:calc(100% - 16px);font-weight:600;color:var(--ink);font-size:16px;}
+.wheel-band{position:absolute;left:8px;right:8px;top:50px;height:50px;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;pointer-events:none;}
+
+/* ============ S07 记忆详情 ============ */
+#s07 .content{padding:0 20px 20px;overflow-y:auto;flex:1;}
+#s07 .hero{width:300px;height:300px;margin:10px auto 16px;display:block;}
+.meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.time-main{font-family:var(--font-num);font-size:15px;font-weight:600;}
+#s07 .feel{font-size:15px;line-height:24px;margin:14px 0 18px;}
+.voice-block{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
+.voice-block .who{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.avatar{border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--muted);flex-shrink:0;}
+.voice-block .who .n{font-size:12px;color:var(--sub);}
+.reply{display:flex;justify-content:flex-end;margin-bottom:16px;}
+.reply .bub{background:var(--fill);border-radius:14px 14px 4px 14px;padding:10px 14px;max-width:70%;}
+.reply .bub .txt{font-size:13px;}
+.reply .bub .who{font-size:10px;color:var(--sub);margin-top:5px;text-align:right;}
+.act-bar{display:flex;gap:10px;}
+.act-bar .a{flex:1;height:44px;border-radius:22px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;background:#fff;}
+.act-bar .a.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+/* ============ S08 标记纪念日 ============ */
+#s08 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+.label{font-size:13px;font-weight:600;margin:14px 0 10px;}
+.input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:14px;
+  font-family:var(--font);outline:none;color:var(--ink);}
+.date-card{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:14px 16px;}
+.date-card .d{width:54px;height:54px;background:var(--ink);border-radius:12px;color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-family:var(--font-num);}
+.date-card .d b{font-size:20px;font-weight:600;line-height:1;}
+.date-card .d span{font-size:10px;margin-top:3px;}
+.date-card .t{font-size:13px;color:var(--muted);}
+.setrow{display:flex;align-items:center;justify-content:space-between;padding:14px 2px;border-bottom:1px solid var(--line-light);}
+.setrow:last-child{border-bottom:none;}
+.setrow .st{font-size:14px;}
+.setrow .sd{font-size:11px;color:var(--sub);margin-top:3px;}
+#s08 .btn-primary{margin-top:24px;}
+
+/* ============ S09 纪念日列表 ============ */
+#s09 .content{padding:14px 20px 12px;overflow-y:auto;flex:1;}
+#s09 .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+#s09 .head h1{font-size:20px;font-weight:700;}
+#s09 .head .add{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;
+  justify-content:center;font-size:18px;cursor:pointer;line-height:1;}
+.overview{background:var(--ink);border-radius:16px;padding:18px;color:#fff;margin-bottom:16px;}
+.overview .k{font-size:11px;color:#ABABAB;}
+.overview .n{font-size:19px;font-weight:600;margin:8px 0 14px;}
+.overview .big{font-size:26px;font-weight:700;font-family:var(--font-num);}
+.overview .big small{font-size:14px;font-weight:500;margin-left:2px;}
+.overview .date{font-size:11px;color:#ABABAB;margin-top:10px;}
+.ann-card{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+.ann-card .d{width:54px;height:54px;background:var(--fill);border-radius:12px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-family:var(--font-num);flex-shrink:0;}
+.ann-card .d b{font-size:20px;font-weight:600;color:var(--ink);}
+.ann-card .d span{font-size:10px;color:var(--sub);margin-top:2px;}
+.ann-card .t{font-size:14px;font-weight:600;}
+.ann-card .s{font-size:11px;color:var(--sub);margin-top:4px;}
+.rec-count{font-size:12px;color:var(--sub);margin:2px 0 10px;}
+
+/* ============ S10 双人共建-邀请 ============ */
+#s10 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+#s10 h1{font-size:18px;font-weight:600;}
+#s10 .sub{font-size:12px;color:var(--sub);margin:6px 0 18px;}
+.invite-row{display:flex;align-items:center;gap:10px;padding:14px;}
+.invite-row .txt{flex:1;font-size:14px;}
+.invite-row .code{font-family:var(--font-num);font-size:13px;font-weight:600;}
+.mini-btn{padding:5px 12px;border-radius:13px;background:var(--btn);font-size:11px;font-weight:500;cursor:pointer;flex-shrink:0;}
+.divider{height:1px;background:#E0E0E0;}
+.friend-card{display:flex;align-items:center;gap:12px;padding:14px;margin-top:14px;}
+.friend-card .fc-t{font-size:14px;font-weight:600;}
+.friend-card .fc-s{font-size:11px;color:var(--sub);margin-top:3px;}
+.state-badge{padding:4px 10px;border-radius:11px;background:var(--fill);color:var(--sub);font-size:10px;flex-shrink:0;}
+#s10 .btn-primary{margin-top:22px;}
+
+/* ============ S11 共建时间线 ============ */
+#s11 .content{padding:8px 20px 16px;overflow-y:auto;flex:1;}
+.duo{display:flex;align-items:center;gap:12px;}
+.duo .avs{display:flex;}
+.duo .avs .avatar{border:2px solid #fff;margin-right:-9px;}
+.duo .dt{font-size:15px;font-weight:600;}
+.duo .ds{font-size:11px;color:var(--sub);margin-top:3px;}
+.co-badge{padding:4px 10px;border-radius:11px;background:#EBF5EB;color:#3A7D44;font-size:10px;flex-shrink:0;}
+.spiral-note{font-size:12px;color:var(--sub);font-weight:500;margin:14px 0 0;}
+.spiral-area{position:relative;width:350px;height:590px;margin:0 auto;flex-shrink:0;}
+.spiral-area svg{position:absolute;inset:0;}
+.sp-node{position:absolute;width:12px;height:12px;border-radius:6px;background:var(--muted);
+  box-shadow:0 2px 3px rgba(0,0,0,.25);cursor:pointer;z-index:3;}
+.sp-node.latest{width:14px;height:14px;border-radius:7px;background:#404040;border:2px solid #fff;box-shadow:0 3px 4px rgba(0,0,0,.3);}
+.sp-node.on{outline:3px solid rgba(51,51,51,.2);outline-offset:2px;}
+.sp-label{position:absolute;width:96px;height:40px;background:#fff;border:1px solid #D9D9D9;border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);cursor:pointer;z-index:4;padding:3px 6px;}
+.sp-label .lr{display:flex;align-items:center;gap:4px;}
+.sp-label .ln{font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;}
+.sp-label .ld{font-family:var(--font-num);font-size:10px;color:var(--sub);margin-top:2px;}
+.sp-label.on{border-color:var(--ink);}
+.sp-center{position:absolute;width:8px;height:8px;border-radius:4px;background:var(--muted);left:171px;top:296px;}
+.hint-bar{height:40px;background:var(--fill);border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--muted);font-weight:500;margin-top:12px;}
+/* 螺旋节点浮层 */
+.sp-pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:250px;background:#fff;
+  border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:16px;z-index:20;display:none;}
+.sp-pop.show{display:block;}
+.sp-pop .pt{display:flex;align-items:center;justify-content:space-between;}
+.sp-pop .pn{font-size:15px;font-weight:600;}
+.sp-pop .pd{font-family:var(--font-num);font-size:12px;color:var(--sub);}
+.sp-pop .px{font-size:16px;color:var(--sub);cursor:pointer;line-height:1;padding:0 2px;}
+.sp-pop .pdesc{font-size:12px;color:var(--muted);line-height:1.7;margin:10px 0 14px;}
+.sp-pop .pbtn{height:38px;border-radius:19px;background:var(--ink);color:#fff;font-size:13px;display:flex;
+  align-items:center;justify-content:center;cursor:pointer;}
+
+/* ============ S12 个人中心 ============ */
+#s12 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+.user-card{display:flex;align-items:center;gap:12px;padding:14px;}
+.user-card .un{font-size:16px;font-weight:600;}
+.user-card .us{font-size:11px;color:var(--sub);margin-top:4px;}
+.sec-label{font-size:12px;color:var(--sub);font-weight:500;margin:14px 0 8px;}
+.prow{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;}
+.prow .pt{font-size:14px;}
+.prow .pv{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:8px;}
+.arrow-r{width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:#AAAAAA;}
+.logout{height:48px;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:500;color:var(--danger);cursor:pointer;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<!-- ================= 原型导航 ================= -->
+<div class="proto-nav" id="protoNav">
+  <h3>记忆漩涡 · 12 屏原型</h3>
+  <button data-s="s01" class="on">1 · 选择场景</button>
+  <button data-s="s02">2 · 完成引导</button>
+  <button data-s="s03">3 · 我的记忆线</button>
+  <button data-s="s04">4 · 创建 · 选照片</button>
+  <button data-s="s05">5 · 创建 · 写感受</button>
+  <button data-s="s06">6 · 自定义时间戳</button>
+  <button data-s="s07">7 · 记忆详情</button>
+  <button data-s="s08">8 · 标记纪念日</button>
+  <button data-s="s09">9 · 纪念日列表</button>
+  <button data-s="s10">10 · 邀请共建</button>
+  <button data-s="s11">11 · 共建时间线</button>
+  <button data-s="s12">12 · 个人中心</button>
+  <div class="tip">可点击：场景选择、照片多选、情绪标签、开关、三列滚轮、螺旋时间点、Tab 切换。</div>
+</div>
+
+<!-- ================= 手机 ================= -->
+<div class="phone" id="phone">
+
+<!-- ========== S01 启动-场景选择 ========== -->
+<section class="screen active" id="s01">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="wrap">
+    <div class="logo-vortex"></div>
+    <h1>记忆漩涡</h1>
+    <div class="en">MemoryVortex</div>
+    <div class="tagline">把值得记住的瞬间，卷入记忆漩涡</div>
+    <div class="question">你想为谁记录？</div>
+    <div class="scene-card" data-scene="1">
+      <div class="info"><div class="name">情侣空间</div><div class="desc">和 TA 共建一条记忆线</div></div>
+      <div class="radio on"></div>
+    </div>
+    <div class="scene-card" data-scene="2">
+      <div class="info"><div class="name">个人博物馆</div><div class="desc">私密记录自己的每段感受</div></div>
+      <div class="radio"></div>
+    </div>
+    <div class="scene-card" data-scene="3">
+      <div class="info"><div class="name">家庭成长</div><div class="desc">宝宝与宠物的成长里程碑</div></div>
+      <div class="radio"></div>
+    </div>
+    <button class="btn-primary" data-go="s02">进入记忆漩涡</button>
+  </div>
+</section>
+
+<!-- ========== S02 引导 ========== -->
+<section class="screen" id="s02">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="top"><span class="skip" data-go="s03">跳过</span></div>
+  <div class="wrap">
+    <div class="hero ph">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="10" width="36" height="26" rx="6" stroke="#C9C9C9" stroke-width="2"/><circle cx="22" cy="23" r="7" stroke="#C9C9C9" stroke-width="2"/><path d="M16 10l3-4h6l3 4" stroke="#C9C9C9" stroke-width="2"/></svg>
+    </div>
+    <h1>30 秒，记下此刻的你</h1>
+    <div class="sub">选一张照片 · 录一句声音 · 写下一个时间戳</div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1.5" y="3.5" width="15" height="11" rx="2.5" stroke="#8A8A8A" stroke-width="1.6"/><circle cx="9" cy="9" r="2.8" stroke="#8A8A8A" stroke-width="1.6"/></svg></div><div class="t">照片 / 视频</div></div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6" y="1.5" width="6" height="11" rx="3" stroke="#8A8A8A" stroke-width="1.6"/><path d="M3.5 8a5.5 5.5 0 0011 0M9 13.5v3" stroke="#8A8A8A" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">语音感受</div></div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#8A8A8A" stroke-width="1.6"/><path d="M9 5v4l2.5 2.5" stroke="#8A8A8A" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">自定义时间戳</div></div>
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <button class="btn-primary" data-go="s04">创建第一条记忆</button>
+  </div>
+</section>
+
+<!-- ========== S03 我的记忆线 ========== -->
+<section class="screen" id="s03">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll">
+    <div class="head">
+      <h1>我的记忆线</h1>
+      <div class="acts">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#666" stroke-width="1.8"/><path d="M14 14l4 4" stroke="#666" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke="#666" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke="#666" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <div class="then-card" data-go="s07">
+      <div class="date"><b>24</b><span>8月</span></div>
+      <div><div class="tt">一年前的今天</div><div class="td">1 条记忆 · 来听当时的你</div></div>
+    </div>
+    <div class="chips">
+      <span class="chip sel">全部</span><span class="chip">个人</span><span class="chip">双人</span><span class="chip">纪念日</span>
+    </div>
+    <div class="group-title">2026年8月</div>
+    <div class="mem-card" data-go="s07">
+      <div class="pic ph"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="3" stroke="#CFCFCF" stroke-width="1.6"/><circle cx="13" cy="13.5" r="4" stroke="#CFCFCF" stroke-width="1.6"/><path d="M8 6l2-2.5h6L18 6" stroke="#CFCFCF" stroke-width="1.6"/></svg></div>
+      <div class="body">
+        <div class="row1"><span style="font-family:var(--font-num)">今晚 20:15</span><span class="tag-mini">双人共建</span></div>
+        <div class="feel">今天路过外滩，想如果你在旁边就好了</div>
+        <div class="voice"><span class="play"></span>
+          <span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span>
+          <span class="dur">0:30</span></div>
+        <div class="row3"><span class="emo-tag">想念</span><span class="tag-mini">陈昊视角</span></div>
+      </div>
+    </div>
+    <div class="mem-card2" data-go="s07">
+      <div class="r1"><span style="font-family:var(--font-num)">8月21日 22:10</span><span class="tag-mini">补录</span></div>
+      <div class="feel">那天特别孤独，但雨声让我平静</div>
+      <div class="emos"><span>孤独 · 平静</span></div>
+      <div class="r3">时间戳 · 3个月前</div>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+  <div class="tabbar">
+    <div class="pill">
+      <div class="tab on" data-tab="s03">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>时间轴</span></div>
+      <div class="tab" data-tab="s09">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>纪念日</span></div>
+      <div class="tab" data-tab="s04">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>记录</span></div>
+      <div class="tab" data-tab="s12">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M4 16.5c1.2-2.6 3.4-4 6-4s4.8 1.4 6 4" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>我的</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== S04 创建-选媒体 ========== -->
+<section class="screen" id="s04">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="right" style="min-width:34px;text-align:left;font-size:14px;color:#666;cursor:pointer" data-go="s03">取消</span>
+    <span class="title">创建记忆</span><span class="right" style="font-size:14px;color:#333;font-weight:500;cursor:pointer" data-go="s05">下一步</span></div>
+  <div class="steps"><i class="on"></i><i></i><i></i></div>
+  <div class="content">
+    <div class="grid">
+      <div class="cell cam">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="6.5" width="20" height="14" rx="3" stroke="#8A8A8A" stroke-width="1.7"/><circle cx="12" cy="13.5" r="4" stroke="#8A8A8A" stroke-width="1.7"/><path d="M8 6.5l2-3h4l2 3" stroke="#8A8A8A" stroke-width="1.7"/></svg>
+        <span>拍照</span>
+      </div>
+      <!-- 8 张照片，第 1 张默认选中 -->
+      <div class="cell sel"><div class="ph"></div><span class="badge">1</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">2</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">3</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">4</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">5</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">6</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">7</span></div>
+      <div class="cell"><div class="ph"></div><span class="badge">8</span></div>
+    </div>
+    <div class="foot"><span class="count">已选 1/9</span><button class="btn-mid" data-go="s05">下一步</button></div>
+  </div>
+</section>
+
+<!-- ========== S05 创建-写感受 ========== -->
+<section class="screen" id="s05">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s04"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">写感受</span>
+    <span class="right" style="font-size:14px;color:#333;font-weight:500;cursor:pointer" data-go="s06">下一步</span></div>
+  <div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
+  <div class="content">
+    <div class="sec-title">已选照片</div>
+    <div class="thumbs">
+      <div class="t ph"></div><div class="t ph"></div><div class="t ph"></div>
+      <div class="more">+5</div>
+    </div>
+    <textarea class="textarea" placeholder="写下此刻的感受…"></textarea>
+    <div class="sec-title">此刻的情绪</div>
+    <div class="emotions" id="emoGroup">
+      <span class="chip sel">想念</span><span class="chip">幸福</span><span class="chip">平静</span><span class="chip">孤独</span>
+      <span class="chip">感动</span><span class="chip">期待</span><span class="chip">疲惫</span><span class="chip">难过</span><span class="chip">焦虑</span>
+    </div>
+    <div class="record-wrap">
+      <div class="record-btn" id="recBtn">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="10" y="3" width="10" height="17" rx="5" fill="#fff"/><path d="M5.5 14a9.5 9.5 0 0019 0M15 23.5V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="record-hint">长按录音 · 最多 60 秒</div>
+    </div>
+    <div class="sec-title">感受滤镜</div>
+    <div class="filters">
+      <div class="f on"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.5" fill="#D8D8D8"/><circle cx="11" cy="11" r="2.5" fill="#BDBDBD"/></svg></div>
+      <div class="f"><svg width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#E9E9E9"/></svg></div>
+      <div class="f"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#CFCFCF" stroke-width="2"/></svg></div>
+    </div>
+    <button class="btn-primary" data-go="s06">下一步</button>
+  </div>
+</section>
+
+<!-- ========== S06 创建-设置时间 ========== -->
+<section class="screen" id="s06">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s05"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">设置时间</span><span class="right"></span></div>
+  <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  <div class="content">
+    <div class="center-tip">记忆时间可以不等于拍摄时间</div>
+    <div class="opt">
+      <div><div class="ot">现在 · 8月24日 20:15</div><div class="od">按记忆创建时刻</div></div>
+      <div class="radio"></div>
+    </div>
+    <div class="opt on">
+      <div><div class="ot">自定义日期时间</div><div class="od">补录 / 回填任意年月日时分</div></div>
+      <div class="radio on"></div>
+    </div>
+    <div class="wheels">
+      <div class="wheel" id="wy"></div>
+      <div class="wheel" id="wm"></div>
+      <div class="wheel" id="wd"></div>
+      <div class="wheel-band"></div>
+    </div>
+    <div class="opt">
+      <div><div class="ot">模糊时间</div><div class="od">去年夏天 / 某个晚上</div></div>
+      <div class="radio"></div>
+    </div>
+    <button class="btn-primary" data-go="s07" style="margin-top:20px">保存记忆</button>
+  </div>
+</section>
+
+<!-- ========== S07 记忆详情 ========== -->
+<section class="screen" id="s07">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">记忆详情</span><span class="right"></span></div>
+  <div class="content">
+    <div class="hero ph" style="border-radius:18px">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#CFCFCF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#CFCFCF" stroke-width="2.4"/><path d="M18 12l3.5-5h9L34 12" stroke="#CFCFCF" stroke-width="2.4"/></svg>
+    </div>
+    <div class="meta-row">
+      <span class="time-main">8月24日 20:15</span>
+      <span class="tag-mini">自定义时间戳</span><span class="tag-mini">双人共建</span>
+    </div>
+    <div class="meta-row"><span class="emo-tag">想念</span></div>
+    <div class="feel">今天路过外滩，想如果你在旁边就好了。下次我们一起来吧。</div>
+    <div class="voice-block">
+      <div class="who"><span class="avatar" style="width:28px;height:28px;font-size:12px">陈</span><span class="n">陈昊的语音留言</span></div>
+      <div class="voice"><span class="play"></span>
+        <span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span>
+        <span class="dur">0:30</span></div>
+    </div>
+    <div class="reply">
+      <div class="bub"><div class="txt">下次我们一起来</div><div class="who">苏苏的回复</div></div>
+    </div>
+    <div class="act-bar">
+      <div class="a">编辑</div><div class="a">分享</div>
+      <div class="a dark" data-go="s08">标记纪念日</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== S08 标记纪念日 ========== -->
+<section class="screen" id="s08">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s07"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">标记纪念日</span><span class="right" data-go="s07">关闭</span></div>
+  <div class="content">
+    <div class="label">纪念日名称</div>
+    <input class="input" value="我们的第 1000 天">
+    <div class="label">日期</div>
+    <div class="date-card">
+      <div class="d"><b>24</b><span>8月</span></div>
+      <div class="t">将这条记忆标记为纪念日</div>
+    </div>
+    <div class="label">纪念日提醒</div>
+    <div class="card-gray">
+      <div class="setrow"><div><div class="st">提前 3 天提醒</div></div><div class="switch"><span class="knob"></span></div></div>
+      <div class="setrow"><div><div class="st">农历支持</div></div><div class="switch"><span class="knob"></span></div></div>
+      <div class="setrow"><div><div class="st">同步到双人</div></div><div class="switch off"><span class="knob"></span></div></div>
+    </div>
+    <button class="btn-primary" data-go="s09">完成标记</button>
+  </div>
+</section>
+
+<!-- ========== S09 纪念日列表 ========== -->
+<section class="screen" id="s09">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll">
+    <div class="content" style="padding-top:14px">
+      <div class="head"><h1>纪念日</h1><div class="add" data-go="s08">+</div></div>
+      <div class="overview">
+        <div class="k">下一个纪念日</div>
+        <div class="n">我们的第 1000 天</div>
+        <div class="big">12<small>天</small></div>
+        <div class="date">2026年8月24日 · 农历七月初七</div>
+      </div>
+      <div class="rec-count">已记录 3 个纪念日</div>
+      <div class="ann-card" data-go="s07">
+        <div class="d"><b>24</b><span>8月</span></div>
+        <div><div class="t">我们的第 1000 天</div><div class="s">每年重复 · 还有 12 天</div></div>
+      </div>
+      <div class="ann-card" data-go="s07">
+        <div class="d"><b>14</b><span>2月</span></div>
+        <div><div class="t">恋爱纪念日</div><div class="s">农历七月初七 · 已过 215 天</div></div>
+      </div>
+      <div class="ann-card" data-go="s07">
+        <div class="d"><b>20</b><span>5月</span></div>
+        <div><div class="t">领证纪念日</div><div class="s">5月20日 · 已过 96 天</div></div>
+      </div>
+      <div style="height:12px"></div>
+    </div>
+  </div>
+  <div class="tabbar">
+    <div class="pill">
+      <div class="tab" data-tab="s03">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>时间轴</span></div>
+      <div class="tab on" data-tab="s09">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>纪念日</span></div>
+      <div class="tab" data-tab="s04">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>记录</span></div>
+      <div class="tab" data-tab="s12">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M4 16.5c1.2-2.6 3.4-4 6-4s4.8 1.4 6 4" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>我的</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== S10 双人共建-邀请 ========== -->
+<section class="screen" id="s10">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s12"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">双人共建</span><span class="right" data-go="s12">关闭</span></div>
+  <div class="content">
+    <h1>和重要的人一起记录</h1>
+    <div class="sub">邀请一位伙伴加入，共建专属时间线</div>
+    <div class="card-gray">
+      <div class="invite-row">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="5.5" width="7" height="9" rx="2" stroke="#8A8A8A" stroke-width="1.6"/><rect x="11.5" y="5.5" width="7" height="9" rx="2" stroke="#8A8A8A" stroke-width="1.6"/><path d="M4.5 9.6l7-3" stroke="#8A8A8A" stroke-width="1.6" transform="rotate(45 8 8)"/></svg>
+        <span class="txt">复制邀请链接</span><span class="mini-btn">复制</span>
+      </div>
+      <div class="divider"></div>
+      <div class="invite-row">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#8A8A8A"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#8A8A8A"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#8A8A8A"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#8A8A8A"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#8A8A8A"/></svg>
+        <span class="txt">显示二维码</span><span class="mini-btn">生成</span>
+      </div>
+      <div class="divider"></div>
+      <div class="invite-row">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" stroke="#8A8A8A" stroke-width="1.6"/><path d="M5.5 7h9M5.5 11h9" stroke="#8A8A8A" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span class="txt">邀请码</span><span class="code" style="flex:1;text-align:right">Q7K-2024</span><span class="mini-btn">复制</span>
+      </div>
+    </div>
+    <div class="card friend-card">
+      <span class="avatar" style="width:40px;height:40px;font-size:14px;background:#F0F0F0">苏</span>
+      <div style="flex:1"><div class="fc-t">苏苏</div><div class="fc-s">等待接受 · 已发送 2 小时前</div></div>
+      <span class="state-badge">待接受</span>
+    </div>
+    <button class="btn-primary" data-go="s11">生成邀请</button>
+  </div>
+</section>
+
+<!-- ========== S11 共建时间线 ========== -->
+<section class="screen" id="s11">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s10"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">共建时间线</span>
+    <span class="avatar" style="width:26px;height:26px;font-size:12px;background:#F0F0F0">苏</span></div>
+  <div class="content">
+    <div class="duo">
+      <div class="avs">
+        <span class="avatar" style="width:36px;height:36px;font-size:13px">陈</span>
+        <span class="avatar" style="width:36px;height:36px;font-size:13px;background:#F0F0F0">苏</span>
+      </div>
+      <div style="flex:1"><div class="dt">陈昊 × 苏苏</div><div class="ds">已连接 · 共 87 条记忆</div></div>
+      <span class="co-badge">共建中</span>
+    </div>
+    <div class="chips" style="padding:14px 0 0">
+      <span class="chip sel" style="background:#E3E3E3;color:#333;font-weight:500">全部</span>
+      <span class="chip">我的</span><span class="chip">苏苏的</span>
+    </div>
+    <div class="spiral-note">记忆螺旋 · 由内到外，由远及近</div>
+    <div class="spiral-area" id="spiralArea">
+      <svg id="spiralSvg" width="350" height="590" viewBox="0 0 350 590"></svg>
+      <div class="sp-center"></div>
+      <!-- 时间点（坐标来自设计稿） -->
+      <div class="sp-node" data-k="meet"    style="left:199px;top:294px"></div>
+      <div class="sp-node" data-k="travel"  style="left:132.5px;top:333.5px"></div>
+      <div class="sp-node" data-k="ny"      style="left:166px;top:217px"></div>
+      <div class="sp-node" data-k="cert"    style="left:244.5px;top:360.5px"></div>
+      <div class="sp-node" data-k="home"    style="left:46px;top:305px"></div>
+      <div class="sp-node" data-k="wed"     style="left:261.5px;top:179.5px"></div>
+      <div class="sp-node latest" data-k="bund" style="left:191.5px;top:462.5px"></div>
+      <!-- 标签卡（坐标来自设计稿） -->
+      <div class="sp-label" data-k="meet" style="left:215px;top:300px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12S1.5 8.6 1.5 5.1C1.5 3.4 2.8 2 4.4 2c1 0 2 .5 2.6 1.4C7.6 2.5 8.6 2 9.6 2 11.2 2 12.5 3.4 12.5 5.1 12.5 8.6 7 12 7 12z" fill="#666"/></svg><span class="ln">初见</span></div>
+        <div class="ld">2022.06</div>
+      </div>
+      <div class="sp-label" data-k="travel" style="left:50px;top:379px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="6" width="12" height="5" rx="1.5" fill="#666"/><rect x="3" y="4" width="7" height="2.2" rx="1" fill="#666"/><circle cx="4" cy="11" r="1.6" fill="#666"/><circle cx="10" cy="11" r="1.6" fill="#666"/></svg><span class="ln">第一次旅行</span></div>
+        <div class="ld">2023.02</div>
+      </div>
+      <div class="sp-label" data-k="ny" style="left:121px;top:163px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="1.5" fill="#666"/><path d="M7 1v3M7 10v3M1 7h3M10 7h3M2.8 2.8l2.1 2.1M9.1 9.1l2.1 2.1M11.2 2.8L9.1 4.9M4.9 9.1l-2.1 2.1" stroke="#666" stroke-width="1.2" stroke-linecap="round"/></svg><span class="ln">跨年</span></div>
+        <div class="ld">2023.12</div>
+      </div>
+      <div class="sp-label" data-k="cert" style="left:246px;top:387px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="1.5" width="8" height="11" rx="1" stroke="#666" stroke-width="1.3"/><path d="M5.5 5h3M5.5 8h3" stroke="#666" stroke-width="1.3" stroke-linecap="round"/></svg><span class="ln">领证</span></div>
+        <div class="ld">2024.05</div>
+      </div>
+      <div class="sp-label" data-k="home" style="left:62px;top:301px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 6.5L7 2l5.5 4.5" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6.5" width="8" height="5.5" fill="#666"/><rect x="5.8" y="8.5" width="2.4" height="3.5" fill="#fff"/></svg><span class="ln">新家</span></div>
+        <div class="ld">2025.01</div>
+      </div>
+      <div class="sp-label" data-k="wed" style="left:182px;top:225px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3.2L2.5 8.8V12h9V8.8L7 3.2z" stroke="#666" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 1v1.8" stroke="#666" stroke-width="1.3" stroke-linecap="round"/><rect x="5.4" y="8.4" width="3.2" height="3.6" fill="#666"/></svg><span class="ln">婚礼</span></div>
+        <div class="ld">2025.08</div>
+      </div>
+      <div class="sp-label" data-k="bund" style="left:158px;top:519px">
+        <div class="lr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" fill="#666"/><path d="M7 0.5v1.5" stroke="#666" stroke-width="1.3" stroke-linecap="round"/><rect x="1.5" y="10.5" width="11" height="2" rx="1" fill="#666"/></svg><span class="ln">外滩晨光</span></div>
+        <div class="ld">2026.08</div>
+      </div>
+      <!-- 节点详情浮层 -->
+      <div class="sp-pop" id="spPop">
+        <div class="pt"><span class="pn" id="popName"></span><span class="px" id="popClose">✕</span></div>
+        <div class="pd" id="popDate"></div>
+        <div class="pdesc" id="popDesc"></div>
+        <div class="pbtn" data-go="s07">回看那段记忆</div>
+      </div>
+    </div>
+    <div class="hint-bar">点击任意时间点 · 回看那段记忆</div>
+  </div>
+</section>
+
+<!-- ========== S12 个人中心-隐私 ========== -->
+<section class="screen" id="s12">
+  <div class="statusbar"><span class="time">9:41</span>
+    <span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar">
+    <span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="title">我的</span><span class="right">设置</span></div>
+  <div class="content">
+    <div class="card user-card">
+      <span class="avatar" style="width:44px;height:44px;font-size:16px">林</span>
+      <div><div class="un">林薇</div><div class="us">独居一人 · 已记录 23 条记忆</div></div>
+    </div>
+    <div class="sec-label">隐私安全</div>
+    <div class="card-gray">
+      <div class="prow"><span class="pt">应用锁</span><div class="switch"><span class="knob"></span></div></div>
+      <div class="divider"></div>
+      <div class="prow"><span class="pt">面容 ID 解锁</span><div class="switch"><span class="knob"></span></div></div>
+      <div class="divider"></div>
+      <div class="prow"><span class="pt">本地加密</span><span class="pv">已开启</span></div>
+      <div class="divider"></div>
+      <div class="prow"><span class="pt">云端同步</span><span class="pv">仅我可见</span></div>
+    </div>
+    <div class="sec-label">数据管理</div>
+    <div class="card-gray">
+      <div class="prow"><span class="pt">导出全部数据</span>
+        <span class="pv"><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#AAA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div>
+      <div class="divider"></div>
+      <div class="prow"><span class="pt">清除缓存</span>
+        <span class="pv">12.4MB<span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#AAA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div>
+    </div>
+    <div class="logout">退出登录</div>
+    <div style="height:8px"></div>
+  </div>
+  <div class="tabbar">
+    <div class="pill">
+      <div class="tab" data-tab="s03">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>时间轴</span></div>
+      <div class="tab" data-tab="s09">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>纪念日</span></div>
+      <div class="tab" data-tab="s04">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>记录</span></div>
+      <div class="tab on" data-tab="s12">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M4 16.5c1.2-2.6 3.4-4 6-4s4.8 1.4 6 4" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>我的</span></div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /phone -->
+</div><!-- /stage -->
+
+<script>
+/* ================= 屏幕切换 ================= */
+const screens = document.querySelectorAll('.screen');
+function show(id){
+  screens.forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el){el.classList.add('active');el.querySelectorAll('.scroll,.content').forEach(c=>{if(c.scrollTo)c.scrollTop=0;});}
+  document.querySelectorAll('#protoNav button').forEach(b=>b.classList.toggle('on',b.dataset.s===id));
+}
+document.addEventListener('click',e=>{
+  const go = e.target.closest('[data-go]');
+  if(go){show(go.dataset.go);return;}  const tab = e.target.closest('[data-tab]');
+  if(tab){
+    const id = tab.dataset.tab;
+    /* 同步所有 TabBar 高亮 */
+    document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===id));
+    show(id === 's04' ? 's04' : id);
+    return;
+  }
+});
+
+/* 原型导航 */
+document.querySelectorAll('#protoNav button').forEach(b=>{
+  b.addEventListener('click',()=>show(b.dataset.s));
+});
+
+/* hash 路由（支持刷新保持 / 直链定位） */
+window.addEventListener('hashchange',()=>{
+  const id=location.hash.slice(1);
+  if(document.getElementById(id))show(id);
+});
+(function(){const id=location.hash.slice(1);if(document.getElementById(id))show(id);})();
+
+/* ================= S01 场景单选 ================= */
+document.querySelectorAll('#s01 .scene-card').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#s01 .scene-card').forEach(x=>x.querySelector('.radio').classList.remove('on'));
+    c.querySelector('.radio').classList.add('on');
+  });
+});
+
+/* ================= S03 / S11 筛选 chips 单选 ================= */
+document.querySelectorAll('.chips').forEach(g=>{
+  g.addEventListener('click',e=>{
+    const c = e.target.closest('.chip'); if(!c)return;
+    g.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel');
+  });
+});
+
+/* ================= S04 照片多选 ================= */
+const grid = document.querySelector('#s04 .grid');
+if(grid){
+  const count = grid.parentElement.querySelector('.count');
+  grid.addEventListener('click',e=>{
+    const cell = e.target.closest('.cell'); if(!cell||cell.classList.contains('cam'))return;
+    cell.classList.toggle('sel');
+    const sel = grid.querySelectorAll('.cell.sel');
+    grid.querySelectorAll('.cell.sel .badge').forEach((b,i)=>b.textContent=i+1);
+    count.textContent = '已选 ' + sel.length + '/9';
+  });
+}
+
+/* ================= S05 情绪单选 / 滤镜单选 ================= */
+const emoG = document.getElementById('emoGroup');
+if(emoG) emoG.addEventListener('click',e=>{
+  const c=e.target.closest('.chip'); if(!c)return;
+  emoG.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel')); c.classList.add('sel');
+});
+document.querySelectorAll('#s05 .filters').forEach(g=>g.addEventListener('click',e=>{
+  const f=e.target.closest('.f'); if(!f)return;
+  g.querySelectorAll('.f').forEach(x=>x.classList.remove('on')); f.classList.add('on');
+}));
+
+/* ================= S06 时间选项单选 ================= */
+document.querySelectorAll('#s06 .opt').forEach(o=>{
+  o.addEventListener('click',()=>{
+    document.querySelectorAll('#s06 .opt').forEach(x=>x.classList.remove('on'));
+    o.classList.add('on');
+  });
+});
+
+/* ================= S06 三列滚轮 ================= */
+function buildWheel(el,arr,cur){
+  arr.forEach(v=>{
+    const d=document.createElement('div');d.className='it';d.textContent=v;
+    if(v===cur)d.classList.add('cur');el.appendChild(d);
+  });
+  const mark=()=>{const items=el.querySelectorAll('.it');const mid=el.scrollTop+75;
+    items.forEach(it=>it.classList.toggle('cur',Math.abs(it.offsetTop+25-mid)<25));};
+  el.addEventListener('scroll',mark);
+  setTimeout(()=>{const idx=arr.indexOf(cur);el.scrollTop=idx*50;},0);
+}
+buildWheel(document.getElementById('wy'),['2019','2020','2021','2022','2023','2024','2025','2026'],'2022');
+buildWheel(document.getElementById('wm'),['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],'8月');
+buildWheel(document.getElementById('wd'),Array.from({length:31},(_,i)=>String(i+1)),'24');
+
+/* ================= 开关切换 ================= */
+document.querySelectorAll('.switch').forEach(s=>{
+  s.addEventListener('click',()=>s.classList.toggle('off'));
+});
+
+/* ================= S11 螺旋生成 ================= */
+/* 参数与设计稿一致：中心(175,300) 基础半径30 每圈外扩10 共2.23圈 */
+function spiralPath(t0,t1,steps){
+  const cx=175,cy=300,R0=30,k=10;let d='';
+  for(let i=0;i<=steps;i++){
+    const t=t0+(t1-t0)*i/steps, th=t*2*Math.PI, r=R0+k*th;
+    d+=(i?' L':'M')+(cx+r*Math.cos(th)).toFixed(1)+','+(cy+r*Math.sin(th)).toFixed(1);
+  }
+  return d;
+}
+(function(){
+  const svg=document.getElementById('spiralSvg');
+  const NS='http://www.w3.org/2000/svg';
+  const segs=[
+    {t0:0,t1:0.85,c:'#DADADA',w:2.5},
+    {t0:0.85,t1:1.75,c:'#B0B0B0',w:2.5},
+    {t0:1.75,t1:2.23,c:'#666666',w:3}
+  ];
+  segs.forEach(s=>{
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',spiralPath(s.t0,s.t1,80));
+    p.setAttribute('fill','none');p.setAttribute('stroke',s.c);
+    p.setAttribute('stroke-width',s.w);p.setAttribute('stroke-linecap','round');
+    svg.appendChild(p);
+  });
+})();
+
+/* ================= S11 节点浮层 ================= */
+const spData={
+  meet:{n:'初见',d:'2022.06',s:'咖啡馆的第一句"你好"。你们都不知道，这会是往后四年的起点。'},
+  travel:{n:'第一次旅行',d:'2023.02',s:'大理 · 洱海边。风很大，照片全部糊了，但你笑得很清楚。'},
+  ny:{n:'跨年',d:'2023.12',s:'一起倒数的烟花，零点时你说的那句话被爆竹声盖住了。'},
+  cert:{n:'领证',d:'2024.05',s:'民政局门口的合影。两个红本本，比想象中轻，也比想象中重。'},
+  home:{n:'新家',d:'2025.01',s:'搬进来的第一晚，地板上吃外卖，觉得家就该是这个样子。'},
+  wed:{n:'婚礼',d:'2025.08',s:'交换戒指的瞬间。台下哭了很多人，你只记得TA的眼睛。'},
+  bund:{n:'外滩晨光',d:'2026.08 · 最新',s:'今晚 20:15 · 双人共建 · "今天路过外滩，想如果你在旁边就好了。"'}
+};
+const pop=document.getElementById('spPop');
+function openPop(k){
+  const d=spData[k];if(!d)return;
+  document.getElementById('popName').textContent=d.n;
+  document.getElementById('popDate').textContent=d.d;
+  document.getElementById('popDesc').textContent=d.s;
+  pop.classList.add('show');
+  document.querySelectorAll('.sp-node,.sp-label').forEach(x=>x.classList.toggle('on',x.dataset.k===k));
+}
+document.querySelectorAll('.sp-node,.sp-label').forEach(el=>{
+  el.addEventListener('click',()=>openPop(el.dataset.k));
+});
+document.getElementById('popClose').addEventListener('click',()=>{
+  pop.classList.remove('show');
+  document.querySelectorAll('.sp-node,.sp-label').forEach(x=>x.classList.remove('on'));
+});
+
+/* ================= S05 录音按钮按压效果 ================= */
+const rec=document.getElementById('recBtn');
+if(rec){
+  const hint=rec.parentElement.querySelector('.record-hint');
+  let timer=null;
+  const start=()=>{rec.style.transform='scale(1.06)';let s=0;
+    timer=setInterval(()=>{s++;hint.textContent='录音中 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},1000);};
+  const end=()=>{clearInterval(timer);rec.style.transform='';hint.textContent='长按录音 · 最多 60 秒';};
+  rec.addEventListener('mousedown',start);rec.addEventListener('mouseup',end);rec.addEventListener('mouseleave',end);
+  rec.addEventListener('touchstart',e=>{e.preventDefault();start();});
+  rec.addEventListener('touchend',end);
+}
+</script>
+</body>
+</html>

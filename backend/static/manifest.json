@@ -1,0 +1,30 @@
+{
+  "name": "记忆漩涡 MemoryVortex",
+  "short_name": "记忆漩涡",
+  "description": "情侣/个人记忆管理：记录、纪念日、成长追踪、共建时间线",
+  "start_url": "./memory-vortex-prototype-v2-api.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECE5DD",
+  "theme_color": "#FBF8F4",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="记忆漩涡">
+<meta name="theme-color" content="#FBF8F4">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>记忆漩涡 MemoryVortex</title>
+<style>
+:root{
+  --ink:#3D2E24;--muted:#7A5E4E;--sub:#9B8271;--line:#DED3C8;--line-strong:#CFC2B4;--line-light:#E9E0D7;
+  --divider:#E9E0D7;--card:#FBF8F4;--fill:#F6F0EA;--fill-dark:#F2EBE3;--btn:#EDE3D9;
+  --danger:#B03A3A;--white:#FFF;
+  --font:'Sarasa Gothic SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --font-num:'Inter','Sarasa Gothic SC',sans-serif;
+  --sc-p:#B07A5E;--sc-c:#D4737A;--sc-f:#8D9B5B;--sc-g:#C4A45D;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
+.stage{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:32px 16px;}
+.phone{width:390px;height:844px;background:var(--white);border-radius:44px;border:1px solid var(--line-strong);
+  box-shadow:0 24px 60px rgba(0,0,0,.12);overflow:hidden;position:relative;flex-shrink:0;}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--white);}
+.screen.active{display:flex;}
+.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;}.scroll::-webkit-scrollbar{display:none;}
+.proto-nav{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:16px;width:196px;
+  flex-shrink:0;max-height:92vh;overflow-y:auto;}
+.proto-nav::-webkit-scrollbar{width:3px;}.proto-nav::-webkit-scrollbar-thumb{background:#E0D5C9;border-radius:2px;}
+.proto-nav h3{font-size:13px;font-weight:600;margin-bottom:10px;}
+.proto-nav .ns{font-size:10px;font-weight:600;color:#B5A293;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px;padding-left:2px;}
+.proto-nav .ns:first-of-type{margin-top:0;}
+.proto-nav button{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;
+  border-radius:9px;padding:6px 10px;font-size:12px;color:var(--sub);cursor:pointer;font-family:var(--font);margin-bottom:2px;}
+.proto-nav button:hover{background:var(--fill);}.proto-nav button.on{background:var(--ink);color:#fff;}
+.proto-nav .tip{font-size:11px;color:var(--sub);line-height:1.6;margin-top:10px;border-top:1px solid var(--line-light);padding-top:10px;}
+.statusbar{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 32px 10px 36px;flex-shrink:0;}
+.statusbar .time{font-family:var(--font-num);font-size:15px;font-weight:600;}
+.statusbar .icons{display:flex;align-items:center;gap:6px;}
+.sig{display:flex;align-items:flex-end;gap:2px;height:11px;}.sig i{width:3px;background:var(--ink);border-radius:1px;display:block;}
+.sig i:nth-child(1){height:4px;}.sig i:nth-child(2){height:6px;}.sig i:nth-child(3){height:8px;}.sig i:nth-child(4){height:11px;}
+.batt{width:25px;height:12px;border:1px solid var(--ink);border-radius:3.5px;position:relative;padding:1.5px;}
+.batt::after{content:'';position:absolute;right:-4px;top:3.5px;width:2px;height:4px;background:var(--ink);border-radius:0 1px 1px 0;}
+.batt i{display:block;height:100%;width:78%;background:var(--ink);border-radius:1.5px;}
+.navbar{height:46px;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;}
+.navbar .back{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.navbar .title{flex:1;text-align:center;font-size:16px;font-weight:600;}
+.navbar .right{min-width:34px;text-align:right;font-size:14px;color:var(--muted);cursor:pointer;}
+.btn-primary{height:54px;background:var(--ink);color:#fff;border-radius:27px;font-size:16px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--font);border:none;width:100%;}
+.btn-primary:active{opacity:.85;}
+.steps{display:flex;gap:8px;padding:0 20px 14px;}.steps i{flex:1;height:4px;border-radius:2px;background:#E6DDD3;}.steps i.on{background:var(--ink);}
+.card{background:var(--white);border:1px solid #E3D9CF;border-radius:14px;}
+.card-gray{background:var(--card);border-radius:14px;}
+.chip{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:16px;font-size:12px;
+  background:var(--fill);color:var(--sub);cursor:pointer;white-space:nowrap;}
+.chip.sel{background:var(--ink);color:#fff;font-weight:500;}
+.switch{width:44px;height:24px;border-radius:12px;background:var(--ink);position:relative;cursor:pointer;flex-shrink:0;transition:background .15s;}
+.switch .knob{position:absolute;top:3px;left:23px;width:18px;height:18px;border-radius:9px;background:#fff;transition:left .15s;}
+.switch.off{background:#D9CCBF;}.switch.off .knob{left:3px;}
+.tabbar{flex-shrink:0;padding:10px 16px 22px;}
+.tabbar .pill{height:66px;background:var(--fill);border:1px solid #C6B9AB;border-radius:36px;display:flex;padding:7px;}
+.tabbar .tab{flex:1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--sub);cursor:pointer;font-size:10px;font-weight:500;}
+.tabbar .tab svg{width:20px;height:20px;stroke:var(--sub);}
+.tabbar .tab.on{background:var(--btn);color:var(--ink);}.tabbar .tab.on svg{stroke:var(--ink);}
+.radio{width:18px;height:18px;border-radius:9px;border:1.5px solid var(--line-strong);flex-shrink:0;position:relative;background:#fff;}
+.radio.on{border-color:var(--ink);}.radio.on::after{content:'';position:absolute;inset:3.5px;border-radius:5px;background:var(--ink);}
+.ph{background:#F2ECE5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#D4C6B9;}
+.sdot{width:6px;height:6px;border-radius:3px;display:inline-block;margin-right:5px;flex-shrink:0;}
+.sdot.p{background:var(--sc-p);}.sdot.c{background:var(--sc-c);}.sdot.f{background:var(--sc-f);}.sdot.g{background:var(--sc-g);}
+.scene-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9px;font-size:10px;white-space:nowrap;}
+.scene-tag.p{background:rgba(176,122,94,.14);color:#8A5B41;}
+.scene-tag.c{background:rgba(212,115,122,.14);color:#A04047;}
+.scene-tag.f{background:rgba(141,155,91,.14);color:#5C7038;}
+.scene-tag.g{background:rgba(196,164,93,.14);color:#8A7340;}
+/* S01 */
+#s01 .wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:50px 20px 30px;overflow-y:auto;}
+.logo-vortex{width:52px;height:60px;border:2px solid var(--ink);border-radius:26px;position:relative;margin-bottom:18px;}
+.logo-vortex::after{content:'';position:absolute;left:50%;top:10px;transform:translateX(-50%);width:18px;height:18px;border-radius:9px;border:2px solid var(--ink);border-bottom:none;}
+#s01 h1{font-size:30px;font-weight:700;letter-spacing:2px;}
+#s01 .en{font-family:var(--font-num);font-size:13px;color:var(--sub);letter-spacing:3px;margin:6px 0 10px;}
+#s01 .tagline{font-size:15px;color:var(--muted);}
+#s01 .question{font-size:15px;font-weight:600;margin:32px 0 14px;align-self:flex-start;padding-left:4px;}
+.scene-card{width:100%;min-height:66px;display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--white);
+  border:1px solid var(--line);border-radius:14px;margin-bottom:10px;cursor:pointer;}
+.scene-card .info{flex:1;}.scene-card .name{font-size:15px;font-weight:600;}.scene-card .desc{font-size:12px;color:var(--sub);margin-top:3px;}
+.scene-card.locked{opacity:.5;border-style:dashed;}
+.scene-card .lock-ic{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--sub);}
+#s01 .btn-primary{margin-top:auto;}
+/* S02 */
+#s02 .top{display:flex;justify-content:flex-end;padding:14px 20px 0;}#s02 .skip{font-size:14px;color:var(--sub);cursor:pointer;}
+#s02 .wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 24px 34px;overflow-y:auto;}
+#s02 .hero{width:230px;height:230px;border-radius:18px;border:1px solid var(--line);margin:8px 0 26px;}
+#s02 h1{font-size:24px;font-weight:700;}#s02 .sub{font-size:14px;color:var(--sub);margin:10px 0 30px;}
+.feat{width:100%;display:flex;align-items:center;gap:14px;padding:13px 16px;margin-bottom:10px;background:var(--card);border-radius:12px;}
+.feat .ic{width:34px;height:34px;border-radius:8px;background:var(--fill-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.feat .t{font-size:14px;font-weight:500;}
+.dots{display:flex;gap:8px;margin:22px 0;}.dots i{width:8px;height:8px;border-radius:4px;background:#E0D6CB;}.dots i.on{background:var(--ink);width:22px;}
+/* S03 */
+#s03 .head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 4px;}
+#s03 .head h1{font-size:20px;font-weight:700;}#s03 .head .acts{display:flex;gap:16px;color:var(--muted);cursor:pointer;}
+.all-entry{margin:8px 20px 4px;height:64px;display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--ink);border-radius:14px;cursor:pointer;}
+.all-entry .ae-ic{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.all-entry .ae-t{font-size:14px;font-weight:600;color:#fff;}.all-entry .ae-s{font-size:11px;color:#D9C8BA;margin-top:2px;}
+.all-entry .ae-arrow{margin-left:auto;color:#8C7260;font-size:18px;}
+.scene-tabs{display:flex;gap:8px;padding:10px 20px 4px;overflow-x:auto;}.scene-tabs::-webkit-scrollbar{display:none;}
+.group-title{font-size:12px;color:var(--sub);font-weight:500;padding:10px 20px 6px;}
+.mem-card{margin:0 20px 12px;padding:12px;display:flex;gap:12px;border:1px solid var(--line);border-radius:14px;cursor:pointer;background:#fff;}
+.mem-card .pic{width:92px;height:96px;flex-shrink:0;}.mem-card .body{flex:1;min-width:0;display:flex;flex-direction:column;}
+.mem-card .row1{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub);flex-wrap:wrap;}
+.mem-card .feel{font-size:13px;line-height:1.6;margin:8px 0;word-break:break-all;}
+.voice{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:12px;padding:7px 12px;height:30px;}
+.voice .play{width:16px;height:16px;border-radius:8px;background:var(--ink);flex-shrink:0;position:relative;}
+.voice .play::after{content:'';position:absolute;left:5px;top:4.5px;border:3.5px solid transparent;border-left:5px solid #fff;}
+.voice .wave{flex:1;display:flex;align-items:center;gap:2.5px;height:14px;}.voice .wave i{width:2px;background:#B8A797;border-radius:1px;}
+.voice .dur{font-family:var(--font-num);font-size:11px;color:var(--sub);}
+.mem-card .row3{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap;}
+.emo-tag{padding:2px 9px;border-radius:10px;background:var(--ink);color:#fff;font-size:10px;}
+.mem-card2{margin:0 20px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;cursor:pointer;}
+.mem-card2 .r1{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub);flex-wrap:wrap;}
+.mem-card2 .feel{font-size:13px;margin:8px 0;}.mem-card2 .emos span{font-size:11px;color:var(--muted);}
+.mem-card2 .r3{font-size:11px;color:var(--sub);margin-top:8px;}
+/* S04 */
+/* S04 · 记录 / 场景选择（v0.8.6：由底部弹窗改为常驻全屏页面，可自由返回） */
+#s04 .scroll{padding:24px 20px 28px;}
+#s04 .sheet-title{font-size:22px;font-weight:700;margin:2px 0 6px;}
+#s04 .sheet-sub{font-size:13px;color:var(--sub);margin-bottom:24px;}
+#s04 .scene-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.scene-opt{border:1px solid var(--line);border-radius:14px;padding:16px 14px;position:relative;cursor:pointer;text-align:center;}
+.scene-opt.sel{border-color:var(--ink);border-width:2px;background:var(--fill);}
+.scene-opt .so-ic{width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:var(--fill-dark);display:flex;align-items:center;justify-content:center;}
+.scene-opt.sel .so-ic{background:var(--ink);}.scene-opt.sel .so-ic svg [stroke]{stroke:#fff;}.scene-opt.sel .so-ic svg [fill]{fill:#fff;}
+.scene-opt .so-name{font-size:14px;font-weight:600;}.scene-opt .so-desc{font-size:11px;color:var(--sub);margin-top:3px;}
+.scene-opt .so-rec{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:9px;background:var(--ink);color:#fff;font-size:10px;}
+.scene-opt.locked{opacity:.45;}
+/* S05 */
+#s05 .content{padding:14px 20px 20px;overflow-y:auto;flex:1;}
+#s05 .scene-ctx{display:flex;align-items:center;gap:6px;margin-bottom:14px;padding:8px 12px;background:var(--card);border-radius:10px;}
+#s05 .scene-ctx .label{font-size:12px;color:var(--sub);}
+.sec-title{font-size:13px;font-weight:600;margin-bottom:10px;}
+.grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.cell{width:74px;height:74px;border-radius:8px;position:relative;cursor:pointer;flex-shrink:0;}
+.cell .ph{width:100%;height:100%;border-radius:8px;}.cell.sel .ph{outline:2px solid var(--ink);outline-offset:-2px;}
+.cell .badge{position:absolute;right:4px;top:4px;width:16px;height:16px;border-radius:8px;background:var(--ink);color:#fff;font-family:var(--font-num);font-size:10px;display:none;align-items:center;justify-content:center;}
+.cell.sel .badge{display:flex;}
+.cell.cam{border:1px dashed #D9CCBF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-size:11px;}
+.cell.pick .pp{width:100%;height:100%;border-radius:8px;object-fit:cover;display:block;background:#EFE6DC;}
+.cell.pick .pick-tag{position:absolute;left:4px;bottom:4px;background:rgba(61,46,36,.78);color:#fff;font-size:9px;line-height:14px;padding:0 5px;border-radius:7px;pointer-events:none;}
+.cell.pick .pick-del{position:absolute;right:-6px;top:-6px;width:18px;height:18px;border-radius:9px;background:#C04A52;color:#fff;font-size:12px;line-height:18px;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.textarea{width:100%;height:80px;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;font-family:var(--font);resize:none;outline:none;color:var(--ink);margin-bottom:18px;background:#fff;}
+.textarea::placeholder{color:#C7B5A6;}
+.emotions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.record-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+.record-btn{width:72px;height:72px;border-radius:36px;background:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.record-btn:active{transform:scale(.94);}.record-hint{font-size:12px;color:var(--sub);margin-top:10px;}
+/* S06 */
+#s06 .content{padding:14px 20px 20px;overflow-y:auto;flex:1;}
+#s06 .center-tip{text-align:center;font-size:14px;font-weight:600;margin:6px 0 16px;}
+.opt{height:58px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:12px;padding:0 16px;margin-bottom:10px;cursor:pointer;background:#fff;}
+.opt.on{border-color:var(--ink);}.opt .ot{font-size:14px;font-weight:500;}.opt .od{font-size:11px;color:var(--sub);margin-top:3px;}.opt .radio{margin-left:auto;}
+.precision-toggle{display:flex;background:var(--fill);border-radius:10px;padding:3px;margin:4px 0 14px;}
+.precision-toggle .pt-opt{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;}
+.precision-toggle .pt-opt.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.wheels{display:flex;gap:10px;height:150px;margin:4px 0 16px;position:relative;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;}
+.wheel{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;position:relative;padding:50px 0;overscroll-behavior:auto;}.wheel::-webkit-scrollbar{width:2px;}.wheel::-webkit-scrollbar-thumb{background:#E6DDD3;border-radius:1px;}
+.wheel .it{height:50px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-family:var(--font-num);font-size:12px;color:#A2917F;}
+.wheel .it.cur{background:var(--fill-dark);border-radius:8px;margin:0 8px;width:calc(100% - 16px);font-weight:600;color:var(--ink);font-size:16px;}
+.wheel-band{position:absolute;left:8px;right:8px;top:50px;height:50px;border-top:1px solid #F2EBE3;border-bottom:1px solid #F2EBE3;pointer-events:none;}
+.wheels-5 .wheel{flex:.8;}
+/* S07 */
+#s07 .content{padding:0 20px 20px;overflow-y:auto;flex:1;}
+#s07 .hero{width:300px;height:300px;margin:10px auto 16px;display:block;}
+.meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.time-main{font-family:var(--font-num);font-size:15px;font-weight:600;}
+#s07 .feel{font-size:15px;line-height:24px;margin:14px 0 18px;}
+.voice-block{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
+.voice-block .who{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.avatar{border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-shrink:0;}
+.voice-block .who .n{font-size:12px;color:var(--sub);}
+.act-bar{display:flex;gap:10px;}.act-bar .a{flex:1;height:44px;border-radius:22px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:#fff;}
+.act-bar .a.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+.persp-section{margin-top:20px;}
+.persp-collapsed{background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.persp-collapsed .pl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);}
+.persp-collapsed .pl b{font-family:var(--font-num);color:var(--ink);}
+.persp-collapsed .chev{transition:transform .2s;color:var(--sub);}.persp-collapsed .chev.open{transform:rotate(180deg);}
+.persp-expanded{display:none;margin-top:12px;gap:12px;}.persp-expanded.show{display:flex;}
+.persp-card{flex:1;background:var(--card);border-radius:12px;padding:14px;}
+.persp-card .pc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.persp-card .pc-name{font-size:13px;font-weight:600;}
+.persp-card .pc-feel{font-size:13px;line-height:1.6;}
+.persp-card .pc-time{font-family:var(--font-num);font-size:11px;color:var(--sub);margin-top:8px;}
+/* S08 */
+#s08 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+.label{font-size:13px;font-weight:600;margin:14px 0 10px;}
+.input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:14px;font-family:var(--font);outline:none;color:var(--ink);}
+.date-card{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:14px 16px;}
+.date-card .d{width:54px;height:54px;background:var(--ink);border-radius:12px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-num);}
+.date-card .d b{font-size:20px;font-weight:600;}.date-card .d span{font-size:10px;margin-top:3px;}.date-card .t{font-size:13px;color:var(--muted);}
+.setrow{display:flex;align-items:center;justify-content:space-between;padding:14px 2px;border-bottom:1px solid var(--line-light);}.setrow:last-child{border-bottom:none;}
+.setrow .st{font-size:14px;}.setrow .sd{font-size:11px;color:var(--sub);margin-top:3px;}
+#s08 .btn-primary{margin-top:24px;}
+/* S09 */
+#s09 .content{padding:14px 20px 12px;overflow-y:auto;flex:1;}
+#s09 .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+#s09 .head h1{font-size:20px;font-weight:700;}
+#s09 .head .add{width:28px;height:28px;border-radius:14px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;line-height:1;}
+.overview{background:var(--ink);border-radius:16px;padding:18px;color:#fff;margin-bottom:16px;}
+.overview .k{font-size:11px;color:#D9C8BA;}.overview .n{font-size:19px;font-weight:600;margin:8px 0 14px;}
+.overview .big{font-size:26px;font-weight:700;font-family:var(--font-num);}.overview .big small{font-size:14px;font-weight:500;margin-left:2px;}
+.overview .date{font-size:11px;color:#D9C8BA;margin-top:10px;}
+/* v0.9.2：下一个纪念日大卡背景用关联记忆照片（深色渐变遮罩保证白字可读） */
+.overview.has-cover{background:linear-gradient(180deg,rgba(22,14,9,.18) 0%,rgba(22,14,9,.72) 100%),var(--cov-url) center/cover no-repeat;border:1px solid rgba(255,255,255,.14);}
+.overview.has-cover .k,.overview.has-cover .date{color:rgba(255,255,255,.88);}
+.ann-card{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;position:relative;}
+.ann-card .d{width:54px;height:54px;background:var(--fill);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-num);flex-shrink:0;}
+.ann-card .d b{font-size:20px;font-weight:600;color:var(--ink);}.ann-card .d span{font-size:10px;color:var(--sub);margin-top:2px;}
+.ann-card .t{font-size:14px;font-weight:600;}.ann-card .s{font-size:11px;color:var(--sub);margin-top:4px;}
+/* v0.9.2：纪念日卡片背景 = 关联记忆的照片（深色渐变遮罩保证文字可读） */
+.ann-card.has-cover{background:linear-gradient(180deg,rgba(22,14,9,.12) 0%,rgba(22,14,9,.66) 100%),var(--cov-url) center/cover no-repeat;border:none;padding:13px 14px;min-height:78px;align-items:flex-end;}
+.ann-card.has-cover .d{background:rgba(255,255,255,.16);backdrop-filter:blur(3px);border:1px solid rgba(255,255,255,.25);}
+.ann-card.has-cover .d b{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.35);}
+.ann-card.has-cover .d span{color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.3);}
+.ann-card.has-cover .t{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45);}
+.ann-card.has-cover .s{color:rgba(255,255,255,.88);text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.ann-card.has-cover .ann-del{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+.rec-count{font-size:12px;color:var(--sub);margin:2px 0 10px;}
+/* S10 */
+#s10 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+#s10 h1{font-size:18px;font-weight:600;}#s10 .sub{font-size:12px;color:var(--sub);margin:6px 0 16px;}
+.rel-toggle{display:flex;background:var(--fill);border-radius:12px;padding:3px;margin-bottom:20px;}
+.rel-toggle .rt-opt{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:14px;font-weight:500;color:var(--sub);cursor:pointer;}
+.rel-toggle .rt-opt.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.invite-row{display:flex;align-items:center;gap:10px;padding:14px;}.invite-row .txt{flex:1;font-size:14px;}.invite-row .code{font-family:var(--font-num);font-size:13px;font-weight:600;}
+.mini-btn{padding:5px 12px;border-radius:13px;background:var(--btn);font-size:11px;font-weight:500;cursor:pointer;flex-shrink:0;}
+.divider{height:1px;background:#E6DDD3;}
+.friend-card{display:flex;align-items:center;gap:12px;padding:14px;margin-top:14px;}
+.friend-card .fc-t{font-size:14px;font-weight:600;}.friend-card .fc-s{font-size:11px;color:var(--sub);margin-top:3px;}
+.state-badge{padding:4px 10px;border-radius:11px;background:var(--fill);color:var(--sub);font-size:10px;flex-shrink:0;}
+.member-slot{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px dashed var(--line-strong);border-radius:12px;margin-top:8px;}
+.member-slot .ms-add{width:36px;height:36px;border-radius:18px;border:1px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:18px;flex-shrink:0;}
+.member-slot .ms-t{font-size:13px;color:var(--sub);}
+#s10 .btn-primary{margin-top:22px;}
+/* S11 */
+#s11 .content{padding:8px 20px 16px;overflow-y:auto;flex:1;}
+.duo{display:flex;align-items:center;gap:12px;}.duo .avs{display:flex;}.duo .avs .avatar{border:2px solid #fff;margin-right:-9px;}
+.duo .dt{font-size:15px;font-weight:600;}.duo .ds{font-size:11px;color:var(--sub);margin-top:3px;}
+.co-badge{padding:4px 10px;border-radius:11px;background:#F3EBDC;color:#8A7340;font-size:10px;flex-shrink:0;}
+.spiral-note{font-size:12px;color:var(--sub);font-weight:500;margin:14px 0 0;}
+.spiral-area{position:relative;width:350px;height:590px;margin:0 auto;flex-shrink:0;}.spiral-area svg{position:absolute;inset:0;}
+.sp-node{position:absolute;width:12px;height:12px;border-radius:6px;background:var(--muted);box-shadow:0 2px 3px rgba(0,0,0,.25);cursor:pointer;z-index:3;}
+.sp-node.latest{width:14px;height:14px;border-radius:7px;background:#4A392C;border:2px solid #fff;box-shadow:0 3px 4px rgba(0,0,0,.3);}
+.sp-node.on{outline:3px solid rgba(51,51,51,.2);outline-offset:2px;}
+.sp-label{position:absolute;width:96px;height:40px;background:#fff;border:1px solid #DED3C8;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.08);cursor:pointer;z-index:4;padding:3px 6px;}
+.sp-label .lr{display:flex;align-items:center;gap:4px;}.sp-label .ln{font-size:11px;font-weight:600;white-space:nowrap;}
+.sp-label .ld{font-family:var(--font-num);font-size:10px;color:var(--sub);margin-top:2px;}.sp-label.on{border-color:var(--ink);}
+.sp-center{position:absolute;width:8px;height:8px;border-radius:4px;background:var(--muted);left:171px;top:296px;}
+.sp-mp-badge{position:absolute;width:18px;height:18px;border-radius:9px;background:var(--ink);color:#fff;font-size:9px;font-family:var(--font-num);display:flex;align-items:center;justify-content:center;z-index:5;}
+.sp-cmt-badge{position:absolute;min-width:16px;height:16px;border-radius:8px;background:var(--sc-c);font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 4px;z-index:5;}
+.hint-bar{height:40px;background:var(--fill);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);font-weight:500;margin-top:12px;}
+.sp-pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:250px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:16px;z-index:20;display:none;}
+.sp-pop.show{display:block;}.sp-pop .pt{display:flex;align-items:center;justify-content:space-between;}
+.sp-pop .pn{font-size:15px;font-weight:600;}.sp-pop .pd{font-family:var(--font-num);font-size:12px;color:var(--sub);}
+.sp-pop .px{font-size:16px;color:var(--sub);cursor:pointer;line-height:1;padding:0 2px;}
+.sp-pop .pdesc{font-size:12px;color:var(--muted);line-height:1.7;margin:10px 0 14px;}
+.sp-pop .pbtn{height:38px;border-radius:19px;background:var(--ink);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+/* S11 友情群组头像 */
+.avs-group{display:flex;align-items:center;}
+.avs-group .avatar{width:28px;height:28px;border:2px solid #fff;margin-right:-8px;font-size:10px;}
+.avs-group .avatar.more{background:var(--fill-dark);color:var(--sub);font-size:9px;}
+.co-badge.friend{background:#F3EBDC;color:#8A7340;}
+/* S11 关系切换(复用rel-toggle) */
+#s11 .rel-toggle{margin-bottom:14px;}
+/* S12 */
+#s12 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+#s12 .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+#s12 .head h1{font-size:20px;font-weight:700;}#s12 .head .settings{cursor:pointer;}
+#s03 .ts-date{font-size:12px;color:var(--sub);font-weight:500;padding:12px 20px 6px;}
+#s03 .ts-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 20px 10px;cursor:pointer;display:flex;gap:12px;}
+#s03 .ts-card .pic{width:72px;height:72px;flex-shrink:0;}#s03 .ts-card .body{flex:1;min-width:0;}
+#s03 .ts-card .r1{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}#s03 .ts-card .feel{font-size:13px;margin:6px 0;word-break:break-all;line-height:1.5;}
+#s03 .ts-card .r3{font-size:11px;color:var(--sub);}
+.user-card{display:flex;align-items:center;gap:12px;padding:14px;margin-top:20px;}
+.user-card .un{font-size:16px;font-weight:600;}.user-card .us{font-size:11px;color:var(--sub);margin-top:4px;}
+.sec-label{font-size:12px;color:var(--sub);font-weight:500;margin:14px 0 8px;}
+.prow{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;}.prow .pt{font-size:14px;}
+.prow .pv{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:8px;}
+.arrow-r{width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:#B5A293;}
+.logout{height:48px;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--danger);cursor:pointer;margin-top:6px;}
+/* S12 未登录态 */
+.login-entry{height:52px;background:var(--ink);color:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;}
+.login-entry:active{opacity:.85;}
+.login-entry svg{stroke:#fff;}
+.login-entry-sub{font-size:11px;color:var(--sub);text-align:center;margin-top:9px;line-height:1.6;}
+/* S17 登录/注册 */
+#s17 .auth-wrap{flex:1;display:flex;flex-direction:column;padding:4px 28px 26px;overflow-y:auto;}
+#s17 .auth-logo{display:flex;flex-direction:column;align-items:center;margin:4px 0 18px;}
+#s17 .auth-logo .logo-vortex{margin-bottom:14px;}
+#s17 .auth-title{font-size:22px;font-weight:700;text-align:center;}
+#s17 .auth-sub{font-size:12px;color:var(--sub);text-align:center;margin:6px 0 0;}
+#s17 .auth-tabs{display:flex;background:var(--fill);border:1px solid var(--line-light);border-radius:13px;padding:4px;margin:20px 0 18px;}
+#s17 .auth-tab{flex:1;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--sub);cursor:pointer;font-weight:500;}
+#s17 .auth-tab.on{background:var(--ink);color:#fff;}
+#s17 .field{margin-bottom:14px;}
+#s17 .field label{display:block;font-size:12px;color:var(--sub);margin-bottom:6px;padding-left:2px;}
+#s17 .field input{width:100%;height:50px;border:1px solid var(--line-strong);border-radius:13px;background:var(--white);padding:0 16px;font-size:15px;color:var(--ink);font-family:var(--font);outline:none;}
+#s17 .field input:focus{border-color:var(--ink);}
+#s17 .field input::placeholder{color:#C9BBAE;}
+#s17 .auth-err{min-height:18px;font-size:12px;color:var(--danger);margin:0 0 8px;padding-left:2px;line-height:1.5;}
+#s17 .btn-primary{margin-top:2px;}
+#s17 .auth-guest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:13px;color:var(--sub);cursor:pointer;}
+#s17 .auth-guest:active{opacity:.7;}
+#s17 .auth-foot{text-align:center;font-size:11px;color:#B5A293;margin-top:auto;padding-top:18px;line-height:1.7;}
+/* S13 */
+#s13 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+#s13 .gh-wrap{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+#s13 .gh-title{font-size:20px;font-weight:700;}
+.indep-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:11px;background:var(--fill);color:var(--sub);font-size:10px;flex-shrink:0;}
+.subject-card{position:relative;display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;cursor:pointer;}
+.subject-card .subj-ic{width:56px;height:56px;border-radius:14px;background:var(--fill);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.subject-card .subj-name{font-size:15px;font-weight:600;}.subject-card .subj-meta{font-size:12px;color:var(--sub);margin-top:3px;}
+.subject-card .subj-milestone{font-size:12px;color:var(--muted);margin-top:6px;}.subject-card .subj-arrow{color:#B5A293;}
+#s13 .add-subj,#s14 .add-subj{height:48px;border:1px dashed var(--line-strong);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--sub);cursor:pointer;gap:6px;margin-top:4px;}
+/* S14 */
+#s14 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+.subj-switcher{display:flex;gap:8px;padding:10px 0 16px;overflow-x:auto;}.subj-switcher::-webkit-scrollbar{display:none;}
+.growth-timeline{position:relative;padding-left:24px;}.growth-timeline::before{content:'';position:absolute;left:7px;top:6px;bottom:0;width:2px;background:var(--line);}
+.milestone{position:relative;margin-bottom:18px;cursor:pointer;}
+.milestone::before{content:'';position:absolute;left:-21px;top:6px;width:12px;height:12px;border-radius:6px;background:var(--ink);border:2px solid #fff;box-shadow:0 0 0 1px var(--line);z-index:1;}
+.milestone.ms-major::before{width:16px;height:16px;border-radius:8px;left:-23px;background:var(--sc-g);border-color:#fff;box-shadow:0 0 0 2px var(--sc-g);}
+.ms-date{font-family:var(--font-num);font-size:12px;color:var(--sub);margin-bottom:6px;}
+.ms-card{position:relative;background:var(--card);border-radius:12px;padding:12px 14px;}.ms-card .ms-title{font-size:14px;font-weight:600;}
+.ms-card .ms-desc{font-size:12px;color:var(--sub);margin-top:4px;}.ms-card .ms-pic{width:100%;height:100px;border-radius:8px;margin-top:8px;}
+.compare-entry{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding:14px 16px;background:var(--card);border-radius:14px;cursor:pointer;}
+.compare-entry .ce-t{font-size:14px;font-weight:600;}.compare-entry .ce-s{font-size:11px;color:var(--sub);margin-top:3px;}
+/* S15 */
+#s15 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+#s15 .otd-head{text-align:center;margin:10px 0 16px;}#s15 .otd-head .otd-title{font-size:20px;font-weight:700;}
+#s15 .otd-head .otd-date{font-size:12px;color:var(--sub);margin-top:6px;}
+.year-selector{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.otd-card{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;cursor:pointer;}
+.otd-card .otd-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.otd-card .otd-pic{width:100%;height:120px;border-radius:10px;margin-bottom:10px;}
+.otd-card .otd-feel{font-size:13px;line-height:1.6;}.otd-card .otd-meta{font-family:var(--font-num);font-size:11px;color:var(--sub);margin-top:8px;}
+/* S03 快捷入口 */
+.qe-row{display:flex;gap:10px;margin:10px 20px 4px;}
+.qe-mini{flex:1;display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:14px;cursor:pointer;background:#fff;}
+.qe-mini:active{background:var(--fill);}
+.qe-mini .qm-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qe-mini .qm-t{font-size:13px;font-weight:600;}
+.qe-mini .qm-s{font-size:10px;color:var(--sub);margin-top:2px;}
+/* S06 模糊时间面板 */
+.fuzzy-panel{display:none;margin:0 0 14px;}
+.fuzzy-panel.show{display:block;}
+.fuzzy-panel .fp-label{font-size:12px;color:var(--sub);margin-bottom:8px;}
+.fuzzy-panel .fp-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.fuzzy-panel .input{height:44px;}
+#s06 .opt:active{background:var(--fill);}
+/* S16 时间轴中心 */
+#s16 .content{padding:8px 20px 20px;overflow-y:auto;flex:1;}
+.tl-intro{font-size:12px;color:var(--sub);margin:6px 0 14px;}
+.tl-card{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;cursor:pointer;background:#fff;}
+.tl-card:active{background:var(--fill);}
+.tl-ic{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tl-ic.c{background:rgba(212,115,122,.12);}
+.tl-ic.f{background:rgba(141,155,91,.12);}
+.tl-ic.g{background:rgba(196,164,93,.15);}
+.tl-ic.all{background:var(--fill);}
+.tl-name{font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.tl-meta{font-size:12px;color:var(--sub);margin-top:4px;}
+.tl-last{font-size:11px;color:var(--muted);margin-top:4px;}
+.tl-card.ghost{border-style:dashed;background:var(--card);}
+/* 数据加载失败提示 */
+.data-error{position:fixed;inset:0;background:rgba(61,46,36,.95);color:#fff;display:flex;align-items:center;justify-content:center;z-index:999;padding:24px;}
+.data-error .box{max-width:460px;text-align:center;line-height:2;font-size:14px;}
+.data-error .box h2{font-size:18px;margin-bottom:8px;}
+.data-error code{background:rgba(255,255,255,.16);padding:2px 10px;border-radius:6px;font-family:var(--font-num);font-size:12px;}
+/* 真实数据模式：删除按钮 + toast 提示 */
+.ts-card,.mem-card,.mem-card2{position:relative;}
+.ts-del{position:absolute;top:7px;right:8px;width:22px;height:22px;border-radius:11px;background:rgba(61,46,36,.07);color:#8A7340;font-size:15px;line-height:22px;text-align:center;cursor:pointer;z-index:5;font-family:Arial,sans-serif;user-select:none;}
+.subj-del{position:absolute;top:-9px;right:-7px;width:22px;height:22px;border-radius:11px;background:#fff;border:1px solid var(--line);color:#8A7340;font-size:15px;line-height:20px;text-align:center;cursor:pointer;z-index:5;font-family:Arial,sans-serif;user-select:none;}
+.subj-del:hover,.ms-del:hover{background:rgba(61,46,36,.12);}
+.ms-del{position:absolute;top:7px;right:8px;width:22px;height:22px;border-radius:11px;background:rgba(61,46,36,.07);color:#8A7340;font-size:15px;line-height:22px;text-align:center;cursor:pointer;z-index:5;font-family:Arial,sans-serif;user-select:none;}
+.ann-del{position:absolute;top:7px;right:8px;width:22px;height:22px;border-radius:11px;background:rgba(61,46,36,.07);color:#8A7340;font-size:15px;line-height:22px;text-align:center;cursor:pointer;z-index:5;font-family:Arial,sans-serif;user-select:none;}
+.ts-del:hover{background:rgba(212,115,122,.16);color:#C04A52;}
+.member-del{position:absolute;top:-9px;right:-7px;width:22px;height:22px;border-radius:11px;background:#fff;border:1px solid var(--line);color:#8A7340;font-size:15px;line-height:20px;text-align:center;cursor:pointer;z-index:6;font-family:Arial,sans-serif;user-select:none;}
+.member-del:hover{background:rgba(212,115,122,.16);color:#C04A52;}
+/* v0.8：S07 记忆媒体区（照片/视频/音频） */
+.media-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+.media-strip img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--fill);}
+.media-strip video{width:100%;max-height:220px;min-height:120px;border-radius:12px;background:#000;border:1px solid var(--line);}
+.media-strip audio{width:100%;height:40px;border-radius:12px;}
+.media-live{position:relative;width:100%;}
+.media-live video{width:100%;}
+.media-live .live-flag{position:absolute;left:10px;top:8px;background:rgba(61,46,36,.8);color:#fff;font-size:10px;line-height:16px;padding:0 7px;border-radius:8px;letter-spacing:1px;pointer-events:none;}
+/* v0.8.2：记忆记录卡片 + 详情 hero 默认展示「传入的第一张媒体」（照片/视频/实况） */
+.ts-card .pic,.mem-card .pic{position:relative;overflow:hidden;border-radius:10px;background:var(--fill);}
+.ts-card .pic img,.ts-card .pic video,.mem-card .pic img,.mem-card .pic video{width:100%;height:100%;object-fit:cover;display:block;background:var(--fill);}
+.cover-tag{position:absolute;left:4px;bottom:4px;background:rgba(61,46,36,.78);color:#fff;font-size:9px;line-height:14px;padding:0 5px;border-radius:7px;pointer-events:none;}
+#s07 .hero{position:relative;}
+#s07 .hero img,#s07 .hero video{width:100%;height:100%;object-fit:cover;border-radius:18px;display:block;background:var(--fill);}
+#s07 .hero .live-flag{position:absolute;left:10px;top:10px;background:rgba(61,46,36,.8);color:#fff;font-size:10px;line-height:16px;padding:0 7px;border-radius:8px;letter-spacing:1px;pointer-events:none;}
+/* v0.8.3：S07 编辑态媒体管理（增删媒体 + 保存后首页刷新） */
+#s07 .hero .hero-rm{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;background:rgba(61,46,36,.78);color:#fff;font-size:13px;line-height:24px;text-align:center;cursor:pointer;pointer-events:auto;z-index:2;user-select:none;}
+#s07 .media-strip .m-item{position:relative;}
+#s07 .media-strip .m-item img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--fill);display:block;}
+#s07 .media-strip .media-rm{position:absolute;right:-5px;top:-5px;width:20px;height:20px;border-radius:50%;background:rgba(61,46,36,.85);color:#fff;font-size:11px;line-height:18px;text-align:center;cursor:pointer;z-index:2;user-select:none;border:1px solid #fff;}
+#s07 .media-add{width:96px;height:96px;border-radius:12px;border:1.5px dashed var(--line);color:var(--sub);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;cursor:pointer;background:transparent;}
+#s07 .media-add b{font-size:20px;font-weight:400;line-height:1;}
+#s07 .edit-hint{font-size:11px;color:var(--sub);margin-top:10px;text-align:center;}
+.mc-toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);background:rgba(61,46,36,.92);color:#fff;font-size:12px;letter-spacing:.5px;padding:10px 20px;border-radius:22px;z-index:999;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.mc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* 真实数据模式 v0.5：留言区（S07） */
+.cmt-section{margin-top:20px;}
+.cmt-head{font-size:13px;color:var(--sub);margin-bottom:12px;}
+.cmt-head b{font-family:var(--font-num);color:var(--ink);}
+.cmt-list{display:flex;flex-direction:column;gap:10px;}
+.cmt-item{display:flex;gap:10px;align-items:flex-start;}
+.cmt-item .avatar{width:30px;height:30px;font-size:12px;}
+.cmt-bubble{flex:1;background:var(--card);border-radius:12px;padding:10px 13px;}
+.cmt-bubble .cb-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.cmt-bubble .cb-name{font-size:12px;font-weight:600;}
+.cmt-bubble .cb-time{font-family:var(--font-num);font-size:10px;color:var(--sub);margin-left:auto;}
+.cmt-bubble .cb-content{font-size:13px;line-height:1.6;}
+.cmt-empty{font-size:12px;color:var(--sub);text-align:center;padding:14px 0;}
+.cmt-input-row{display:flex;gap:10px;margin-top:14px;}
+.cmt-input-row .input{height:44px;flex:1;}
+.cmt-send{height:44px;min-width:72px;padding:0 18px;background:var(--ink);color:#fff;border:none;border-radius:22px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.cmt-send:disabled{opacity:.5;cursor:default;}
+.cmt-del{margin-left:6px;font-size:11px;color:var(--sub);cursor:pointer;user-select:none;}
+.cmt-del:hover{color:#C04A52;}
+/* PWA standalone 模式：隐藏侧栏，手机框全屏 */
+@media (display-mode: standalone){
+  .stage{padding:0;gap:0;}
+  .proto-nav{display:none;}
+  .phone{width:100vw;height:100vh;border-radius:0;border:none;box-shadow:none;}
+  .data-error{position:fixed;inset:0;z-index:9999;}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="proto-nav" id="protoNav">
+  <h3 id="navPanelTitle">记忆漩涡 · 16屏 v2.2</h3>
+  <div class="ns">入口</div>
+  <button data-s="s01" class="on">1 · 选择场景</button>
+  <button data-s="s02">2 · 完成引导</button>
+  <button data-s="s03">3 · 聚合视图</button>
+  <div class="ns">创建</div>
+  <button data-s="s04">4 · 场景选择器</button>
+  <button data-s="s05">5 · 创建·媒体+感受</button>
+  <button data-s="s06">6 · 自定义时间戳</button>
+  <div class="ns">详情&纪念日</div>
+  <button data-s="s07">7 · 详情(多视角)</button>
+  <button data-s="s08">8 · 标记纪念日</button>
+  <button data-s="s09">9 · 纪念日列表</button>
+  <div class="ns">共建</div>
+  <button data-s="s10">10 · 邀请(情侣+友情)</button>
+  <button data-s="s11">11 · 共建时间线</button>
+  <div class="ns">我的&成长</div>
+  <button data-s="s12">12 · 我的·设置</button>
+  <button data-s="s13">13 · 成长·主体选择</button>
+  <button data-s="s14">14 · 成长时间轴</button>
+  <button data-s="s15">15 · 往年今日(V1.1)</button>
+  <div class="ns">时间轴中心</div>
+  <button data-s="s16">16 · 时间轴中心(V2.1)</button>
+  <div class="ns">账号</div>
+  <button data-s="s17">17 · 登录/注册</button>
+  <div class="tip">v2.3 架构：真假数据分离。测试数据在 test_data.js（模拟后端返回），后端就绪后删除该文件并把 DATA_MODE 改为 'api' 即可。双击 HTML 可直接打开。</div>
+</div>
+
+<div class="phone" id="phone">
+
+<!-- S01 -->
+<section class="screen active" id="s01">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="wrap">
+    <div class="logo-vortex"></div><h1 id="appTitle">记忆漩涡</h1><div class="en" id="appEn">MemoryVortex</div>
+    <div class="tagline" id="appTagline">把值得记住的瞬间，卷入记忆漩涡</div>
+    <div class="question">你想为谁记录？</div>
+    <div id="s01scenes" style="width:100%"></div>
+    <button class="btn-primary" data-go="s02" id="appEnterBtn">进入记忆漩涡</button>
+  </div>
+</section>
+
+<!-- S02 -->
+<section class="screen" id="s02">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="top"><span class="skip" data-go="s03">跳过</span></div>
+  <div class="wrap">
+    <div class="hero ph"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="10" width="36" height="26" rx="6" stroke="#D4C6B9" stroke-width="2"/><circle cx="22" cy="23" r="7" stroke="#D4C6B9" stroke-width="2"/><path d="M16 10l3-4h6l3 4" stroke="#D4C6B9" stroke-width="2"/></svg></div>
+    <h1>30 秒，记下此刻的你</h1><div class="sub">选一张照片 · 录一句声音 · 写下一个时间戳</div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1.5" y="3.5" width="15" height="11" rx="2.5" stroke="#9B8271" stroke-width="1.6"/><circle cx="9" cy="9" r="2.8" stroke="#9B8271" stroke-width="1.6"/></svg></div><div class="t">照片 / 视频</div></div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6" y="1.5" width="6" height="11" rx="3" stroke="#9B8271" stroke-width="1.6"/><path d="M3.5 8a5.5 5.5 0 0011 0M9 13.5v3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">语音感受</div></div>
+    <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#9B8271" stroke-width="1.6"/><path d="M9 5v4l2.5 2.5" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">自定义时间戳</div></div>
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <button class="btn-primary" data-go="s05">创建第一条记忆</button>
+  </div>
+</section>
+
+<!-- S03 -->
+<section class="screen" id="s03">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll">
+    <div class="head"><h1>我的记忆线</h1><div class="acts">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#7A5E4E" stroke-width="1.8"/><path d="M14 14l4 4" stroke="#7A5E4E" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="cursor:pointer" data-go="s12"><circle cx="10" cy="10" r="2.5" stroke="#7A5E4E" stroke-width="1.6"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M15.7 4.3l-1.4 1.4M5.7 14.3l-1.4 1.4" stroke="#7A5E4E" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div></div>
+    <div class="all-entry" data-go="s16">
+      <div class="ae-ic"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 3v16M4 5h13l-2.5 4L17 13H4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div style="flex:1"><div class="ae-t">时间轴中心</div><div class="ae-s">情侣 · 友情 · 成长 · 一屏直达</div></div>
+      <div class="ae-arrow">›</div>
+    </div>
+    <div class="qe-row">
+      <div class="qe-mini" data-timeline="couple">
+        <div class="qm-ic" style="background:rgba(212,115,122,.12)"><svg width="18" height="18" viewBox="0 0 22 22" fill="none"><circle cx="7.5" cy="7" r="3" stroke="#D4737A" stroke-width="1.6"/><circle cx="14.5" cy="7" r="3" stroke="#D4737A" stroke-width="1.6"/><path d="M2 17c1-2.5 3-4 5.5-4M9 17c1-2.5 3-4 5.5-4s4.5 1.5 5.5 4" stroke="#D4737A" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><div class="qm-t">共建时间线</div><div class="qm-s">情侣 · 友情</div></div>
+      </div>
+      <div class="qe-mini" data-go="s15">
+        <div class="qm-ic" style="background:var(--fill)"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke="#9B8271" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <div><div class="qm-t">往年今日</div><div class="qm-s">跨年份回看</div></div>
+      </div>
+    </div>
+    <div class="scene-tabs" id="s03tabs"><span class="chip sel" data-view="all">全部</span><span class="chip" data-view="personal"><span class="sdot p"></span>个人</span><span class="chip" data-view="couple"><span class="sdot c"></span>情侣</span><span class="chip" data-view="friend"><span class="sdot f"></span>友情</span><span class="chip" data-view="growth"><span class="sdot g"></span>成长</span></div>
+    <!-- 全部视图：跨场景时间轴（数据渲染） -->
+    <div id="s03all"></div>
+    <!-- 场景视图：单场景记忆卡（数据渲染） -->
+    <div id="s03scene" style="display:none"></div>
+    <div style="height:12px"></div>
+  </div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab on" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S04 -->
+<section class="screen" id="s04">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">选择场景</span><span class="right"></span></div>
+  <div class="scroll">
+    <div class="sheet-title">你想为谁记录？</div><div class="sheet-sub">不同场景进入不同的记录系统</div>
+    <div class="scene-grid" id="s04grid"></div>
+    <button class="btn-primary" data-go="s05">开始记录</button>
+  </div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab on" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S05 -->
+<section class="screen" id="s05">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="right" style="min-width:34px;text-align:left;font-size:14px;color:#7A5E4E;cursor:pointer" data-go="s03">取消</span><span class="title">创建记忆</span><span class="right" style="font-size:14px;color:#3D2E24;font-weight:500;cursor:pointer" data-go="s06">下一步</span></div>
+  <div class="steps"><i class="on"></i><i></i><i></i></div>
+  <div class="content">
+    <div class="scene-ctx"><span id="s05scene"></span><span class="label">· 当前场景</span></div>
+    <div class="sec-title">选照片 / 视频 / 实况</div>
+    <div class="grid" id="s05grid">
+      <div class="cell cam" id="s05cam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="6.5" width="20" height="14" rx="3" stroke="#9B8271" stroke-width="1.7"/><circle cx="12" cy="13.5" r="4" stroke="#9B8271" stroke-width="1.7"/><path d="M8 6.5l2-3h4l2 3" stroke="#9B8271" stroke-width="1.7"/></svg><span>拍照</span></div>
+      <div class="cell cam" id="s05album"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="#9B8271" stroke-width="1.7"/><circle cx="8.5" cy="9.5" r="1.8" fill="#9B8271"/><path d="M4 17l5-5 4 4 3-3 4 4" stroke="#9B8271" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>相册·实况</span></div>
+    </div>
+    <input type="file" id="s05file" accept="image/*,video/*" multiple style="display:none">
+    <div class="sec-title">写感受</div>
+    <textarea class="textarea" placeholder="写下此刻的感受…"></textarea>
+    <div class="sec-title">此刻的情绪</div>
+    <div class="emotions" id="emoGroup"></div>
+    <div class="record-wrap"><div class="record-btn" id="recBtn"><svg width="26" height="26" viewBox="0 0 30 30" fill="none"><rect x="10" y="3" width="10" height="17" rx="5" fill="#fff"/><path d="M5.5 14a9.5 9.5 0 0019 0M15 23.5V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></div><div class="record-hint">长按录音 · 最多 60 秒</div></div>
+    <button class="btn-primary" data-go="s06">下一步</button>
+  </div>
+</section>
+
+<!-- S06 -->
+<section class="screen" id="s06">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s05"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">设置时间</span><span class="right"></span></div>
+  <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  <div class="content">
+    <div class="center-tip">记忆时间可以不等于拍摄时间</div>
+    <div class="opt" data-timeopt="now"><div><div class="ot" id="s06nowLabel"></div><div class="od">按记忆创建时刻 · 选中即生效</div></div><div class="radio"></div></div>
+    <div class="opt on" data-timeopt="custom"><div><div class="ot">自定义日期时间</div><div class="od">补录 / 回填任意年月日时分</div></div><div class="radio on"></div></div>
+    <div class="precision-toggle" id="precToggle"><div class="pt-opt on" data-prec="ymd">年月日</div><div class="pt-opt" data-prec="hm">时分</div></div>
+    <div class="wheels" id="wheels3"><div class="wheel" id="wy"></div><div class="wheel" id="wm"></div><div class="wheel" id="wd"></div><div class="wheel-band"></div></div>
+    <div class="wheels wheels-5" id="wheels5" style="display:none"><div class="wheel" id="wy2"></div><div class="wheel" id="wm2"></div><div class="wheel" id="wd2"></div><div class="wheel" id="wh"></div><div class="wheel" id="wmi"></div><div class="wheel-band"></div></div>
+    <div class="opt" data-timeopt="fuzzy"><div><div class="ot">模糊时间</div><div class="od">去年夏天 / 某个晚上 / 大学时期</div></div><div class="radio"></div></div>
+    <div class="fuzzy-panel" id="fuzzyPanel">
+      <div class="fp-label">大概是哪个时期？</div>
+      <div class="fp-chips" id="fuzzyChips"></div>
+      <input class="input" id="fuzzyInput">
+    </div>
+    <button class="btn-primary" data-go="s07" style="margin-top:20px">保存记忆</button>
+  </div>
+</section>
+
+<!-- S07 -->
+<section class="screen" id="s07">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">记忆详情</span><span class="right"></span></div>
+  <div class="content">
+    <div class="hero ph" style="border-radius:18px"><svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#D9CCBF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#D9CCBF" stroke-width="2.4"/><path d="M18 12l3.5-5h9L34 12" stroke="#D9CCBF" stroke-width="2.4"/></svg></div>
+    <div class="media-strip" id="s07media"></div>
+    <input type="file" id="s07file" accept="image/*,video/*,audio/*" style="display:none">
+    <div class="meta-row"><span class="time-main" id="s07time"></span><span id="s07scene"></span><span class="chip" style="height:20px;font-size:10px;padding:0 7px">自定义时间戳</span></div>
+    <div class="meta-row"><span class="emo-tag" id="s07emo"></span></div>
+    <div class="feel" id="s07feel"></div>
+    <div class="voice-block"><div class="who"><span class="avatar" style="width:28px;height:28px;font-size:12px" id="s07vava"></span><span class="n">语音留言</span></div><div class="voice"><span class="play"></span><span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span><span class="dur" id="s07vdur"></span></div></div>
+    <div class="persp-section">
+      <div class="persp-collapsed" id="perspToggle"><div class="pl"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5.5" cy="5" r="2.5" stroke="#9B8271" stroke-width="1.4"/><circle cx="11" cy="5.5" r="2" stroke="#9B8271" stroke-width="1.4"/><path d="M1.5 13c.5-2 2-3 4-3M8.5 13c.5-1.5 1.5-2.5 3-2.5" stroke="#9B8271" stroke-width="1.2" stroke-linecap="round"/></svg><span><b id="s07pcount"></b> 条多视角记录</span></div><div class="chev" id="perspChev"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 5l3 3 3-3" stroke="#9B8271" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div class="persp-expanded" id="perspExpanded"></div>
+    </div>
+    <div class="cmt-section" id="cmtSection" style="display:none">
+      <div class="cmt-head"><b id="cmtCount">0</b> 条留言</div>
+      <div class="cmt-list" id="cmtList"></div>
+      <div class="cmt-input-row" id="cmtInputRow">
+        <input class="input" id="cmtInput" placeholder="写下一条留言…" maxlength="1000">
+        <button class="cmt-send" id="cmtSend">发送</button>
+      </div>
+    </div>
+    <div class="act-bar" style="margin-top:20px"><div class="a" id="s07editBtn">编辑</div><div class="a">分享</div><div class="a dark" data-go="s08">标记纪念日</div></div>
+  </div>
+</section>
+
+<!-- S08 -->
+<section class="screen" id="s08">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s07"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">标记纪念日</span><span class="right" data-go="s07">关闭</span></div>
+  <div class="content">
+    <div class="label">纪念日名称</div><input class="input" id="annName" placeholder="给这个日子起个名字" maxlength="100">
+    <div class="label">日期</div><input class="input" id="annDate" type="date">
+    <div class="label">纪念日提醒</div>
+    <div class="card-gray">
+      <div class="setrow"><div><div class="st">提前 3 天提醒</div></div><div class="switch" id="annRemindSwitch"><span class="knob"></span></div></div>
+      <div class="setrow"><div><div class="st">农历支持</div></div><div class="switch off" id="annLunarSwitch"><span class="knob"></span></div></div>
+      <div class="setrow"><div><div class="st">跨场景可见</div><div class="sd">在聚合视图中展示</div></div><div class="switch off"><span class="knob"></span></div></div>
+    </div>
+    <button class="btn-primary" data-go="s09" id="annSaveBtn">完成标记</button>
+  </div>
+</section>
+
+<!-- S09 -->
+<section class="screen" id="s09">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll"><div class="content" style="padding-top:14px">
+    <div class="head"><h1>纪念日</h1><div class="add" data-go="s08">+</div></div>
+    <div class="overview" id="s09overview"><div class="k">下一个纪念日</div><div class="n" id="s09name"></div><div class="big" id="s09days"></div><div class="date" id="s09date"></div></div>
+    <div class="rec-count" id="s09count"></div>
+    <div id="s09list"></div>
+    <div style="height:12px"></div>
+  </div></div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab on" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S10 -->
+<section class="screen" id="s10">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建邀请</span><span class="right" data-go="s03">关闭</span></div>
+  <div class="content">
+    <div class="rel-toggle" id="relToggle"><div class="rt-opt on" data-rel="couple">情侣</div><div class="rt-opt" data-rel="friend">友情</div></div>
+    <div id="coupleMode">
+      <h1>和重要的人一起记录</h1><div class="sub">邀请一位伙伴加入，共建专属时间线</div>
+      <div class="card-gray">
+        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制邀请链接</span><span class="mini-btn">复制</span></div>
+        <div class="divider"></div>
+        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">显示二维码</span><span class="mini-btn">生成</span></div>
+        <div class="divider"></div>
+        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" stroke="#9B8271" stroke-width="1.6"/><path d="M5.5 7h9M5.5 11h9" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span class="txt">邀请码</span><span class="code" id="s10code" style="flex:1;text-align:right"></span><span class="mini-btn">复制</span></div>
+      </div>
+      <div id="s10couplePending"></div>
+    </div>
+    <div id="friendMode" style="display:none">
+      <h1>和朋友一起记录</h1><div class="sub">邀请最多 5 位好友，共建群组记忆线</div>
+      <div class="card-gray">
+        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制群组邀请链接</span><span class="mini-btn">复制</span></div>
+        <div class="divider"></div>
+        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">群组二维码</span><span class="mini-btn">生成</span></div>
+      </div>
+      <div id="s10friendMembers"></div>
+      <div class="member-slot"><div class="ms-add">+</div><div class="ms-t" id="s10remain"></div></div>
+    </div>
+    <button class="btn-primary" data-go="s11">生成邀请</button>
+  </div>
+</section>
+
+<!-- S11 -->
+<section class="screen" id="s11">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s10"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建时间线</span><span class="avatar" style="width:26px;height:26px;font-size:12px;background:#F2EBE3">林</span></div>
+  <div class="content">
+    <div class="rel-toggle" id="s11toggle"><div class="rt-opt on" data-rel="couple"><span class="sdot c"></span>情侣</div><div class="rt-opt" data-rel="friend"><span class="sdot f"></span>友情</div></div>
+    <!-- 情侣共建时间线 -->
+    <div id="coupleTimeline">
+      <div class="duo" id="s11duo"></div>
+      <div class="chips" style="padding:14px 0 0"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span><span class="chip">苏苏的</span><span class="chip" style="font-size:11px"><span class="sdot c"></span>多视角</span></div>
+      <div class="spiral-note">记忆螺旋 · 由内到外，由远及近</div>
+      <div class="spiral-area" id="spiralArea">
+        <svg id="spiralSvg" width="350" height="590" viewBox="0 0 350 590"></svg><div class="sp-center"></div>
+        <div id="s11nodes"></div>
+        <div class="sp-pop" id="spPop"><div class="pt"><span class="pn" id="popName"></span><span class="px" id="popClose">✕</span></div><div class="pd" id="popDate"></div><div class="pdesc" id="popDesc"></div><div class="pbtn" data-go="s07">回看那段记忆</div></div>
+      </div>
+      <div class="hint-bar">点击任意时间点 · 回看那段记忆</div>
+    </div>
+    <!-- 友情共建时间线 -->
+    <div id="friendTimeline" style="display:none">
+      <div class="duo" id="s11duo2"></div>
+      <div class="chips" style="padding:14px 0 0"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span><span class="chip">小鹿的</span><span class="chip">苏然的</span><span class="chip" style="font-size:11px"><span class="sdot f"></span>多视角</span></div>
+      <div class="spiral-note">记忆螺旋 · 6人共同编织，由远及近</div>
+      <div class="spiral-area" id="spiralArea2">
+        <svg id="spiralSvg2" width="350" height="590" viewBox="0 0 350 590"></svg><div class="sp-center"></div>
+        <div id="s11nodes2"></div>
+        <div class="sp-pop" id="spPop2"><div class="pt"><span class="pn" id="popName2"></span><span class="px" id="popClose2">✕</span></div><div class="pd" id="popDate2"></div><div class="pdesc" id="popDesc2"></div><div class="pbtn" data-go="s07">回看那段记忆</div></div>
+      </div>
+      <div class="hint-bar">点击任意时间点 · 回看那段记忆</div>
+    </div>
+  </div>
+</section>
+
+<!-- S12: 我的·设置 -->
+<section class="screen" id="s12">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll"><div class="content" style="padding-top:14px">
+    <div class="head"><h1>我的</h1></div>
+    <div class="card user-card" id="s12UserCard"><span class="avatar" id="s12Avatar" style="width:44px;height:44px;font-size:16px">登</span><div><div class="un" id="s12Nick">未登录</div><div class="us" id="s12Sub">游客模式 · 数据仅保存在本机</div></div></div>
+    <div class="login-entry" id="s12LoginEntry" style="display:none"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke-width="1.6"/><path d="M9 6.5a2 2 0 100 4 2 2 0 000-4zM4.6 13.4c.7-1.8 2.2-2.7 4.4-2.7s3.7.9 4.4 2.7" stroke-width="1.4" stroke-linecap="round"/></svg>登录 / 注册</div>
+    <div class="login-entry-sub" id="s12LoginSub" style="display:none">登录后记忆将绑定到你的账号<br>换设备也能找回</div>
+    <div class="sec-label">数据管理</div>
+    <div class="card-gray"><div class="prow"><span class="pt">导出全部数据</span><span class="pv"><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div><div class="divider"></div><div class="prow"><span class="pt">清除缓存</span><span class="pv">12.4MB<span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div></div>
+    <div class="logout" id="s12Logout" style="display:none">退出登录</div><div style="height:8px"></div>
+  </div></div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab on" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S13 -->
+<section class="screen" id="s13">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="scroll"><div class="content" style="padding-top:14px">
+    <div class="gh-wrap"><div class="gh-title">成长追踪</div><span class="indep-tag"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3.5" stroke="#9B8271" stroke-width="1"/><path d="M3.5 5l1 1 2-2" stroke="#9B8271" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>独立追踪</span></div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:16px" id="s13desc"></div>
+    <div id="s13list"></div>
+    <div class="add-subj"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span>新增主体</span></div>
+    <div style="height:12px"></div>
+  </div></div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab on" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S14 -->
+<section class="screen" id="s14">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s13"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">成长时间线</span><span class="right"></span></div>
+  <div class="scroll"><div class="content" style="padding-top:8px">
+    <div class="subj-switcher" id="s14switcher"></div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:14px;padding:0 2px" id="s14sub"></div>
+    <div class="add-subj" id="msAddBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录里程碑</span></div>
+    <div style="height:12px"></div>
+    <div class="growth-timeline" id="s14timeline"></div>
+    <div class="compare-entry"><div><div class="ce-t">成长对比</div><div class="ce-s">对比小橙子和豆豆的同月龄成长</div></div><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    <div style="height:12px"></div>
+  </div></div>
+  <div class="tabbar"><div class="pill">
+    <div class="tab on" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
+    <div class="tab" data-tab="s09"><svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="13" rx="2" stroke-width="1.6"/><path d="M2.5 8h15M6 2.5v3M14 2.5v3" stroke-width="1.6" stroke-linecap="round"/></svg><span>纪念日</span></div>
+    <div class="tab" data-tab="s04"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke-width="1.6"/><path d="M10 7v6M7 10h6" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录</span></div>
+    <div class="tab" data-tab="s12"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.2" stroke-width="1.6"/><path d="M3.5 17c.8-3.2 3.3-4.8 6.5-4.8s5.7 1.6 6.5 4.8" stroke-width="1.6" stroke-linecap="round"/></svg><span>我的</span></div>
+  </div></div>
+</section>
+
+<!-- S15 -->
+<section class="screen" id="s15">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">往年今日</span><span class="right"></span></div>
+  <div class="content">
+    <div class="otd-head"><div class="otd-title" id="s15title"></div><div class="otd-date" id="s15sub"></div></div>
+    <div class="year-selector" id="s15years"></div>
+    <div id="s15cards"></div>
+    <div style="height:12px"></div>
+  </div>
+</section>
+
+<!-- S16: 时间轴中心 -->
+<section class="screen" id="s16">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">时间轴中心</span><span class="right"></span></div>
+  <div class="scroll"><div class="content" style="padding-top:8px">
+    <div class="tl-intro" id="s16intro"></div>
+    <div id="s16cards"></div>
+    <div class="hint-bar">首页 → 时间轴中心 → 任意关系时间线</div>
+    <div style="height:12px"></div>
+  </div></div>
+</section>
+
+<!-- S17: 登录 / 注册 -->
+<section class="screen" id="s17">
+  <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
+  <div class="navbar"><span class="back" id="authBack"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">账号</span><span class="right"></span></div>
+  <div class="auth-wrap">
+    <div class="auth-logo"><div class="logo-vortex"></div><div class="auth-title" id="authTitle">登录记忆漩涡</div><div class="auth-sub" id="authSub">欢迎回来，继续记录你的人生</div></div>
+    <div class="auth-tabs">
+      <div class="auth-tab on" data-amode="login">登录</div>
+      <div class="auth-tab" data-amode="register">注册</div>
+    </div>
+    <div class="field"><label>账号</label><input id="authUsername" maxlength="32" placeholder="3-32 位中英文 / 数字 / 下划线" autocomplete="username"></div>
+    <div class="field" id="authNickField" style="display:none"><label>昵称（可选）</label><input id="authNickname" maxlength="32" placeholder="默认与账号相同"></div>
+    <div class="field"><label>密码</label><input id="authPassword" type="password" maxlength="64" placeholder="至少 6 位" autocomplete="current-password"></div>
+    <div class="auth-err" id="authErr"></div>
+    <button class="btn-primary" id="authSubmit">登录</button>
+    <div class="auth-guest" id="authGuest"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#9B8271" stroke-width="1.4"/><path d="M8 5.5a1.8 1.8 0 100 3.6 1.8 1.8 0 000-3.6zM4 11.5c.6-1.7 2-2.5 4-2.5s3.4.8 4 2.5" stroke="#9B8271" stroke-width="1.2" stroke-linecap="round"/></svg>游客模式进入（不登录也能体验）</div>
+    <div class="auth-foot">登录后你的记忆将绑定到账号，<br>换设备也能找回 · 演示环境数据仅保存在本机</div>
+  </div>
+</section>
+
+</div><!-- /phone -->
+</div><!-- /stage -->
+
+<!-- API 模式：数据全部来自后端 /api/app/bootstrap，无需引入 test_data.js -->
+
+<!-- PWA 本地数据层：IndexedDB 替代后端，fetch 拦截安装 -->
+<script src="localdb.js"></script>
+<script>
+var screens=document.querySelectorAll('.screen');
+function recenterWheels(){document.querySelectorAll('.wheel').forEach(function(w){var val=w.dataset.wheelValue;var items=w.querySelectorAll('.it');var target=null;items.forEach(function(it){if(it.textContent===val)target=it});if(target){w.scrollTop=Math.max(0,target.offsetTop-50);items.forEach(function(it){it.classList.remove('cur')});target.classList.add('cur');w.dispatchEvent(new Event('scroll'))}})}
+function show(id){screens.forEach(function(s){s.classList.remove('active')});var el=document.getElementById(id);if(el){el.classList.add('active');el.querySelectorAll('.scroll,.content').forEach(function(c){if(c.scrollTo)c.scrollTop=0})}if(id==='s04')syncS04Scene();if(id==='s05')syncS05Scene();if(id==='s06'){setTimeout(recenterWheels,60)}document.querySelectorAll('#protoNav button').forEach(function(b){b.classList.toggle('on',b.dataset.s===id)});document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)})}
+function openTimeline(rel){var t=document.getElementById('s11toggle');if(t){t.querySelectorAll('.rt-opt').forEach(function(x){x.classList.toggle('on',x.dataset.rel===rel)});var isF=rel==='friend';var ct=document.getElementById('coupleTimeline'),ft=document.getElementById('friendTimeline');if(ct)ct.style.display=isF?'none':'';if(ft)ft.style.display=isF?'':'none'}show('s11')}
+document.addEventListener('click',function(e){var tl=e.target.closest('[data-timeline]');if(tl){openTimeline(tl.dataset.timeline);return}var go=e.target.closest('[data-go]');if(go){show(go.dataset.go);return}var tab=e.target.closest('[data-tab]');if(tab){var id=tab.dataset.tab;document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)});show(id);return}})
+document.querySelectorAll('#protoNav button').forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s)})})
+window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(document.getElementById(id))show(id)});(function(){var id=location.hash.slice(1);if(document.getElementById(id))show(id)})()
+document.querySelectorAll('.chips,.scene-tabs,.filter-chips,.subj-switcher,.year-selector,.fp-chips').forEach(function(g){g.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;g.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel')});c.classList.add('sel')})})
+var s03tabs=document.getElementById('s03tabs');if(s03tabs)s03tabs.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;var view=c.dataset.view;var all=document.getElementById('s03all'),scene=document.getElementById('s03scene');if(!all||!scene)return;s03tabs.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('sel',x===c)});if(view==='all'){all.style.display='';scene.style.display='none';return}all.style.display='none';scene.style.display='';var sv=APP_DATA.home&&APP_DATA.home.sceneView,cards=(sv&&sv.cards||[]).filter(function(x){return x.scene===view});renderSceneCards(cards)})
+var s05g=document.getElementById('s05grid');if(s05g){s05g.addEventListener('click',function(e){var cell=e.target.closest('.cell');if(!cell||cell.classList.contains('cam')||cell.classList.contains('pick'))return;cell.classList.toggle('sel');var sel=s05g.querySelectorAll('.cell.sel');s05g.querySelectorAll('.cell.sel .badge').forEach(function(b,i){b.textContent=i+1})})}
+var emoG=document.getElementById('emoGroup');if(emoG)emoG.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;emoG.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel')});c.classList.add('sel')})
+function s06Apply(mode){var prec=document.getElementById('precToggle'),w3=document.getElementById('wheels3'),w5=document.getElementById('wheels5'),fp=document.getElementById('fuzzyPanel');if(!prec)return;var isCustom=mode==='custom';prec.style.display=isCustom?'':'none';var pon=document.querySelector('#precToggle .pt-opt.on');var isHM=!!pon&&pon.dataset.prec==='hm';w3.style.display=(isCustom&&!isHM)?'':'none';w5.style.display=(isCustom&&isHM)?'':'none';fp.style.display=mode==='fuzzy'?'block':'none'}
+document.addEventListener('click',function(e){var o=e.target.closest('#s06 .opt');if(!o)return;document.querySelectorAll('#s06 .opt').forEach(function(x){x.classList.remove('on');var r=x.querySelector('.radio');if(r)r.classList.remove('on')});o.classList.add('on');var r=o.querySelector('.radio');if(r)r.classList.add('on');s06Apply(o.dataset.timeopt)})
+document.querySelectorAll('#precToggle .pt-opt').forEach(function(p){p.addEventListener('click',function(){document.querySelectorAll('#precToggle .pt-opt').forEach(function(x){x.classList.remove('on')});p.classList.add('on');var isHM=p.dataset.prec==='hm';document.getElementById('wheels3').style.display=isHM?'none':'';document.getElementById('wheels5').style.display=isHM?'':'none'})})
+function buildWheel(el,arr,cur){if(!el)return;el.dataset.wheelValue=cur;el.dataset.wheelTouched='false';arr.forEach(function(v){var d=document.createElement('div');d.className='it';d.textContent=v;if(v===cur)d.classList.add('cur');d.addEventListener('click',function(){el.dataset.wheelTouched='true';el.scrollTop=Math.max(0,d.offsetTop-50)});el.appendChild(d)});var mark=function(){if(el.dataset.wheelTouched!=='true')return;var items=el.querySelectorAll('.it');var mid=el.scrollTop+75;var centered=null;items.forEach(function(it){var isCur=Math.abs(it.offsetTop+25-mid)<25;it.classList.toggle('cur',isCur);if(isCur)centered=it});if(centered)el.dataset.wheelValue=centered.textContent};el.addEventListener('scroll',mark);el.addEventListener('pointerdown',function(){el.dataset.wheelTouched='true'});el.addEventListener('wheel',function(){el.dataset.wheelTouched='true'},{passive:true});if(el.getBoundingClientRect().width>0){setTimeout(function(){var idx=arr.indexOf(cur);if(idx>=0)el.scrollTop=idx*50;mark()},0)}}
+document.querySelectorAll('.switch').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('off')})})
+var pTog=document.getElementById('perspToggle'),pExp=document.getElementById('perspExpanded'),pChev=document.getElementById('perspChev');
+if(pTog)pTog.addEventListener('click',function(){var isShow=pExp.classList.toggle('show');pChev.classList.toggle('open',isShow)})
+var rTog=document.getElementById('relToggle');if(rTog)rTog.addEventListener('click',function(e){var opt=e.target.closest('.rt-opt');if(!opt)return;rTog.querySelectorAll('.rt-opt').forEach(function(x){x.classList.remove('on')});opt.classList.add('on');var isFriend=opt.dataset.rel==='friend';document.getElementById('coupleMode').style.display=isFriend?'none':'';document.getElementById('friendMode').style.display=isFriend?'':'none'})
+function spiralPath(t0,t1,steps){var cx=175,cy=300,R0=30,k=10,d='';for(var i=0;i<=steps;i++){var t=t0+(t1-t0)*i/steps,th=t*2*Math.PI,r=R0+k*th;d+=(i?' L':'M')+(cx+r*Math.cos(th)).toFixed(1)+','+(cy+r*Math.sin(th)).toFixed(1)}return d}
+;(function(){var NS='http://www.w3.org/2000/svg';var segs=[{t0:0,t1:0.85,c:'#E0D4C8',w:2.5},{t0:0.85,t1:1.75,c:'#BFAE9E',w:2.5},{t0:1.75,t1:2.23,c:'#7A5E4E',w:3}];['spiralSvg','spiralSvg2'].forEach(function(id){var svg=document.getElementById(id);if(!svg)return;segs.forEach(function(s){var p=document.createElementNS(NS,'path');p.setAttribute('d',spiralPath(s.t0,s.t1,80));p.setAttribute('fill','none');p.setAttribute('stroke',s.c);p.setAttribute('stroke-width',s.w);p.setAttribute('stroke-linecap','round');svg.appendChild(p)})})})()
+var s11Tog=document.getElementById('s11toggle');if(s11Tog)s11Tog.addEventListener('click',function(e){var opt=e.target.closest('.rt-opt');if(!opt)return;s11Tog.querySelectorAll('.rt-opt').forEach(function(x){x.classList.remove('on')});opt.classList.add('on');var isFriend=opt.dataset.rel==='friend';document.getElementById('coupleTimeline').style.display=isFriend?'none':'';document.getElementById('friendTimeline').style.display=isFriend?'':'none'})
+var pop=document.getElementById('spPop'),pop2=document.getElementById('spPop2');
+function nodeByKey(tl,k){if(!tl)return null;for(var i=0;i<tl.nodes.length;i++)if(tl.nodes[i].k===k)return tl.nodes[i];return null}
+function openPop(k){var d=APP_DATA&&nodeByKey(APP_DATA.coupleTimeline,k);if(!d)return;document.getElementById('popName').textContent=d.n;document.getElementById('popDate').textContent=d.d;document.getElementById('popDesc').textContent=d.s;var pb=document.querySelector('#spPop .pbtn');if(pb){if(d.mid){pb.style.display='';pb.dataset.mid=d.mid}else{pb.style.display='none';delete pb.dataset.mid}}pop.classList.add('show');document.querySelectorAll('#s11nodes .sp-node,#s11nodes .sp-label').forEach(function(x){x.classList.toggle('on',x.dataset.k===k)})}
+function openPop2(k){var d=APP_DATA&&nodeByKey(APP_DATA.friendTimeline,k);if(!d)return;document.getElementById('popName2').textContent=d.n;document.getElementById('popDate2').textContent=d.d;document.getElementById('popDesc2').textContent=d.s;var pb=document.querySelector('#spPop2 .pbtn');if(pb){if(d.mid){pb.style.display='';pb.dataset.mid=d.mid}else{pb.style.display='none';delete pb.dataset.mid}}pop2.classList.add('show');document.querySelectorAll('#s11nodes2 .sp-node,#s11nodes2 .sp-label').forEach(function(x){x.classList.toggle('on',x.dataset.k===k)})}
+var popClose=document.getElementById('popClose');if(popClose)popClose.addEventListener('click',function(){pop.classList.remove('show');document.querySelectorAll('#s11nodes .sp-node,#s11nodes .sp-label').forEach(function(x){x.classList.remove('on')})})
+var popClose2=document.getElementById('popClose2');if(popClose2)popClose2.addEventListener('click',function(){pop2.classList.remove('show');document.querySelectorAll('#s11nodes2 .sp-node,#s11nodes2 .sp-label').forEach(function(x){x.classList.remove('on')})})
+var rec=document.getElementById('recBtn');if(rec){var hint=rec.parentElement.querySelector('.record-hint');var timer=null;var start=function(){rec.style.transform='scale(1.06)';var s=0;timer=setInterval(function(){s++;hint.textContent='录音中 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000)};var end=function(){clearInterval(timer);rec.style.transform='';hint.textContent='长按录音 · 最多 60 秒'};rec.addEventListener('mousedown',start);rec.addEventListener('mouseup',end);rec.addEventListener('mouseleave',end);rec.addEventListener('touchstart',function(e){e.preventDefault();start()});rec.addEventListener('touchend',end)}
+
+/* ============ 逻辑与数据分离：渲染层（数据来自 memory-vortex-data.json） ============ */
+var APP_DATA=null;
+var CUR_SCENE=null; /* 当前选中场景（S01 入口选择后全局记住，S04/S05 同步） */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function $(id){return document.getElementById(id)}
+function setT(id,t){var e=$(id);if(e)e.textContent=t}
+var SCENE_NAMES={personal:'个人',couple:'情侣',friend:'友情',growth:'成长'};
+function sceneTag(s,label){return '<span class="scene-tag '+s.charAt(0)+'"><span class="sdot '+s.charAt(0)+'"></span>'+esc(label||SCENE_NAMES[s]||s)+'</span>'}
+
+/* 图标模板库（表现层，不随数据变化） */
+var ICONS={
+  arrow:'<svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  photo20:'<svg width="20" height="20" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="3" stroke="#D9CCBF" stroke-width="1.6"/><circle cx="13" cy="13.5" r="4" stroke="#D9CCBF" stroke-width="1.6"/></svg>',
+  photo26:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="3" stroke="#D9CCBF" stroke-width="1.6"/><circle cx="13" cy="13.5" r="4" stroke="#D9CCBF" stroke-width="1.6"/><path d="M8 6l2-2.5h6L18 6" stroke="#D9CCBF" stroke-width="1.6"/></svg>',
+  photo24:'<svg width="24" height="24" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="3" stroke="#D9CCBF" stroke-width="1.6"/><circle cx="13" cy="13.5" r="4" stroke="#D9CCBF" stroke-width="1.6"/></svg>',
+  photo30:'<svg width="30" height="30" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#D9CCBF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#D9CCBF" stroke-width="2.4"/></svg>',
+  wave:'<span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span>',
+  scene:{
+    personal:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7" r="3.5" stroke="#9B8271" stroke-width="1.6"/><path d="M4 18c1.2-3 3.5-4.5 7-4.5s5.8 1.5 7 4.5" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    couple:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="7.5" cy="7" r="3" stroke="#9B8271" stroke-width="1.6"/><circle cx="14.5" cy="7" r="3" stroke="#9B8271" stroke-width="1.6"/><path d="M2 17c1-2.5 3-4 5.5-4M9 17c1-2.5 3-4 5.5-4s4.5 1.5 5.5 4" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    friend:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="7" cy="7" r="2.5" stroke="#9B8271" stroke-width="1.6"/><circle cx="15" cy="7" r="2.5" stroke="#9B8271" stroke-width="1.6"/><circle cx="11" cy="13" r="2.5" stroke="#9B8271" stroke-width="1.6"/></svg>',
+    growth:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3v16M5 8c0-3 2.5-5 6-5s6 2 6 5" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  },
+  sp:{
+    heart:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12S1.5 8.6 1.5 5.1C1.5 3.4 2.8 2 4.4 2c1 0 2 .5 2.6 1.4C7.6 2.5 8.6 2 9.6 2c1.6 0 2.9 1.4 2.9 3.1C12.5 8.6 7 12 7 12z" fill="#7A5E4E"/></svg>',
+    travel:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="6" width="12" height="5" rx="1.5" fill="#7A5E4E"/><rect x="3" y="4" width="7" height="2.2" rx="1" fill="#7A5E4E"/><circle cx="4" cy="11" r="1.6" fill="#7A5E4E"/><circle cx="10" cy="11" r="1.6" fill="#7A5E4E"/></svg>',
+    star:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="1.5" fill="#7A5E4E"/><path d="M7 1v3M7 10v3M1 7h3M10 7h3" stroke="#7A5E4E" stroke-width="1.2" stroke-linecap="round"/></svg>',
+    cert:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="1.5" width="8" height="11" rx="1" stroke="#7A5E4E" stroke-width="1.3"/><path d="M5.5 5h3M5.5 8h3" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    home:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 6.5L7 2l5.5 4.5" stroke="#7A5E4E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6.5" width="8" height="5.5" fill="#7A5E4E"/><rect x="5.8" y="8.5" width="2.4" height="3.5" fill="#fff"/></svg>',
+    wed:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 3.2L2.5 8.8V12h9V8.8L7 3.2z" stroke="#7A5E4E" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 1v1.8" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/><rect x="5.4" y="8.4" width="3.2" height="3.6" fill="#7A5E4E"/></svg>',
+    camera:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" fill="#7A5E4E"/><path d="M7 0.5v1.5" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/><rect x="1.5" y="10.5" width="11" height="2" rx="1" fill="#7A5E4E"/></svg>',
+    grad:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1.5 4l5.5 3 5.5-3L7 1z" stroke="#7A5E4E" stroke-width="1.3" stroke-linejoin="round"/><path d="M3 5.5V9c0 1 1.8 2 4 2s4-1 4-2V5.5" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    check:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#7A5E4E" stroke-width="1.3"/><path d="M5 5l2 2 3-3" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    cake:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="5" width="10" height="7" rx="1" fill="#7A5E4E"/><path d="M7 3v2M4 5V3.5a1 1 0 012 0V5M9 5V3.5a1 1 0 012 0V5" stroke="#7A5E4E" stroke-width="1"/><circle cx="5" cy="8.5" r=".8" fill="#fff"/><circle cx="7" cy="8.5" r=".8" fill="#fff"/><circle cx="9" cy="8.5" r=".8" fill="#fff"/></svg>',
+    clock:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#7A5E4E" stroke-width="1.3"/><path d="M7 4v3l2 1.5" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    camp:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 11c1-4 3-6 6-6s5 2 6 6" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/><path d="M4 11V8M10 11V8" stroke="#7A5E4E" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    friends:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="4" cy="5" r="2" fill="#7A5E4E"/><circle cx="10" cy="5" r="2" fill="#7A5E4E"/><circle cx="7" cy="9" r="2" fill="#7A5E4E"/><path d="M2 12c.5-1.5 1.5-2.5 3-2.5M9 12c2 0 3.5-1 4-2.5" stroke="#7A5E4E" stroke-width="1" stroke-linecap="round"/></svg>'
+  },
+  gs:{
+    baby:'<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="9" r="4" stroke="var(--sc-g)" stroke-width="1.8"/><path d="M6 22c1-3.5 4-5.5 8-5.5s7 2 8 5.5" stroke="var(--sc-g)" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    pet:'<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><ellipse cx="14" cy="11" rx="5" ry="4" stroke="var(--sc-g)" stroke-width="1.8"/><path d="M9 14c-2 1-3 3-3 5 0 3 3 5 8 5s8-2 8-5c0-2-1-4-3-5" stroke="var(--sc-g)" stroke-width="1.8" stroke-linecap="round"/></svg>'
+  },
+  hub:{
+    couple:'<svg width="24" height="24" viewBox="0 0 22 22" fill="none"><circle cx="7.5" cy="7" r="3" stroke="#D4737A" stroke-width="1.6"/><circle cx="14.5" cy="7" r="3" stroke="#D4737A" stroke-width="1.6"/><path d="M2 17c1-2.5 3-4 5.5-4M9 17c1-2.5 3-4 5.5-4s4.5 1.5 5.5 4" stroke="#D4737A" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    friend:'<svg width="24" height="24" viewBox="0 0 22 22" fill="none"><circle cx="7" cy="7" r="2.5" stroke="#8D9B5B" stroke-width="1.6"/><circle cx="15" cy="7" r="2.5" stroke="#8D9B5B" stroke-width="1.6"/><circle cx="11" cy="13" r="2.5" stroke="#8D9B5B" stroke-width="1.6"/></svg>',
+    growth:'<svg width="24" height="24" viewBox="0 0 22 22" fill="none"><path d="M11 3v16M5 8c0-3 2.5-5 6-5s6 2 6 5" stroke="#C4A45D" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    flag:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 3v16M4 5h13l-2.5 4L17 13H4" stroke="#9B8271" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  }
+};
+
+/* ---- 各屏渲染函数 ---- */
+function renderS01(){
+  var box=$('s01scenes');if(!box||!APP_DATA.scenes)return;
+  CUR_SCENE=APP_DATA.scenes[0].key;
+  box.innerHTML=APP_DATA.scenes.map(function(s,i){
+    return '<div class="scene-card" data-scene="'+s.key+'"><div class="info"><div class="name">'+esc(s.name)+'</div><div class="desc">'+esc(s.desc)+'</div></div><div class="radio'+(i===0?' on':'')+'"></div></div>'
+  }).join('');
+  box.querySelectorAll('.scene-card').forEach(function(c){
+    c.addEventListener('click',function(){box.querySelectorAll('.scene-card .radio').forEach(function(r){r.classList.remove('on')});var r=c.querySelector('.radio');if(r)r.classList.add('on');CUR_SCENE=c.dataset.scene})
+  })
+}
+/* 记忆记录卡片封面：有媒体则显示第一张（照片 img / 视频·实况 video + 角标），否则回退占位图标 */
+function cardPic(cov,iconKey){
+  if(cov&&cov.url){
+    var ext=(cov.kind||'').toLowerCase();
+    if(ext==='mp4'||ext==='webm'||ext==='mov'){
+      return '<div class="pic"><video src="'+esc(cov.url)+'" muted playsinline preload="metadata"></video><span class="cover-tag">'+(ext==='mov'?'实况':'视频')+'</span></div>';
+    }
+    if(ext!=='m4a'&&ext!=='mp3'){
+      return '<div class="pic"><img src="'+esc(cov.url)+'" alt="" loading="lazy"></div>';
+    }
+  }
+  return '<div class="pic ph">'+(ICONS[iconKey]||'')+'</div>';
+}
+function renderS03(){
+  var h=APP_DATA.home,all=$('s03all'),scene=$('s03scene');
+  if(all&&h.timeline){
+    all.innerHTML=h.timeline.map(function(g){
+      return '<div class="ts-date">'+esc(g.date)+'</div>'+g.items.map(function(it){
+        return '<div class="ts-card" data-go="s07"'+(it.mid?' data-mid="'+it.mid+'"':'')+'>'+(it.mid?'<span class="ts-del" data-mid="'+it.mid+'" title="删除这条记忆">×</span>':'')+cardPic(it.cover,'photo20')+'<div class="body"><div class="r1">'+sceneTag(it.scene)+'<span style="font-family:var(--font-num);font-size:11px;color:var(--sub)">'+esc(it.time)+'</span></div><div class="feel">'+esc(it.feel)+'</div><div class="r3">'+esc(it.meta)+'</div></div></div>'
+      }).join('')
+    }).join('')
+  }
+  if(scene&&h.sceneView){
+    renderSceneCards(h.sceneView.cards||[]);
+  }
+}
+/* v0.8.5：场景卡渲染独立成函数，S03 tab 切换按场景过滤后复用渲染（含 chip 高亮） */
+function renderSceneCards(cards){
+  var scene=$('s03scene');if(!scene)return;
+  var sv=APP_DATA.home&&APP_DATA.home.sceneView;
+  if(!cards||!cards.length){
+    scene.innerHTML='<div class="group-title">'+esc((sv&&sv.groupTitle)||'')+'</div><div style="padding:36px 0;text-align:center;font-size:13px;color:var(--sub)">这个场景还没有记忆，去记录一条吧</div>';
+    return;
+  }
+  var html='<div class="group-title">'+esc((sv&&sv.groupTitle)||'')+'</div>';
+  html+=cards.map(function(c){
+    var midAttr=c.mid?' data-mid="'+c.mid+'"':'',delBtn=c.mid?'<span class="ts-del" data-mid="'+c.mid+'" title="删除这条记忆">×</span>':'';
+    if(c.type==='text'){
+      return '<div class="mem-card2" data-go="s07"'+midAttr+'>'+delBtn+'<div class="r1"><span style="font-family:var(--font-num)">'+esc(c.time)+'</span>'+sceneTag(c.scene)+'</div><div class="feel">'+esc(c.feel)+'</div><div class="emos"><span>'+esc((c.emotions||[]).join(' · '))+'</span></div>'+(c.meta?'<div class="r3">'+esc(c.meta)+'</div>':'')+'</div>'
+    }
+    return '<div class="mem-card" data-go="s07"'+midAttr+'>'+delBtn+cardPic(c.cover,'photo26')+'<div class="body"><div class="row1"><span style="font-family:var(--font-num)">'+esc(c.time)+'</span>'+sceneTag(c.scene)+'</div><div class="feel">'+esc(c.feel)+'</div>'+(c.voice?'<div class="voice"><span class="play"></span>'+ICONS.wave+'<span class="dur">'+esc(c.voice)+'</span></div>':'')+'<div class="row3">'+(c.emotions||[]).map(function(e){return '<span class="emo-tag">'+esc(e)+'</span>'}).join('')+'</div></div></div>'
+  }).join('');
+  scene.innerHTML=html;
+}
+function renderS04(){
+  var g=$('s04grid');if(!g||!APP_DATA.scenes)return;
+  var selKey=CUR_SCENE||APP_DATA.scenes[0].key;
+  g.innerHTML=APP_DATA.scenes.map(function(s){
+    return '<div class="scene-opt'+(s.key===selKey?' sel':'')+'" data-scene="'+s.key+'">'+(s.rec?'<div class="so-rec">推荐</div>':'')+'<div class="so-ic">'+ICONS.scene[s.key]+'</div><div class="so-name">'+esc(s.name)+'</div><div class="so-desc">'+esc(s.gridDesc||s.desc)+'</div></div>'
+  }).join('');
+  g.querySelectorAll('.scene-opt').forEach(function(o){
+    o.addEventListener('click',function(){g.querySelectorAll('.scene-opt').forEach(function(x){x.classList.remove('sel')});o.classList.add('sel');CUR_SCENE=o.dataset.scene})
+  })
+}
+/* 场景状态同步：进入 S04 时按 CUR_SCENE 高亮；进入 S05 时刷新"当前场景"标签 */
+function syncS04Scene(){var g=$('s04grid');if(!g)return;g.querySelectorAll('.scene-opt').forEach(function(x){x.classList.toggle('sel',x.dataset.scene===CUR_SCENE)})}
+function syncS05Scene(){var el=$('s05scene');if(el)el.innerHTML=CUR_SCENE?sceneTag(CUR_SCENE,SCENE_NAMES[CUR_SCENE]):''}
+function renderS05(){
+  var e=$('emoGroup');if(!e||!APP_DATA.emotions)return;
+  e.innerHTML=APP_DATA.emotions.map(function(x,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(x)+'</span>'}).join('')
+}
+function renderS06(){
+  var ts=APP_DATA.timeSettings;if(!ts)return;
+  setT('s06nowLabel',ts.now.label);
+  var f=$('fuzzyChips');
+  if(f&&ts.fuzzy)f.innerHTML=ts.fuzzy.options.map(function(o,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(o)+'</span>'}).join('');
+  var fi=$('fuzzyInput');if(fi&&ts.fuzzy)fi.placeholder=ts.fuzzy.placeholder;
+  var w=ts.wheels,d=w.default,months=[],days=[],hours=[],mins=[],i;
+  for(i=1;i<=12;i++)months.push(i+'月');
+  for(i=1;i<=w.dayCount;i++)days.push(String(i));
+  for(i=0;i<24;i++)hours.push(('0'+i).slice(-2)+':00');
+  for(i=0;i<60;i++)mins.push(('0'+i).slice(-2));
+  buildWheel($('wy'),w.years,d.year);buildWheel($('wm'),months,d.month);buildWheel($('wd'),days,d.day);
+  buildWheel($('wy2'),w.years,d.year);buildWheel($('wm2'),months,d.month);buildWheel($('wd2'),days,d.day);
+  buildWheel($('wh'),hours,d.hour);buildWheel($('wmi'),mins,d.minute);
+}
+/* v0.8.3：S07 编辑态（媒体增删本地暂存，保存时全量 PATCH 入库） */
+var S07_EDIT=null;
+function renderS07(){
+  var d=APP_DATA.memoryDetail;if(!d)return;
+  var editing=!!S07_EDIT;
+  setT('s07time',d.time);
+  var sc=$('s07scene');if(sc)sc.innerHTML=sceneTag(d.scene);
+  setT('s07emo',d.emotion);
+  var vv=$('s07vava'),hasVoice=!!(d.voice&&d.voice.by);
+  if(vv){var vbox=vv.closest('.voice')||vv.parentElement;if(vbox)vbox.style.display=hasVoice?'':'none'}
+  setT('s07vava',hasVoice?d.voice.by:'');setT('s07vdur',hasVoice?d.voice.duration:'');
+  /* v0.8.3：编辑态媒体列表来自 S07_EDIT（本地增删，保存时才 PATCH 入库） */
+  var med=editing?S07_EDIT.media:(d.media||[]);
+  var feelBox=document.getElementById('s07feel');
+  if(editing){
+    var cur=S07_EDIT;
+    if(feelBox){
+      feelBox.innerHTML='<textarea class="input" id="s07editArea" style="min-height:88px;resize:vertical;line-height:1.6" maxlength="2000">'+esc(cur.feel||'')+'</textarea>'
+        +'<div style="display:flex;gap:10px;margin-top:10px">'
+        +'<button class="cmt-send" id="s07editSave" style="min-width:72px">保存</button>'
+        +'<button class="cmt-send" id="s07editCancel" style="min-width:72px;background:#fff;color:var(--ink);border:1px solid var(--line)">取消</button>'
+        +'</div>'
+        +'<div class="edit-hint">点击媒体右上角 × 可移除；点「+ 添加」补充照片/视频/实况</div>';
+      var area=document.getElementById('s07editArea');if(area)area.focus();
+    }
+  }else{
+    setT('s07feel',d.feel);
+  }
+  var hero=document.querySelector('#s07 .hero');
+  if(hero){
+    var first=med[0],heroInner='<svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#D9CCBF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#D9CCBF" stroke-width="2.4"/><path d="M18 12l3.5-5h9L34 12" stroke="#D9CCBF" stroke-width="2.4"/></svg>';
+    if(first&&first.url){
+      var fext=(first.kind||'').toLowerCase();
+      if(fext==='mov')heroInner='<video src="'+esc(first.url)+'" controls playsinline></video><span class="live-flag">LIVE 实况</span>';
+      else if(fext==='mp4'||fext==='webm')heroInner='<video src="'+esc(first.url)+'" controls playsinline></video>';
+      else if(fext!=='m4a'&&fext!=='mp3')heroInner='<img src="'+esc(first.url)+'" alt="" loading="lazy">';
+    }
+    if(editing&&first)heroInner+='<span class="hero-rm" data-s07-rm="0" title="移除首图">×</span>';
+    hero.innerHTML=heroInner;
+  }
+  var ms=$('s07media');
+  if(ms){
+    ms.style.display=med.length||editing?'':'none';
+    var strip='';
+    med.forEach(function(md,i){
+      var url=md.url||'',ext=(md.kind||'').toLowerCase();
+      var inner;
+      if(ext==='mov')inner='<div class="media-live"><video src="'+esc(url)+'" controls playsinline></video><span class="live-flag">LIVE 实况</span></div>';
+      else if(ext==='mp4')inner='<video src="'+esc(url)+'" controls playsinline></video>';
+      else if(ext==='m4a'||ext==='mp3')inner='<audio src="'+esc(url)+'" controls></audio>';
+      else inner='<img src="'+esc(url)+'" alt="" loading="lazy">';
+      strip+='<div class="m-item" style="'+(ext==='mp4'||ext==='mov'||ext==='m4a'||ext==='mp3'?'width:100%':'')+'">'+inner
+        +(editing?'<span class="media-rm" data-s07-rm="'+i+'" title="移除">×</span>':'')+'</div>';
+    });
+    if(editing)strip+='<div class="media-add" id="s07AddMedia"><b>+</b><span>添加</span></div>';
+    ms.innerHTML=strip;
+  }
+  setT('s07pcount',(d.perspectives||[]).length);
+  var pe=$('perspExpanded');
+  if(pe)pe.innerHTML=(d.perspectives||[]).map(function(p){
+    return '<div class="persp-card"><div class="pc-head"><span class="avatar" style="width:24px;height:24px;font-size:10px'+(p.bg?';background:'+p.bg:'')+'">'+esc(p.avatar)+'</span><span class="pc-name">'+esc(p.name)+'</span></div><div class="pc-feel">'+esc(p.feel)+'</div><div class="pc-time">'+esc(p.time)+'</div></div>'
+  }).join('')
+}
+function renderS09(){
+  var a=APP_DATA.anniversaries;if(!a)return;
+  if(!a.next||!a.list||!a.list.length){
+    setT('s09name','还没有纪念日');
+    var big0=$('s09days');if(big0)big0.innerHTML='–';
+    setT('s09date','点击右上角 + 标记第一条');
+    setT('s09count','已记录 0 个纪念日');
+    var l0=$('s09list');if(l0)l0.innerHTML='';
+    return;
+  }
+  setT('s09name',a.next.name);
+  var big=$('s09days');if(big)big.innerHTML=a.next.daysLeft+'<small>天</small>';
+  setT('s09date',a.next.date);
+  setT('s09count','已记录 '+a.count+' 个纪念日');
+  /* v0.9.2：下一个纪念日大卡背景用关联记忆照片（图片类型首媒体） */
+  var nv=a.next&&a.next.cover,ov=$('s09overview');
+  if(ov){
+    if(nv&&nv.url&&/^(png|jpe?g|gif|webp)$/.test((nv.kind||'').toLowerCase())){
+      ov.classList.add('has-cover');
+      ov.style.setProperty('--cov-url',"url('"+esc(nv.url)+"')");
+    }else{ov.classList.remove('has-cover');ov.style.removeProperty('--cov-url');}
+  }
+  var l=$('s09list');
+  if(l)l.innerHTML=a.list.map(function(x){
+    var goAttr=x.mid?' data-go="s07" data-mid="'+x.mid+'"':'';
+    var delBtn=x.id?'<span class="ann-del" data-aid="'+x.id+'" title="删除这个纪念日">×</span>':'';
+    /* v0.9.2：关联记忆有照片（图片类型首媒体）→ 卡片背景用照片 */
+    var cov=x.cover,covCls='',covStyle='';
+    if(cov&&cov.url&&/^(png|jpe?g|gif|webp)$/.test((cov.kind||'').toLowerCase())){
+      covCls=' has-cover';
+      covStyle=' style="--cov-url:url(\''+esc(cov.url)+'\')"';
+    }
+    return '<div class="ann-card'+covCls+'"'+covStyle+goAttr+'>'+delBtn+'<div class="d"><b>'+esc(x.day)+'</b><span>'+esc(x.month)+'</span></div><div><div class="t">'+esc(x.name)+'</div><div class="s">'+esc(x.note)+'</div></div></div>'
+  }).join('')
+}
+function memberCard(m){
+  var del=m.id?'<span class="member-del" data-space="'+esc(m.space||'')+'" data-mid="'+m.id+'" title="移除这位成员">×</span>':'';
+  return '<div class="card friend-card" style="position:relative">'+del+'<span class="avatar" style="width:40px;height:40px;font-size:14px'+(m.bg?';background:'+m.bg:'')+'">'+esc(m.avatar||m.name)+'</span><div style="flex:1"><div class="fc-t">'+esc(m.name)+'</div><div class="fc-s">'+esc(m.note)+'</div></div><span class="state-badge"'+(m.state==='已加入'?' style="background:#F3EBDC;color:#8A7340"':'')+'>'+esc(m.state)+'</span></div>'
+}
+function renderS10(){
+  var inv=APP_DATA.invites;if(!inv)return;
+  setT('s10code',inv.couple.inviteCode);
+  var cp=$('s10couplePending');if(cp)cp.innerHTML=(inv.couple.pending||[]).map(memberCard).join('');
+  var fm=$('s10friendMembers');if(fm)fm.innerHTML=(inv.friend.members||[]).map(memberCard).join('');
+  setT('s10remain','继续邀请（还可加 '+(inv.friend.capacity-(inv.friend.members||[]).length)+' 人）');
+}
+function spiralHtml(tl){
+  var h=(tl.multiViewBadges||[]).map(function(b){return '<div class="sp-mp-badge" style="left:'+b.pos[0]+'px;top:'+b.pos[1]+'px">'+b.count+'</div>'}).join('');
+  h+=(tl.commentBadges||[]).map(function(b){return '<div class="sp-cmt-badge" style="left:'+b.pos[0]+'px;top:'+b.pos[1]+'px">'+b.count+'</div>'}).join('');
+  h+=tl.nodes.map(function(n){return '<div class="sp-node'+(n.latest?' latest':'')+'" data-k="'+n.k+'" style="left:'+n.node[0]+'px;top:'+n.node[1]+'px"></div>'}).join('');
+  h+=tl.nodes.map(function(n){return '<div class="sp-label" data-k="'+n.k+'" style="left:'+n.label[0]+'px;top:'+n.label[1]+'px"><div class="lr">'+(ICONS.sp[n.icon]||'')+'<span class="ln">'+esc(n.n)+'</span></div><div class="ld">'+esc(n.d)+'</div></div>'}).join('');
+  return h
+}
+function bindSpiral(wrapId,fn){
+  var w=$(wrapId);if(!w)return;
+  w.querySelectorAll('.sp-node,.sp-label').forEach(function(el){
+    el.addEventListener('click',function(){fn(el.dataset.k)})
+  })
+}
+function renderS11(){
+  var ct=APP_DATA.coupleTimeline,ft=APP_DATA.friendTimeline;
+  var duo=$('s11duo');
+  if(duo&&ct&&ct.pair)duo.innerHTML='<div class="avs"><span class="avatar" style="width:36px;height:36px;font-size:13px">'+esc(ct.pair.left.avatar)+'</span><span class="avatar" style="width:36px;height:36px;font-size:13px'+(ct.pair.right.bg?';background:'+ct.pair.right.bg:'')+'">'+esc(ct.pair.right.avatar)+'</span></div><div style="flex:1"><div class="dt">'+esc(ct.pair.title)+'</div><div class="ds">'+esc(ct.pair.sub)+'</div></div><span class="co-badge">'+esc(ct.pair.badge)+'</span>';
+  var duo2=$('s11duo2');
+  if(duo2&&ft&&ft.group)duo2.innerHTML='<div class="avs-group">'+ft.group.avatars.map(function(a){return '<span class="avatar"'+(a.bg?' style="background:'+a.bg+'"':'')+'>'+esc(a.t)+'</span>'}).join('')+'<span class="avatar more">+'+ft.group.more+'</span></div><div style="flex:1"><div class="dt">'+esc(ft.group.title)+'</div><div class="ds">'+esc(ft.group.sub)+'</div></div><span class="co-badge friend">'+esc(ft.group.badge)+'</span>';
+  var nw=$('s11nodes');if(nw&&ct)nw.innerHTML=spiralHtml(ct);
+  var nw2=$('s11nodes2');if(nw2&&ft)nw2.innerHTML=spiralHtml(ft);
+  bindSpiral('s11nodes',openPop);bindSpiral('s11nodes2',openPop2);
+}
+function renderS13(){
+  var g=APP_DATA.growth;if(!g)return;
+  setT('s13desc',g.desc);
+  var l=$('s13list');
+  if(l)l.innerHTML=(g.subjects||[]).map(function(s){
+    return '<div class="subject-card" data-go="s14" data-subj="'+esc(s.name)+'" data-sid="'+s.id+'"><span class="subj-del" data-sid="'+s.id+'" title="删除这个主体">×</span><div class="subj-ic">'+(ICONS.gs[s.icon]||'')+'</div><div class="subj-info"><div class="subj-name">'+esc(s.name)+'</div><div class="subj-meta">'+esc(s.meta)+'</div><div class="subj-milestone">'+esc(s.milestone)+'</div></div><span class="subj-arrow">'+ICONS.arrow+'</span></div>'
+  }).join('')
+}
+var s14Cur=null,s14Id=null;
+function renderS14Timeline(){
+  var t=APP_DATA.growth.timelines[s14Cur];if(!t)return;
+  setT('s14sub',t.subtitle);
+  if(t.id)s14Id=t.id;
+  var tl=$('s14timeline');if(!tl)return;
+  tl.innerHTML=t.milestones.map(function(m){
+    var goAttr=(m.go&&m.mid)?' data-go="s07" data-mid="'+m.mid+'"':'';
+    return '<div class="milestone'+(m.major?' ms-major':'')+'"'+goAttr+'><div class="ms-date">'+esc(m.date)+'</div><div class="ms-card"><span class="ms-del" data-msid="'+m.id+'" title="删除这条里程碑">×</span><div class="ms-title">'+esc(m.title)+'</div><div class="ms-desc">'+esc(m.desc)+'</div>'+(m.pic?'<div class="ms-pic ph">'+ICONS.photo24+'</div>':'')+'</div></div>'
+  }).join('')
+}
+function renderS14(){
+  var g=APP_DATA.growth;if(!g)return;
+  var subs=g.subjects||[];
+  /* 刷新后保序：当前主体仍存在则不重置（点击主体卡直达对应时间轴） */
+  if(!subs.some(function(s){return s.name===s14Cur})){
+    s14Cur=subs.length?subs[0].name:null;
+    s14Id=subs.length?subs[0].id:null;
+  }
+  var sw=$('s14switcher');
+  if(sw)sw.innerHTML=subs.map(function(s){return '<span class="chip'+(s.name===s14Cur?' sel':'')+'" data-subj="'+esc(s.name)+'" data-sid="'+s.id+'">'+esc(s.name)+'</span>'}).join('');
+  renderS14Timeline();
+  var swEl=$('s14switcher');
+  if(swEl&&!swEl.dataset.bound){
+    swEl.dataset.bound='1';
+    swEl.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;s14Cur=c.dataset.subj;s14Id=c.dataset.sid;renderS14Timeline()})
+  }
+}
+function renderS15(){
+  var o=APP_DATA.otd;if(!o)return;
+  setT('s15title',o.title);setT('s15sub',o.sub);
+  var y=$('s15years');
+  if(y&&o.years)y.innerHTML=o.years.map(function(x,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(x)+'</span>'}).join('');
+  var c=$('s15cards');
+  if(c&&o.cards)c.innerHTML=o.cards.map(function(x){
+    return '<div class="otd-card" data-go="s07"><div class="otd-top">'+sceneTag(x.scene)+'<span style="font-family:var(--font-num);font-size:11px;color:var(--sub)">'+esc(x.date)+'</span></div><div class="otd-pic ph">'+ICONS.photo30+'</div><div class="otd-feel">'+esc(x.feel)+'</div><div class="otd-meta">'+esc(x.meta)+'</div></div>'
+  }).join('')
+}
+function renderS16(){
+  var h=APP_DATA.timelineHub;if(!h)return;
+  setT('s16intro',h.intro);
+  var c=$('s16cards');if(!c)return;
+  c.innerHTML=h.cards.map(function(x){
+    var attr=x.action==='timeline'?'data-timeline="'+esc(x.target)+'"':'data-go="'+esc(x.target)+'"';
+    return '<div class="tl-card'+(x.ghost?' ghost':'')+'" '+attr+'><div class="tl-ic '+esc(x.type)+'">'+(ICONS.hub[x.icon]||'')+'</div><div style="flex:1;min-width:0"><div class="tl-name">'+(x.type&&x.type!=='all'?'<span class="sdot '+x.type.charAt(0)+'"></span>':'')+esc(x.name)+'</div><div class="tl-meta">'+esc(x.meta)+'</div>'+(x.last?'<div class="tl-last">'+esc(x.last)+'</div>':'')+'</div><span class="arrow-r">'+ICONS.arrow+'</span></div>'
+  }).join('')
+}
+/* meta 渲染：应用名称/版本由 JSON meta.name / meta.en / meta.version 驱动 */
+function renderMeta(){
+  var m=APP_DATA.meta||{};
+  var name=m.name||m.app||'记忆漩涡';
+  var en=m.en||'';
+  document.title=name+(en?' '+en:'')+' · 交互原型 '+(m.version||'v2.0');
+  setT('appTitle',name);
+  setT('appEn',en);
+  var eb=$('appEnterBtn');if(eb)eb.textContent='进入'+name;
+  if(m.tagline)setT('appTagline',m.tagline);
+  var nt=$('navPanelTitle');if(nt)nt.textContent=name+' · 16屏 '+(m.version||'');
+}
+function initApp(D){
+  APP_DATA=D;
+  renderMeta();
+  renderS01();renderS03();renderS04();renderS05();renderS06();renderS07();renderS09();renderS10();renderS11();renderS13();renderS14();renderS15();renderS16();
+  if(typeof renderS12==='function')renderS12();
+}
+/* ============ 真假数据源分离 ============
+ * DATA_MODE='mock'：使用 test_data.js 的测试数据（模拟后端返回）
+ * DATA_MODE='api' ：走真实后端接口（后端开发完成后切换）
+ * 切真实后端三步：①删除 test_data.js；②删除 HTML 中 <script src="test_data.js">；③DATA_MODE 改为 'api' 并按屏填入真实接口。
+ */
+var DATA_MODE='api';
+var API_BASE=''; /* 后端就绪后填入，如 'https://api.example.com' */
+function loadAppData(){
+  if(DATA_MODE==='mock'){
+    if(typeof TEST_DATA==='undefined'||!TEST_DATA){
+      return Promise.reject(new Error('未找到测试数据 test_data.js'))
+    }
+    return Promise.resolve(TEST_DATA)
+  }
+  /* ---- 真实接口模式（后端就绪后启用，可按屏拆分为多个接口） ---- */
+  var opts={};
+  var tok='';
+  try{tok=localStorage.getItem('mc_token')||''}catch(_){}
+  if(tok)opts.headers={'Authorization':'Bearer '+tok};
+  return fetch(API_BASE+'/api/app/bootstrap',opts).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json()
+  })
+}
+(function boot(){
+  /* 初始化本地数据层（IndexedDB + fetch 拦截），完成后走正常 bootstrap 流程 */
+  var initPromise=(window.__localdb)?window.__localdb.init():Promise.resolve(true);
+  initPromise.then(function(){
+    return loadAppData();
+  }).then(function(D){
+    initApp(D);
+    /* v0.9 登录态：URL hash 优先（原型调试）；已登录用户直接进主界面；游客保留欢迎屏 */
+    var hashId=location.hash.slice(1);
+    if(hashId&&document.getElementById(hashId)){
+      show(hashId);
+    }else if(D&&D.meta&&D.meta.auth&&D.meta.auth.loggedIn){
+      show('s03');
+    }else{
+      show('s01');
+    }
+  }).catch(function(err){
+    console.error('数据加载失败：',err);
+    var d=document.createElement('div');
+    d.className='data-error';
+    d.innerHTML='<div class="box"><h2>数据加载失败</h2>'+(DATA_MODE==='mock'?'未能读取测试数据 <code>test_data.js</code><br>请确认该文件与本页面在同一目录':'后端接口请求失败：<code>'+String(err&&err.message||err)+'</code><br>请确认后端服务已启动')+'</div>';
+    document.body.appendChild(d)
+  })
+})();
+</script>
+<script>
+/* ============ 真实数据链路（API 模式专用，v0.4 数据库阶段） ============
+ * 1. S06「保存记忆」→ 收集 S05/S06 表单 → POST /api/v1/memories
+ *    → 重新拉取 bootstrap → initApp 重渲染 → 回到首页时间轴（新记忆置顶）
+ * 2. 点击带 data-mid 的卡片 → 动态构建 memoryDetail → renderS07 渲染详情
+ * 3. 卡片右上角 × → confirm → DELETE /api/v1/memories/{id} → 刷新重渲染
+ */
+(function(){
+  if(typeof DATA_MODE==='undefined'||DATA_MODE!=='api')return;
+
+  function toast(msg){
+    var t=document.createElement('div');t.className='mc-toast';t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(function(){t.classList.add('show')},10);
+    setTimeout(function(){t.classList.remove('show');setTimeout(function(){if(t.parentElement)t.remove()},300)},1900);
+  }
+  function pad(n){n=parseInt(n,10);if(isNaN(n))n=1;return (n<10?'0':'')+n}
+  function wv(id){var el=document.getElementById(id);return el?String(el.dataset.wheelValue||''):''}
+  function refreshApp(){
+    var opts={};
+    var t=getToken();
+    if(t)opts.headers={'Authorization':'Bearer '+t};
+    return fetch('/api/app/bootstrap',opts).then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(D){initApp(D)});
+  }
+
+  /* ---------- 0) 鉴权（v0.9 双通道） ----------
+   * 登录用户：localStorage.mc_token → Authorization: Bearer <会话令牌>
+   * 游客/本地：bootstrap meta.apiToken → X-API-Token（服务重启令牌刷新）
+   */
+  var MC_TOKEN_KEY='mc_token';
+  function getToken(){try{return localStorage.getItem(MC_TOKEN_KEY)||''}catch(_){return ''}}
+  function setToken(t){try{if(t)localStorage.setItem(MC_TOKEN_KEY,t);else localStorage.removeItem(MC_TOKEN_KEY)}catch(_){}}
+  function isLoggedIn(){return !!(window.APP_DATA&&APP_DATA.meta&&APP_DATA.meta.auth&&APP_DATA.meta.auth.loggedIn)}
+  function currentUser(){return (window.APP_DATA&&APP_DATA.meta&&APP_DATA.meta.auth&&APP_DATA.meta.auth.user)||null}
+  function apiToken(){
+    return (window.APP_DATA&&APP_DATA.meta&&APP_DATA.meta.apiToken)||'';
+  }
+  function apiHeaders(isJson){
+    var h={};
+    if(isJson)h['Content-Type']='application/json';
+    var t=getToken();
+    if(t){h['Authorization']='Bearer '+t;}
+    else{var g=apiToken();if(g)h['X-API-Token']=g;}
+    return h;
+  }
+  /* 会话过期时的伪响应：调用方按「请求失败」处理并展示统一文案 */
+  function expiredResponse(){
+    return {ok:false,status:401,json:function(){return Promise.resolve({message:'登录已过期，请重新登录'})}};
+  }
+  /* apiFetch：统一封装；
+   * 401 + Bearer 会话 → 会话失效：清令牌 → 回登录页（不再重试）；
+   * 401 + 游客令牌 → 服务重启令牌刷新：重取 bootstrap 后重试一次。 */
+  function apiFetch(url,opts){
+    opts=opts||{};
+    opts.headers=Object.assign({},opts.headers||{},apiHeaders(!!opts.body));
+    return fetch(url,opts).then(function(r){
+      if(r.status!==401)return r;
+      if(getToken()){
+        setToken('');
+        toast('登录已过期，请重新登录');
+        return refreshApp().then(function(){
+          showAuth('login',(currentScreen()||'s12'));
+          return expiredResponse();
+        });
+      }
+      return refreshApp().then(function(){
+        opts.headers=Object.assign({},opts.headers||{},apiHeaders(!!opts.body));
+        return fetch(url,opts);
+      });
+    });
+  }
+  function currentScreen(){
+    var act=document.querySelector('.screen.active');
+    return act?act.id:'s03';
+  }
+
+  /* ---------- 0) S05 媒体选择（拍照/相册多选 → 预览缩略图 → 保存时随记忆上传） ---------- */
+  var S05_MEDIA=[];   /* [{file, url(objectURL), kind: photo|video|live}] */
+  function s05KindOf(file){
+    var n=(file.name||'').toLowerCase();
+    if(/\.mov$/.test(n))return 'live';        /* iOS 实况照片导出为 .mov 短视频 */
+    if(/\.(mp4|webm)$/.test(n))return 'video';
+    return 'photo';
+  }
+  var s05file=document.getElementById('s05file');
+  ['s05cam','s05album'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.addEventListener('click',function(e){e.stopPropagation();if(s05file)s05file.click()});
+  });
+  if(s05file)s05file.addEventListener('change',function(){
+    var files=s05file.files||[],i;
+    for(i=0;i<files.length;i++){
+      var f=files[i];
+      if(f.size>5*1024*1024){toast('「'+(f.name||'文件')+'」超过 5MB，已跳过');continue}
+      S05_MEDIA.push({file:f,url:URL.createObjectURL(f),kind:s05KindOf(f)});
+    }
+    s05file.value='';
+    renderS05Grid();
+    if(S05_MEDIA.length)toast('已选 '+S05_MEDIA.length+' 个文件');
+  });
+  function renderS05Grid(){
+    var g=document.getElementById('s05grid');if(!g)return;
+    g.querySelectorAll('.cell.pick').forEach(function(x){x.remove()});
+    var html=S05_MEDIA.map(function(m,i){
+      var inner=(m.kind==='photo')
+        ?'<img class="pp" src="'+m.url+'" alt="">'
+        :'<video class="pp" src="'+m.url+'" muted playsinline preload="metadata"></video>';
+      var tag=m.kind==='live'?'实况':(m.kind==='video'?'视频':'照片');
+      return '<div class="cell pick">'+inner+'<span class="pick-tag">'+tag+'</span><span class="pick-del" data-idx="'+i+'" title="移除">×</span></div>';
+    }).join('');
+    var cam=g.querySelector('.cell.cam');
+    if(cam)cam.insertAdjacentHTML('afterend',html);
+    else g.insertAdjacentHTML('beforeend',html);
+  }
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.pick-del');
+    if(!del)return;
+    e.stopPropagation();e.preventDefault();
+    var idx=parseInt(del.dataset.idx,10);
+    if(!isNaN(idx)&&S05_MEDIA[idx]){
+      URL.revokeObjectURL(S05_MEDIA[idx].url);
+      S05_MEDIA.splice(idx,1);
+      renderS05Grid();
+    }
+  },true);
+  function uploadS05Media(){
+    /* 串行 预签名→PUT直传；返回 Promise<[{file_key}]>（失败即中断保存并 toast） */
+    if(!S05_MEDIA.length)return Promise.resolve([]);
+    var picked=S05_MEDIA.slice(),results=[],p=Promise.resolve();
+    toast('正在上传 '+picked.length+' 个文件…');
+    picked.forEach(function(m){
+      p=p.then(function(){
+        return apiFetch('/api/v1/uploads/presign',{
+          method:'POST',body:JSON.stringify({filename:m.file.name||'upload',contentType:m.file.type||''})
+        }).then(apiOk).then(function(res){
+          var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+          var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+          return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:m.file}).then(function(r){
+            if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
+            return cred.fileKey;
+          });
+        }).then(function(fileKey){results.push({file_key:fileKey})});
+      });
+    });
+    return p.then(function(){return results});
+  }
+  function clearS05Media(){
+    S05_MEDIA.forEach(function(m){try{URL.revokeObjectURL(m.url)}catch(_){}});
+    S05_MEDIA=[];
+    renderS05Grid();
+  }
+
+  /* ---------- 1) 保存记忆 ---------- */
+  function collectAndSave(btn){
+    var ta=document.querySelector('#s05 .textarea');
+    var feel=(ta&&ta.value||'').trim();
+    /* v0.8.4：未写下感受时自动写入「无」，不阻碍保存（后端 min_length=1 亦满足） */
+    if(!feel)feel='无';
+    var emoEl=document.querySelector('#emoGroup .chip.sel');
+    var scene=(typeof CUR_SCENE!=='undefined'&&CUR_SCENE)||'personal';
+    var onOpt=document.querySelector('#s06 .opt.on');
+    var mode=onOpt?onOpt.dataset.timeopt:'custom';
+    var body={scene:scene,feel:feel,emotion:emoEl?emoEl.textContent:null,time_mode:mode};
+
+    if(mode==='custom'){
+      var pon=document.querySelector('#precToggle .pt-opt.on');
+      var isHM=!!pon&&pon.dataset.prec==='hm';
+      var y,mo,d;
+      if(isHM){
+        y=wv('wy2');mo=wv('wm2');d=wv('wd2');
+        var h=wv('wh')||'20:00';
+        body.custom_time=h.slice(0,2)+':'+(wv('wmi')||'00');
+      }else{
+        y=wv('wy');mo=wv('wm');d=wv('wd');
+      }
+      var now=new Date();
+      body.custom_date=(y||now.getFullYear())+'-'+pad((mo||'').replace('月',''))+'-'+pad((d||'').replace('日',''));
+      if(!body.custom_time)body.custom_time=pad(now.getHours())+':'+pad(now.getMinutes());
+    }else if(mode==='fuzzy'){
+      var fc=document.querySelector('#fuzzyChips .chip.sel');
+      body.fuzzy_label=fc?fc.textContent:'记不清了';
+      var fi=document.getElementById('fuzzyInput');
+      body.fuzzy_note=fi?(fi.value||'').trim():null;
+    }
+
+    var old=btn.textContent;btn.disabled=true;btn.textContent='保存中…';
+    uploadS05Media().then(function(media){
+      if(media&&media.length)body.media=media;
+      return apiFetch('/api/v1/memories',{
+        method:'POST',body:JSON.stringify(body)
+      });
+    }).then(function(r){
+      if(!r.ok)return r.json().catch(function(){}).then(function(j){
+        throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+      });
+      return r.json();
+    }).then(function(){
+      return refreshApp();
+    }).then(function(){
+      show('s03');                    /* 回首页时间轴，新记忆在最上面 */
+      if(ta)ta.value='';              /* 清空表单，方便连续记录 */
+      clearS05Media();                /* 清空已上传的媒体选择 */
+      toast('✦ 记忆已卷入漩涡');
+    }).catch(function(err){
+      toast('保存失败：'+(err&&err.message||err));
+    }).then(function(){
+      btn.disabled=false;btn.textContent=old;
+    });
+  }
+
+  /* 挂载到 S06 的「保存记忆」按钮（阻止原有 data-go="s07" 跳转） */
+  var tries=0,timer=setInterval(function(){
+    var btn=document.querySelector('#s06 button.btn-primary');
+    if(btn){
+      clearInterval(timer);
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();e.preventDefault();
+        collectAndSave(btn);
+      });
+    }else if(++tries>100){clearInterval(timer)}
+  },100);
+
+  /* ---------- 2) 点击卡片 → 拉取该条记忆详情（含多视角/留言） → 渲染 S07 ---------- */
+  var CUR_MID=null;
+  function findItem(mid){
+    if(!APP_DATA||!APP_DATA.home)return null;
+    var i,j,g,tl=APP_DATA.home.timeline||[];
+    for(i=0;i<tl.length;i++){g=tl[i];
+      for(j=0;j<g.items.length;j++)if(String(g.items[j].mid)===String(mid))return g.items[j];
+    }
+    var cards=(APP_DATA.home.sceneView||{}).cards||[];
+    for(i=0;i<cards.length;i++)if(String(cards[i].mid)===String(mid))return cards[i];
+    return null;
+  }
+  function buildDetailFallback(it,mid){
+    /* 接口异常时的兜底：用时间线条目本地构建 */
+    var t=it.dateLabel||it.time||'';
+    APP_DATA.memoryDetail={
+      mid:mid,time:t,scene:it.scene,
+      emotion:(it.emotions&&it.emotions[0])||'',
+      feel:it.feel,voice:null,comments:[],
+      perspectives:[{name:'我',avatar:'我',feel:it.feel,time:t}]
+    };
+    renderS07();renderComments();
+  }
+  document.addEventListener('click',function(e){
+    var card=e.target.closest('[data-mid]');
+    if(!card||!card.dataset.mid)return;
+    var mid=card.dataset.mid;
+    var it=findItem(mid);
+    if(!it)return;
+    CUR_MID=mid;
+    apiFetch('/api/v1/memories/'+mid).then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(res){
+      var d=res&&res.data;
+      if(!d)throw new Error('响应异常');
+      var t=d.timeLabel||it.dateLabel||it.time||'';
+      var ps=(d.perspectives||[]);
+      APP_DATA.memoryDetail={
+        mid:mid,
+        time:t,scene:d.scene,
+        emotion:(d.emotions&&d.emotions[0])||'',
+        feel:d.feel,
+        voice:d.voice?{by:'我',duration:d.voice}:null,
+        media:d.media||[],
+        perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
+        comments:d.comments||[]
+      };
+      renderS07();renderComments();
+    }).catch(function(){
+      buildDetailFallback(it,mid);   /* 详情接口失败不阻断浏览 */
+    });
+    /* 渲染在异步回调中完成；data-go="s07" 跳转同时放行 */
+  });
+
+  /* ---------- 2b) 留言区渲染 + 发送/删除（S07） ---------- */
+  function renderComments(){
+    var d=APP_DATA&&APP_DATA.memoryDetail;
+    var list=document.getElementById('cmtList');
+    var cnt=document.getElementById('cmtCount');
+    var cs=document.getElementById('cmtSection');
+    if(!list||!d){return}
+    if(cs)cs.style.display=(d.mid||CUR_MID)?'':'none';   /* 模板演示详情不显示留言区 */
+    var cm=d.comments||[];
+    if(cnt)cnt.textContent=cm.length;
+    if(!cm.length){
+      list.innerHTML='<div class="cmt-empty">还没有留言，写下第一条吧</div>';
+      return;
+    }
+    list.innerHTML=cm.map(function(c){
+      return '<div class="cmt-item">'
+        +'<span class="avatar" style="width:30px;height:30px;font-size:12px'+(c.bg?';background:'+esc(c.bg):'')+'">'+esc(c.avatar||c.name)+'</span>'
+        +'<div class="cmt-bubble"><div class="cb-top"><span class="cb-name">'+esc(c.name)+'</span>'
+        +(c.id?'<span class="cmt-del" data-cid="'+c.id+'" title="删除这条留言">×</span>':'')
+        +'<span class="cb-time">'+esc(c.time||'')+'</span></div>'
+        +'<div class="cb-content">'+esc(c.content)+'</div></div></div>';
+    }).join('');
+  }
+  function refetchDetail(){
+    if(!CUR_MID)return Promise.reject(new Error('无当前记忆'));
+    return apiFetch('/api/v1/memories/'+CUR_MID).then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(res){
+      var d=res&&res.data;if(!d)throw new Error('响应异常');
+      var t=d.timeLabel||'';
+      var ps=(d.perspectives||[]);
+      APP_DATA.memoryDetail={
+        mid:CUR_MID,time:APP_DATA.memoryDetail&&APP_DATA.memoryDetail.time||t,
+        scene:d.scene,emotion:(d.emotions&&d.emotions[0])||'',
+        feel:d.feel,voice:d.voice?{by:'我',duration:d.voice}:null,
+        media:d.media||[],
+        perspectives:ps.length?ps:APP_DATA.memoryDetail.perspectives,
+        comments:d.comments||[]
+      };
+      renderS07();renderComments();
+    });
+  }
+  var sendBtn=document.getElementById('cmtSend');
+  if(sendBtn){
+    sendBtn.addEventListener('click',function(){
+      var input=document.getElementById('cmtInput');
+      var content=(input&&input.value||'').trim();
+      if(!content){toast('先写点什么吧');return}
+      if(!CUR_MID){toast('请先选择一条记忆');return}
+      sendBtn.disabled=true;sendBtn.textContent='…';
+      apiFetch('/api/v1/memories/'+CUR_MID+'/comments',{
+        method:'POST',body:JSON.stringify({author_name:'我',content:content})
+      }).then(function(r){
+        if(!r.ok)return r.json().catch(function(){}).then(function(j){
+          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+        });
+        return r.json();
+      }).then(function(){
+        if(input)input.value='';
+        return refetchDetail();
+      }).then(function(){
+        toast('留言已发送');
+      }).catch(function(err){
+        toast('发送失败：'+(err&&err.message||err));
+      }).then(function(){
+        sendBtn.disabled=false;sendBtn.textContent='发送';
+      });
+    });
+    /* 回车快捷发送 */
+    var cinput=document.getElementById('cmtInput');
+    if(cinput)cinput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();sendBtn.click()}
+    });
+  }
+  /* 删除留言（事件委托，capture 阶段拦截） */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.cmt-del');
+    if(!del||!del.dataset.cid)return;
+    e.stopPropagation();e.preventDefault();
+    if(!window.confirm('删除这条留言？'))return;
+    apiFetch('/api/v1/comments/'+del.dataset.cid,{method:'DELETE'})
+      .then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      })
+      .then(function(){return refetchDetail()})
+      .then(function(){toast('留言已删除')})
+      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+  },true);
+
+  /* ---------- 2c) 编辑记忆（v0.8.3：feel + 媒体增删 → PATCH 全量替换） ---------- */
+  var editBtn=document.getElementById('s07editBtn');
+  if(editBtn){
+    editBtn.addEventListener('click',function(e){
+      e.stopPropagation();e.preventDefault();
+      var d=APP_DATA&&APP_DATA.memoryDetail;
+      if(!d||!d.mid){toast('请先从时间轴选择一条记忆');return}
+      if(S07_EDIT){            /* 编辑态点「编辑」= 取消还原 */
+        S07_EDIT=null;renderS07();
+        return;
+      }
+      S07_EDIT={feel:d.feel||'',media:(d.media||[]).map(function(m){return {key:m.key,url:m.url,kind:m.kind}})}
+      renderS07();
+    });
+  }
+  /* 保存 / 取消（编辑态动态渲染，事件委托） */
+  document.addEventListener('click',function(e){
+    if(e.target.closest('#s07editCancel')){
+      e.stopPropagation();e.preventDefault();
+      S07_EDIT=null;renderS07();   /* 放弃本地媒体改动与文本改动 */
+      return;
+    }
+    var save=e.target.closest('#s07editSave');
+    if(!save)return;
+    e.stopPropagation();e.preventDefault();
+    var d=APP_DATA&&APP_DATA.memoryDetail;
+    var area=document.getElementById('s07editArea');
+    var nv=(area&&area.value||'').trim();
+    if(!nv){toast('感受不能为空');return}
+    var body={feel:nv};
+    body.media=(S07_EDIT&&S07_EDIT.media||[]).map(function(m){return {file_key:m.key||m.file_key}});
+    save.disabled=true;save.textContent='…';
+    apiFetch('/api/v1/memories/'+d.mid,{
+      method:'PATCH',body:JSON.stringify(body)
+    }).then(function(r){
+      if(!r.ok)return r.json().catch(function(){}).then(function(j){
+        throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+      });
+      return r.json();
+    }).then(function(){
+      S07_EDIT=null;
+      /* 先刷首页（时间线封面同步），再拉当前记忆详情（refreshApp 会用 bootstrap 模板 memoryDetail 覆盖，需重新拉取） */
+      return refreshApp().then(refetchDetail);
+    }).then(function(){
+      toast('✦ 已保存');
+    }).catch(function(err){
+      toast('保存失败：'+(err&&err.message||err));
+      renderS07();   /* 失败还原 */
+    }).then(function(){
+      save.disabled=false;save.textContent='保存';
+    });
+  },true);
+  /* 编辑态移除媒体（hero 首图 / media-strip 缩略图上的 ×） */
+  document.addEventListener('click',function(e){
+    var rm=e.target.closest('[data-s07-rm]');
+    if(!rm)return;
+    e.stopPropagation();e.preventDefault();
+    if(!S07_EDIT)return;
+    var idx=parseInt(rm.dataset.s07Rm,10);
+    if(isNaN(idx)||idx<0||idx>=S07_EDIT.media.length)return;
+    S07_EDIT.media.splice(idx,1);
+    renderS07();
+  },true);
+
+  /* ---------- 2c) 纪念日：S08 表单 → POST /api/v1/anniversaries → S09 ---------- */
+  function annSwitchOn(id){
+    var el=document.getElementById(id);
+    return !!el&&!el.classList.contains('off');
+  }
+  /* 打开 S08 时默认日期 = 今天 */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('[data-go="s08"]'))return;
+    var d=document.getElementById('annDate');
+    if(d&&!d.value){var n=new Date();d.value=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())}
+  },true);
+  /* 「完成标记」按钮：拦截 data-go 跳转，先入库再刷新进 S09 */
+  var annTries=0,annTimer=setInterval(function(){
+    var btn=document.getElementById('annSaveBtn');
+    if(btn){
+      clearInterval(annTimer);
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();e.preventDefault();
+        var nameEl=document.getElementById('annName');
+        var dateEl=document.getElementById('annDate');
+        var name=(nameEl&&nameEl.value||'').trim();
+        var date=(dateEl&&dateEl.value||'').trim();
+        if(!name){toast('先给纪念日起个名字吧');if(nameEl)nameEl.focus();return}
+        if(!date){toast('请选择日期');if(dateEl)dateEl.focus();return}
+        var body={
+          name:name,
+          date:date,
+          is_lunar:annSwitchOn('annLunarSwitch'),
+          is_recurring:true,
+          remind_days_before:annSwitchOn('annRemindSwitch')?3:0,
+          linked_memory_id:CUR_MID?parseInt(CUR_MID,10):null   /* 从记忆详情进入时回链 */
+        };
+        var old=btn.textContent;btn.disabled=true;btn.textContent='标记中…';
+        apiFetch('/api/v1/anniversaries',{method:'POST',body:JSON.stringify(body)})
+          .then(function(r){
+            if(!r.ok)return r.json().catch(function(){}).then(function(j){
+              throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+            });
+            return r.json();
+          })
+          .then(function(){return refreshApp()})
+          .then(function(){
+            show('s09');                     /* 列表已含新标记的纪念日 */
+            if(nameEl)nameEl.value='';
+            toast('✦ 纪念日已标记');
+          })
+          .catch(function(err){toast('标记失败：'+(err&&err.message||err))})
+          .then(function(){btn.disabled=false;btn.textContent=old});
+      });
+    }else if(++annTries>100){clearInterval(annTimer)}
+  },100);
+
+  /* ---------- 3) 删除记忆（capture 阶段拦截，优先于 data-go 委托） ---------- */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.ts-del');
+    if(!del)return;
+    e.stopPropagation();e.preventDefault();
+    var mid=del.dataset.mid;
+    if(!window.confirm('删除这条记忆？删除后不可恢复。'))return;
+    apiFetch('/api/v1/memories/'+mid,{method:'DELETE'})
+      .then(function(r){
+        if(!r.ok)return r.json().catch(function(){}).then(function(j){
+          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+        });
+        return r.json();
+      })
+      .then(function(){return refreshApp()})
+      .then(function(){toast('已删除')})
+      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+  },true);
+
+  /* ---------- 4) 删除纪念日（capture 拦截，S09 列表卡片上的 ×） ---------- */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.ann-del');
+    if(!del)return;
+    e.stopPropagation();e.preventDefault();
+    var aid=del.dataset.aid;
+    if(!aid)return;
+    if(!window.confirm('删除这个纪念日？'))return;
+    apiFetch('/api/v1/anniversaries/'+aid,{method:'DELETE'})
+      .then(function(r){
+        if(!r.ok)return r.json().catch(function(){}).then(function(j){
+          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+        });
+        return r.json();
+      })
+      .then(function(){return refreshApp()})
+      .then(function(){toast('纪念日已删除')})
+      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+  },true);
+
+  /* ---------- 5) 成长追踪：S13 主体 / S14 里程碑 ---------- */
+  function apiOk(r){
+    if(!r.ok)return r.json().catch(function(){}).then(function(j){
+      throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+    });
+    return r.json();
+  }
+  /* 5a) 主体删除（capture 拦截，须先于「主体选择」处理器注册） */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.subj-del');
+    if(!del)return;
+    e.stopPropagation();e.preventDefault();
+    var sid=del.dataset.sid;
+    if(!sid)return;
+    if(!window.confirm('删除这个主体？其时间轴上的里程碑也会一并删除。'))return;
+    apiFetch('/api/v1/growth/subjects/'+sid,{method:'DELETE'})
+      .then(apiOk)
+      .then(function(){return refreshApp()})
+      .then(function(){toast('主体已删除')})
+      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+  },true);
+  /* 5b) 点击主体卡 → 直达该主体的时间轴（capture 先于 data-go 委托执行） */
+  document.addEventListener('click',function(e){
+    var card=e.target.closest('.subject-card');
+    if(!card||!card.dataset.subj)return;
+    s14Cur=card.dataset.subj;
+    s14Id=card.dataset.sid||null;
+    renderS14Timeline();
+    var sw=document.getElementById('s14switcher');
+    if(sw)Array.prototype.forEach.call(sw.querySelectorAll('.chip'),function(c){
+      c.classList.toggle('sel',c.dataset.subj===s14Cur);
+    });
+  },true);
+  /* 5c) 新增主体（S13 的「新增主体」虚线卡） */
+  document.addEventListener('click',function(e){
+    var add=e.target.closest('#s13 .add-subj');
+    if(!add)return;
+    e.stopPropagation();e.preventDefault();
+    var name=prompt('主体名称（如：小橙子）');if(!name)return;
+    var kindTxt=(prompt('类型：宝宝 / 宠物 / 其他','宝宝')||'宝宝').trim();
+    var kind=kindTxt==='宠物'?'pet':(kindTxt==='宝宝'?'baby':'other');
+    var note=prompt('备注（如品种「金毛」，可留空）','');if(note===null)return;
+    var bday=prompt('生日或开始日期 YYYY-MM-DD（可留空）','');if(bday===null)return;
+    apiFetch('/api/v1/growth/subjects',{method:'POST',body:JSON.stringify({
+      name:name.trim(),kind:kind,
+      note:note.trim()||null,birthday:bday.trim()||null
+    })})
+      .then(apiOk)
+      .then(function(){return refreshApp()})
+      .then(function(){toast('✦ 主体已创建')})
+      .catch(function(err){toast('创建失败：'+(err&&err.message||err))});
+  });
+  /* 5d) 记录里程碑（S14 的「记录里程碑」按钮，落在当前切换的主体上） */
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('#msAddBtn');
+    if(!btn)return;
+    e.stopPropagation();e.preventDefault();
+    if(!s14Id){toast('请先选择一个主体');return}
+    var title=prompt('里程碑（如：第一次独立走路）');if(!title)return;
+    var d=prompt('发生日期 YYYY-MM-DD（留空 = 今天）','');
+    if(d===null)return;
+    if(!d){var n=new Date();d=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())}
+    var desc=prompt('补充描述（可留空）','');if(desc===null)return;
+    var major=window.confirm('是重要里程碑吗？（时间轴上的大节点）');
+    apiFetch('/api/v1/growth/subjects/'+s14Id+'/milestones',{method:'POST',body:JSON.stringify({
+      title:title.trim(),date:d,desc:desc.trim()||null,is_major:major
+    })})
+      .then(apiOk)
+      .then(function(){return refreshApp()})
+      .then(function(){toast('✦ 里程碑已记录')})
+      .catch(function(err){toast('记录失败：'+(err&&err.message||err))});
+  });
+  /* 5e) 里程碑删除（capture 拦截，S14 时间轴卡片上的 ×） */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.ms-del');
+    if(!del)return;
+    e.stopPropagation();e.preventDefault();
+    var msid=del.dataset.msid;
+    if(!msid)return;
+    if(!window.confirm('删除这条里程碑？'))return;
+    apiFetch('/api/v1/growth/milestones/'+msid,{method:'DELETE'})
+      .then(apiOk)
+      .then(function(){return refreshApp()})
+      .then(function(){toast('里程碑已删除')})
+      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+  },true);
+
+  /* ---------- 6) 邀请成员移除（capture 拦截，S10 成员卡上的 ×） ---------- */
+  document.addEventListener('click',function(e){
+    var del=e.target.closest('.member-del');
+    if(!del||!del.dataset.mid)return;
+    e.stopPropagation();e.preventDefault();
+    var mid=del.dataset.mid;
+    if(!window.confirm('移除这位成员？'))return;
+    apiFetch('/api/v1/invites/members/'+mid,{method:'DELETE'})
+      .then(apiOk)
+      .then(function(){return refreshApp()})
+      .then(function(){toast('成员已移除')})
+      .catch(function(err){toast('移除失败：'+(err&&err.message||err))});
+  },true);
+
+  /* ---------- 7) S07 媒体上传（预签名直传三步走） ---------- */
+  /* v0.8.3+：媒体只在编辑态添加（「+ 添加」格子 → 本地追加，保存时全量 PATCH）；
+     操作栏「照片」按钮已移除（与编辑态重复，见 2026-08-25 修复） */
+  var fileInput=document.getElementById('s07file');
+  function openS07FilePicker(multi){
+    if(!CUR_MID){toast('请先选择一条记忆');return}
+    fileInput.multiple=!!multi;
+    fileInput.value='';
+    fileInput.click();
+  }
+  /* 串行直传一批文件 → [{key,url,kind}] */
+  function uploadS07Files(files){
+    var idx=0;
+    function next(){
+      if(idx>=files.length)return Promise.resolve([]);
+      var file=files[idx++];
+      if(file.size>5*1024*1024){toast('跳过超大文件：'+(file.name||''));return next()}
+      return apiFetch('/api/v1/uploads/presign',{
+        method:'POST',body:JSON.stringify({filename:file.name||'upload',contentType:file.type||''})
+      }).then(apiOk).then(function(res){
+        var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+        var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+        return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:file})
+          .then(function(r){
+            if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
+            return cred.fileKey;
+          });
+      }).then(function(fileKey){
+        return next().then(function(rest){
+          return [{key:fileKey,url:'/uploads/'+fileKey,kind:(fileKey.split('.').pop()||'').toLowerCase()}].concat(rest);
+        });
+      });
+    }
+    return next();
+  }
+  if(fileInput){
+    fileInput.addEventListener('change',function(){
+      var files=Array.prototype.slice.call(fileInput.files||[]);
+      if(!files.length)return;
+      if(!CUR_MID){toast('请先选择一条记忆');fileInput.value='';return}
+      if(!S07_EDIT){toast('请先进入编辑模式再添加媒体');fileInput.value='';return}
+      /* 编辑态：本地追加，等待「保存」全量 PATCH（非编辑态的「照片」按钮已移除） */
+      toast('上传中…');
+      uploadS07Files(files).then(function(items){
+        if(items&&items.length)S07_EDIT.media=S07_EDIT.media.concat(items);
+        renderS07();
+        toast('✦ 已添加，保存后生效');
+      }).catch(function(err){
+        toast('上传失败：'+(err&&err.message||err));
+      }).then(function(){fileInput.value=''});
+    });
+  }
+  /* 编辑态「+ 添加」格子 */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('#s07AddMedia'))return;
+    e.stopPropagation();e.preventDefault();
+    if(!S07_EDIT){toast('请先进入编辑模式');return}
+    openS07FilePicker(true);
+  },true);
+
+  /* ---------- 6) 登录/注册（S17）+ 「我的」页（S12）登录态 ---------- */
+  var AUTH_MODE='login';      /* login | register */
+  var AUTH_BACK='s12';        /* 打开登录页前所在屏，成功后返回 */
+  function setAuthMode(mode){
+    AUTH_MODE=(mode==='register')?'register':'login';
+    document.querySelectorAll('#s17 .auth-tab').forEach(function(t){
+      t.classList.toggle('on',t.dataset.amode===AUTH_MODE);
+    });
+    var title=document.getElementById('authTitle');
+    var sub=document.getElementById('authSub');
+    var nickF=document.getElementById('authNickField');
+    var btn=document.getElementById('authSubmit');
+    if(title)title.textContent=AUTH_MODE==='login'?'登录记忆漩涡':'注册记忆漩涡';
+    if(sub)sub.textContent=AUTH_MODE==='login'?'欢迎回来，继续记录你的人生':'创建新账号，记忆从此有归属';
+    if(nickF)nickF.style.display=AUTH_MODE==='register'?'':'none';
+    if(btn)btn.textContent=AUTH_MODE==='login'?'登录':'注册';
+    setAuthErr('');
+  }
+  function showAuth(mode,back){
+    AUTH_BACK=back||'s12';
+    setAuthMode(mode||'login');
+    var u=document.getElementById('authUsername'),p=document.getElementById('authPassword');
+    if(u)u.value='';if(p)p.value='';
+    var n=document.getElementById('authNickname');if(n)n.value='';
+    show('s17');
+  }
+  function setAuthErr(msg){var e=document.getElementById('authErr');if(e)e.textContent=msg||''}
+  function submitAuth(){
+    var uEl=document.getElementById('authUsername');
+    var pEl=document.getElementById('authPassword');
+    var nEl=document.getElementById('authNickname');
+    var username=(uEl&&uEl.value||'').trim();
+    var password=(pEl&&pEl.value||'');
+    var nickname=(nEl&&nEl.value||'').trim();
+    var errs=[];
+    if(!/^[\w\u4e00-\u9fa5]{3,32}$/.test(username))errs.push('账号需 3-32 位中英文 / 数字 / 下划线');
+    if(password.length<6)errs.push('密码至少 6 位');
+    if(AUTH_MODE==='register'&&nickname&&nickname.length>32)errs.push('昵称最多 32 字');
+    if(errs.length){setAuthErr(errs.join('；'));return}
+    var body={username:username,password:password};
+    if(AUTH_MODE==='register'&&nickname)body.nickname=nickname;
+    var url=AUTH_MODE==='login'?'/api/auth/login':'/api/auth/register';
+    var btn=document.getElementById('authSubmit');
+    var old=btn?btn.textContent:'';
+    if(btn){btn.disabled=true;btn.textContent='请稍候…'}
+    setAuthErr('');
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){
+        return r.json().catch(function(){return {message:'HTTP '+r.status}}).then(function(j){
+          if(!r.ok)throw new Error(j.detail||j.message||('HTTP '+r.status));
+          return j.data;
+        });
+      })
+      .then(function(data){
+        setToken(data&&data.token);
+        return refreshApp();
+      })
+      .then(function(){
+        var u=currentUser();
+        toast(AUTH_MODE==='login'
+          ?'欢迎回来：'+(u&&(u.nickname||u.username)||username)
+          :'注册成功，欢迎加入：'+(u&&(u.nickname||u.username)||username));
+        show(AUTH_BACK||'s12');
+      })
+      .catch(function(err){setAuthErr(err&&err.message||'操作失败，请稍后重试')})
+      .then(function(){if(btn){btn.disabled=false;btn.textContent=old}});
+  }
+  function logout(){
+    if(!window.confirm('确定要退出登录吗？'))return;
+    var t=getToken();
+    if(t){fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
+    setToken('');
+    refreshApp().then(function(){
+      toast('已退出登录');
+      show('s12');
+    });
+  }
+  /* 「我的」页：登录态 vs 游客态动态渲染 */
+  function renderS12(){
+    var u=currentUser();
+    var avatar=document.getElementById('s12Avatar');
+    var nick=document.getElementById('s12Nick');
+    var sub=document.getElementById('s12Sub');
+    var logoutBtn=document.getElementById('s12Logout');
+    var loginEntry=document.getElementById('s12LoginEntry');
+    var loginSub=document.getElementById('s12LoginSub');
+    if(!avatar||!nick||!sub)return;
+    if(u){
+      var ch=(u.avatar||(u.nickname||u.username||'我').slice(0,1));
+      avatar.textContent=ch;
+      nick.textContent=u.nickname||u.username;
+      sub.textContent='账号 '+u.username+' · 统计中…';
+      if(logoutBtn)logoutBtn.style.display='';
+      if(loginEntry)loginEntry.style.display='none';
+      if(loginSub)loginSub.style.display='none';
+      countOwnMemories(u.id).then(function(st){
+        if(sub)sub.textContent='账号 '+u.username+' · 已记录 '+st.count+' 条 · '+st.scenes+' 个场景';
+      }).catch(function(){if(sub)sub.textContent='账号 '+u.username});
+    }else{
+      avatar.textContent='登';
+      nick.textContent='未登录';
+      sub.textContent='游客模式 · 数据仅保存在本机';
+      if(logoutBtn)logoutBtn.style.display='none';
+      if(loginEntry)loginEntry.style.display='';
+      if(loginSub)loginSub.style.display='';
+    }
+  }
+  function countOwnMemories(uid){
+    return apiFetch('/api/v1/memories?limit=500').then(function(r){return r.json()}).then(function(j){
+      var list=(j&&j.data)||[];
+      var own=list.filter(function(m){return m.ownerId==='user:'+uid});
+      var scenes={};own.forEach(function(m){if(m.scene)scenes[m.scene]=1});
+      return {count:own.length,scenes:Object.keys(scenes).length};
+    });
+  }
+  /* ---- S17 / S12 事件绑定 ---- */
+  var authBack=document.getElementById('authBack');
+  if(authBack)authBack.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();show(AUTH_BACK||'s12')});
+  document.querySelectorAll('#s17 .auth-tab').forEach(function(t){
+    t.addEventListener('click',function(e){e.stopPropagation();setAuthMode(t.dataset.amode)});
+  });
+  var authSubmitBtn=document.getElementById('authSubmit');
+  if(authSubmitBtn)authSubmitBtn.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();submitAuth()});
+  var authGuest=document.getElementById('authGuest');
+  if(authGuest)authGuest.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();show(AUTH_BACK||'s12')});
+  ['authUsername','authPassword','authNickname'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submitAuth()}});
+  });
+  var s12LoginEntry=document.getElementById('s12LoginEntry');
+  if(s12LoginEntry)s12LoginEntry.addEventListener('click',function(e){e.stopPropagation();showAuth('login','s12')});
+  var s12LogoutBtn=document.getElementById('s12Logout');
+  if(s12LogoutBtn)s12LogoutBtn.addEventListener('click',function(e){e.stopPropagation();logout()});
+  /* 初始化「我的」页登录态（若 initApp 先于本 IIFE 执行，这里兜底补渲染） */
+  if(window.APP_DATA&&typeof renderS12==='function')renderS12();
+
+  /* QA / 调试入口：暴露给浏览器控制台与外层 initApp，便于端到端验证 */
+  window.renderS12=renderS12;
+  window.MC_AUTH={showAuth:showAuth,submitAuth:submitAuth,logout:logout,renderS12:renderS12,setAuthMode:setAuthMode};
+})();
+</script>
+<script>
+/* PWA Service Worker 注册（仅 https/localhost 生效，file:// 安静失败） */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(e){
+    console.warn('[PWA] SW 注册失败:',e);
+  });
+}
+</script>
+</body>
+</html>

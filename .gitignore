@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 数据库与本地数据（首次运行自动创建）
+backend/data/memory_vortex.db
+backend/data/memory_vortex.db.bak-*
+backend/data/server.log
+backend/data/uploads/
+
+# API 令牌（首次运行自动生成）
+backend/auth_token.txt
+
+# 日志
+*.log
+
+# 临时目录
+.tmp-check/
+
+# API 密钥
+backend/llm_api_key.txt
+*api_key*
+
+# 环境变量
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# AI 助手工作目录
+.workbuddy/
+
+# 图标生成脚本（运行时不需要）
+backend/static/generate_icon.py
+
+# QA 截图
+qa-*.png
+
+# OS
+.DS_Store
+Thumbs.db

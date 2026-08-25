@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记忆漩涡 MemoryVortex — 框线图 v2.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Sarasa Gothic SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+    overflow-x: auto;
+  }
+  .canvas-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  .canvas-subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #8A8A8A;
+    margin-bottom: 30px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 375px);
+    gap: 50px;
+    justify-content: center;
+    margin-bottom: 60px;
+  }
+  .row-label {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4A90D9;
+    padding: 8px 0;
+    border-top: 1px dashed #4A90D9;
+    border-bottom: 1px dashed #4A90D9;
+    margin: 10px 0;
+  }
+
+  /* Phone Frame */
+  .phone {
+    width: 375px;
+    height: 760px;
+    border: 2px solid #333;
+    border-radius: 20px;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .phone-label {
+    position: absolute;
+    top: -28px;
+    left: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    background: #E8E8E8;
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid #333;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #E0E0E0;
+    font-size: 13px;
+    color: #333;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* Nav Bar */
+  .nav-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid #E0E0E0;
+    background: #FAFAFA;
+  }
+  .nav-title { font-size: 16px; font-weight: 600; color: #333; }
+  .nav-btn { font-size: 14px; color: #4A90D9; }
+
+  /* Tab Bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 83px;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 8px;
+    border-top: 1px solid #E0E0E0;
+    background: #FAFAFA;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #8A8A8A;
+  }
+  .tab-item.active { color: #333; font-weight: 600; }
+  .tab-icon {
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .tab-icon.circle { border-radius: 50%; }
+
+  /* Common Elements */
+  .content { padding: 12px 16px; height: calc(100% - 88px - 83px); overflow-y: auto; }
+  .content.no-tab { height: calc(100% - 88px); }
+  .card {
+    border: 1px solid #D0D0D0;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .btn {
+    display: inline-block;
+    padding: 8px 20px;
+    border: 1.5px solid #333;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    text-align: center;
+    cursor: pointer;
+  }
+  .btn.primary { background: #333; color: #fff; }
+  .btn.full { display: block; width: 100%; }
+  .label-sm { font-size: 11px; color: #8A8A8A; }
+  .label-md { font-size: 13px; color: #333; }
+  .label-lg { font-size: 16px; font-weight: 600; color: #333; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-personal { background: #E8EDF0; color: #7B8FA1; border: 1px solid #7B8FA1; }
+  .badge-couple { background: #F5E0E2; color: #D4737A; border: 1px solid #D4737A; }
+  .badge-friend { background: #DFF0E5; color: #5B9B7D; border: 1px solid #5B9B7D; }
+  .badge-growth { background: #F5EBD5; color: #C4A45D; border: 1px solid #C4A45D; }
+
+  /* Floating + button */
+  .fab {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+
+  /* Scene selector cards */
+  .scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .scene-card {
+    border: 1.5px solid #333;
+    border-radius: 14px;
+    padding: 20px 12px;
+    text-align: center;
+    position: relative;
+  }
+  .scene-card.locked { border-color: #CCC; opacity: 0.5; }
+  .scene-card.recommended { border-color: #4A90D9; border-width: 2px; }
+  .scene-card.selected { background: #E8E8E8; }
+  .scene-icon {
+    width: 48px;
+    height: 48px;
+    border: 2px solid #333;
+    border-radius: 12px;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .scene-card.locked .scene-icon { border-color: #CCC; }
+  .lock-icon { font-size: 14px; color: #CCC; position: absolute; top: 8px; right: 8px; }
+  .recommend-tag {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4A90D9;
+    color: #fff;
+    font-size: 9px;
+    padding: 1px 8px;
+    border-radius: 8px;
+  }
+
+  /* Timeline */
+  .timeline-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .timeline-time {
+    flex-shrink: 0;
+    width: 50px;
+    text-align: right;
+    font-size: 11px;
+    color: #8A8A8A;
+    padding-top: 4px;
+  }
+  .timeline-content {
+    flex: 1;
+    border: 1px solid #D0D0D0;
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .timeline-img {
+    width: 100%;
+    height: 80px;
+    background: #F0F0F0;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #BBB;
+    font-size: 12px;
+  }
+
+  /* Tab strip (scenario tabs) */
+  .tab-strip {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #E0E0E0;
+    margin-bottom: 12px;
+  }
+  .tab-strip-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 12px;
+    color: #8A8A8A;
+    border-bottom: 2px solid transparent;
+    position: relative;
+  }
+  .tab-strip-item.active {
+    color: #333;
+    font-weight: 600;
+    border-bottom-color: #333;
+  }
+  .tab-strip-item.locked { color: #CCC; }
+  .tab-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+
+  /* Bottom sheet (scene selector) */
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 2px solid #333;
+    border-radius: 16px 16px 0 0;
+    padding: 16px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+    z-index: 20;
+  }
+  .bottom-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: #D0D0D0;
+    border-radius: 2px;
+    margin: 0 auto 12px;
+  }
+
+  /* Multi-perspective collapsed */
+  .multi-persp-collapsed {
+    border: 1px dashed #B0B0B0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #FAFAFA;
+    font-size: 12px;
+    color: #8A8A8A;
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  /* Multi-perspective expanded */
+  .multi-persp-expanded {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .persp-card {
+    border: 1px solid #D0D0D0;
+    border-radius: 6px;
+    padding: 8px;
+  }
+  .persp-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #E0E0E0;
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  /* Anniversary list */
+  .anni-card {
+    border: 1px solid #D0D0D0;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .anni-countdown {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+  }
+
+  /* Growth subject card */
+  .growth-subject {
+    border: 1.5px solid #333;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .growth-subject-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .growth-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  /* Arrow annotations */
+  .arrow-annotation {
+    position: absolute;
+    font-size: 10px;
+    color: #4A90D9;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* Misc */
+  .input-field {
+    border: 1px solid #D0D0D0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 8px;
+    min-height: 40px;
+  }
+  .input-field.placeholder { color: #BBB; }
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .photo-cell {
+    aspect-ratio: 1;
+    border: 1px dashed #CCC;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #BBB;
+    font-size: 10px;
+  }
+  .photo-cell.filled { background: #F0F0F0; border-style: solid; border-color: #D0D0D0; }
+  .toggle {
+    width: 44px;
+    height: 24px;
+    border: 1.5px solid #333;
+    border-radius: 12px;
+    position: relative;
+    display: inline-block;
+  }
+  .toggle.on { background: #333; }
+  .toggle::after {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #333;
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    transition: 0.2s;
+  }
+  .toggle.on::after { left: 22px; }
+  .chip {
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1px solid #D0D0D0;
+    border-radius: 16px;
+    font-size: 11px;
+    color: #333;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .chip.active { background: #333; color: #fff; }
+  .hr-dashed { border-top: 1px dashed #D0D0D0; margin: 12px 0; }
+
+  /* Member avatars row */
+  .avatar-row { display: flex; gap: 4px; }
+  .avatar-sm {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #8A8A8A;
+  }
+
+  /* Milestone marker */
+  .milestone-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #C4A45D;
+    background: #F5EBD5;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<div class="canvas-title">记忆漩涡 MemoryVortex — 框线图 v2.0</div>
+<div class="canvas-subtitle">4场景架构 · 15屏 · 基于 PRD v2.0 终版 · 灰阶框线图 · 2026-08-24</div>
+
+<!-- ============ 第一行：Onboarding & 入口 ============ -->
+<div class="grid">
+  <div class="row-label">第一行 — Onboarding & 入口（S01-S05）</div>
+
+  <!-- S01: Onboarding 场景选择 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S01 · Onboarding 场景选择</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">跳过</span>
+      <span class="nav-title">选择你的记忆场景</span>
+      <span style="width:30px;"></span>
+    </div>
+    <div class="content no-tab">
+      <p class="label-sm" style="margin-bottom:16px;text-align:center;color:#8A8A8A;">选择场景后仍可随时切换 · 部分场景需逐步解锁</p>
+      <div class="scene-grid">
+        <div class="scene-card selected">
+          <div class="scene-icon"> silhouette </div>
+          <div class="label-md">个人</div>
+          <div class="label-sm">私密情感时间轴</div>
+        </div>
+        <div class="scene-card">
+          <div class="scene-icon"> couple </div>
+          <div class="label-md">情侣</div>
+          <div class="label-sm">双人共建记忆线</div>
+        </div>
+        <div class="scene-card locked">
+          <div class="lock-icon">🔒</div>
+          <div class="scene-icon"> friends </div>
+          <div class="label-md">友情</div>
+          <div class="label-sm" style="font-size:9px;">创建共建空间后解锁</div>
+        </div>
+        <div class="scene-card locked">
+          <div class="lock-icon">🔒</div>
+          <div class="scene-icon"> growth </div>
+          <div class="label-md">成长</div>
+          <div class="label-sm" style="font-size:9px;">填写出生日期后解锁</div>
+        </div>
+      </div>
+      <div style="margin-top:24px;">
+        <div class="btn primary full">开始记录</div>
+      </div>
+      <p class="label-sm" style="margin-top:12px;text-align:center;">渐进解锁 · Q5已确认</p>
+    </div>
+  </div>
+
+  <!-- S02: Onboarding 引导 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S02 · Onboarding 引导</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹</span>
+      <span class="nav-title">30秒创建第一条记忆</span>
+      <span style="width:30px;"></span>
+    </div>
+    <div class="content no-tab" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="width:200px;height:200px;border:2px dashed #D0D0D0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <span style="font-size:40px;color:#D0D0D0;">3</span>
+      </div>
+      <div class="label-lg" style="margin-bottom:8px;">3步完成</div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div class="label-md" style="margin-bottom:6px;">① 选照片/视频</div>
+        <div class="label-md" style="margin-bottom:6px;">② 写下当时感受</div>
+        <div class="label-md">③ 设置真实时间</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div style="width:24px;height:6px;border-radius:3px;background:#333;"></div>
+        <div style="width:24px;height:6px;border-radius:3px;background:#D0D0D0;"></div>
+        <div style="width:24px;height:6px;border-radius:3px;background:#D0D0D0;"></div>
+      </div>
+      <div class="btn primary" style="width:200px;">立即创建 →</div>
+    </div>
+  </div>
+
+  <!-- S03: 个人中心聚合视图-分场景Tab -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S03 · 个人中心聚合视图</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-title" style="font-size:18px;font-weight:700;">我的记忆</span>
+      <span class="nav-btn" style="font-size:13px;">全部记忆</span>
+    </div>
+    <div class="content">
+      <!-- Scenario Tabs -->
+      <div class="tab-strip">
+        <div class="tab-strip-item active"><span class="tab-dot" style="background:#7B8FA1;"></span>个人</div>
+        <div class="tab-strip-item"><span class="tab-dot" style="background:#D4737A;"></span>情侣</div>
+        <div class="tab-strip-item locked"><span class="tab-dot" style="background:#CCC;"></span>友情</div>
+        <div class="tab-strip-item locked"><span class="tab-dot" style="background:#CCC;"></span>成长</div>
+      </div>
+      <!-- Timeline items -->
+      <div class="timeline-item">
+        <div class="timeline-time">8/24</div>
+        <div class="timeline-content">
+          <div class="timeline-img">照片</div>
+          <div class="label-md">今天天气真好，心情很平静</div>
+          <div class="label-sm" style="margin-top:4px;">14:32 · <span class="badge badge-personal">个人</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/20</div>
+        <div class="timeline-content">
+          <div class="timeline-img">视频</div>
+          <div class="label-md">独自散步时录的一段语音感受</div>
+          <div class="label-sm" style="margin-top:4px;">19:05 · <span class="badge badge-personal">个人</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/15</div>
+        <div class="timeline-content">
+          <div class="timeline-img">照片</div>
+          <div class="label-md">补录：上周三拍的雨天窗台</div>
+          <div class="label-sm" style="margin-top:4px;color:#4A90D9;">⏰ 自定义时间戳 · 8/13 · <span class="badge badge-personal">个人</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="fab">+</button>
+    <div class="tab-bar">
+      <div class="tab-item active"><div class="tab-icon circle"></div>记忆</div>
+      <div class="tab-item"><div class="tab-icon"></div>纪念日</div>
+      <div class="tab-item"><div class="tab-icon"></div>我的</div>
+    </div>
+  </div>
+
+  <!-- S04: 场景选择器(新建入口) -->
+  <div class="phone" style="position:relative;background:rgba(0,0,0,0.3);">
+    <div class="phone-label">S04 · 场景选择器(新建入口)</div>
+    <!-- Dimmed background (S03) -->
+    <div style="opacity:0.3;">
+      <div class="status-bar"><span>9:41</span><span>100%</span></div>
+      <div class="nav-bar"><span class="nav-title">我的记忆</span></div>
+      <div class="content"><div class="timeline-item"><div class="timeline-time">8/24</div><div class="timeline-content"><div class="timeline-img">照片</div></div></div></div>
+    </div>
+    <!-- Bottom sheet -->
+    <div class="bottom-sheet">
+      <div class="bottom-sheet-handle"></div>
+      <div class="label-lg" style="text-align:center;margin-bottom:14px;">选择记忆场景</div>
+      <div class="scene-grid">
+        <div class="scene-card recommended">
+          <div class="recommend-tag">推荐</div>
+          <div class="scene-icon"> silhouette </div>
+          <div class="label-md">个人</div>
+          <div class="label-sm" style="font-size:9px;">私密记录</div>
+        </div>
+        <div class="scene-card">
+          <div class="scene-icon"> couple </div>
+          <div class="label-md">情侣</div>
+          <div class="label-sm" style="font-size:9px;">共建记忆</div>
+        </div>
+        <div class="scene-card locked">
+          <div class="lock-icon">🔒</div>
+          <div class="scene-icon"> friends </div>
+          <div class="label-md">友情</div>
+          <div class="label-sm" style="font-size:9px;">解锁后可用</div>
+        </div>
+        <div class="scene-card locked">
+          <div class="lock-icon">🔒</div>
+          <div class="scene-icon"> growth </div>
+          <div class="label-md">成长</div>
+          <div class="label-sm" style="font-size:9px;">解锁后可用</div>
+        </div>
+      </div>
+      <p class="label-sm" style="text-align:center;margin-top:12px;color:#8A8A8A;">推荐 = 上次使用场景 · 可随时切换</p>
+    </div>
+  </div>
+
+  <!-- S05: 创建记忆-选媒体+写感受 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S05 · 创建记忆-选媒体+感受</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">取消</span>
+      <span class="nav-title">新建记忆</span>
+      <span class="nav-btn">下一步</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Scene context badge -->
+      <div style="margin-bottom:12px;">
+        <span class="badge badge-personal">个人场景</span>
+        <span class="label-sm"> · 私密记录</span>
+      </div>
+      <!-- Photo grid -->
+      <div class="label-md" style="margin-bottom:6px;">照片/视频</div>
+      <div class="photo-grid" style="margin-bottom:12px;">
+        <div class="photo-cell filled">photo</div>
+        <div class="photo-cell filled">photo</div>
+        <div class="photo-cell">+ 添加</div>
+      </div>
+      <div class="label-sm" style="margin-bottom:16px;">已选2张 · 最多9张或1段视频</div>
+      <!-- Feeling input -->
+      <div class="label-md" style="margin-bottom:6px;">当时的感受 <span style="color:#D4737A;">*</span></div>
+      <div class="input-field placeholder" style="min-height:80px;">写下你当时的感觉、心情、想法…</div>
+      <div class="label-sm" style="margin-bottom:12px;">必填 · 保证每条记忆都有"感受温度"</div>
+      <!-- Voice recording -->
+      <div style="border:1px solid #D0D0D0;border-radius:8px;padding:10px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;font-size:14px;">🎤</div>
+        <div class="label-sm">语音感受（可选）· 最长60秒</div>
+      </div>
+      <div class="hr-dashed"></div>
+      <!-- Time stamp field -->
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="label-md">时间</div>
+          <div class="label-sm">点击修改为真实时间</div>
+        </div>
+        <div class="label-md" style="color:#4A90D9;">2026/8/24 14:32 ›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 第二行：记忆创建 & 详情 ============ -->
+<div class="grid">
+  <div class="row-label">第二行 — 记忆创建 & 详情（S06-S10）</div>
+
+  <!-- S06: 自定义时间戳 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S06 · 自定义时间戳</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹ 返回</span>
+      <span class="nav-title">设置时间</span>
+      <span class="nav-btn">完成</span>
+    </div>
+    <div class="content no-tab" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="label-sm" style="color:#8A8A8A;margin-bottom:16px;">⏰ 回拨到记忆发生的真实时间</div>
+      <!-- Date picker wheel -->
+      <div style="border:1px solid #D0D0D0;border-radius:12px;padding:20px;width:100%;margin-bottom:16px;">
+        <div style="display:flex;justify-content:center;gap:6px;font-size:18px;">
+          <div style="text-align:center;"><div class="label-sm">年</div><div style="font-weight:700;">2026</div></div>
+          <div style="color:#D0D0D0;">/</div>
+          <div style="text-align:center;"><div class="label-sm">月</div><div style="font-weight:700;">08</div></div>
+          <div style="color:#D0D0D0;">/</div>
+          <div style="text-align:center;"><div class="label-sm">日</div><div style="font-weight:700;">13</div></div>
+        </div>
+        <div class="hr-dashed"></div>
+        <div style="display:flex;justify-content:center;gap:6px;font-size:14px;">
+          <div style="text-align:center;"><div class="label-sm">时</div><div>20</div></div>
+          <div style="color:#D0D0D0;">:</div>
+          <div style="text-align:center;"><div class="label-sm">分</div><div>15</div></div>
+        </div>
+      </div>
+      <!-- Precision toggle -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+        <span class="label-sm">精度</span>
+        <span class="chip active">年月日</span>
+        <span class="chip">年月日 时分</span>
+      </div>
+      <div class="label-sm" style="text-align:center;margin-bottom:16px;color:#8A8A8A;">
+        Q4已确认：存储精确时间戳<br>显示精度按场景控制 · 用户可切换
+      </div>
+      <!-- Warning -->
+      <div style="border:1px solid #D4737A;border-radius:8px;padding:8px;margin-bottom:16px;background:#FFF5F5;">
+        <div class="label-sm" style="color:#D4737A;">⚠ 不可设置为未来日期</div>
+      </div>
+      <div class="btn primary" style="width:200px;">确认时间</div>
+    </div>
+  </div>
+
+  <!-- S07: 记忆详情(多视角折叠) -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S07 · 记忆详情(多视角折叠)</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹</span>
+      <span class="nav-title">记忆详情</span>
+      <span class="nav-btn">···</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Media -->
+      <div style="width:100%;height:180px;background:#F0F0F0;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:#BBB;">照片/视频</div>
+      <!-- Time + Scene -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="label-sm">2026/8/13 20:15</div>
+        <span class="badge badge-couple">情侣共建</span>
+      </div>
+      <!-- Feeling text -->
+      <div class="label-md" style="margin-bottom:12px;">今天路过外滩，想如果你在旁边就好了…</div>
+      <div class="label-sm" style="color:#8A8A8A;margin-bottom:12px;">— 陈昊</div>
+      <div class="hr-dashed"></div>
+      <!-- Multi-perspective collapsed -->
+      <div class="label-sm" style="margin-bottom:6px;">多视角记录</div>
+      <div class="multi-persp-collapsed">
+        ▸ 1条多视角记录 — 点击展开查看苏苏的记录
+      </div>
+      <div class="hr-dashed" style="margin-top:12px;"></div>
+      <!-- Comments (共建场景) -->
+      <div class="label-sm" style="margin-bottom:6px;">留言 (0)</div>
+      <div class="input-field placeholder">写下你的留言…</div>
+    </div>
+    <!-- Show expanded state note -->
+    <div style="position:absolute;bottom:12px;left:16px;right:16px;padding:8px;background:#F5F5F5;border-radius:6px;">
+      <div class="label-sm" style="text-align:center;color:#8A8A8A;">Q9已确认：默认折叠，点击展开并排</div>
+    </div>
+  </div>
+
+  <!-- S08: 标记纪念日 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S08 · 标记纪念日</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">取消</span>
+      <span class="nav-title">标记纪念日</span>
+      <span class="nav-btn">保存</span>
+    </div>
+    <div class="content no-tab">
+      <div style="margin-bottom:12px;">
+        <div class="label-md" style="margin-bottom:6px;">纪念日名称</div>
+        <div class="input-field placeholder">如：恋爱3周年</div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div class="label-md" style="margin-bottom:6px;">日期</div>
+        <div class="input-field">2026/11/14</div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div class="label-md" style="margin-bottom:6px;">预留留言</div>
+        <div class="input-field placeholder" style="min-height:60px;">提前写好，纪念日当天推送给Ta…</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #E0E0E0;border-bottom:1px solid #E0E0E0;">
+        <div>
+          <div class="label-md">当天自动推送</div>
+          <div class="label-sm">纪念日当天定时推送给对方/自己</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="label-sm" style="margin-bottom:6px;">推送对象</div>
+        <div style="display:flex;gap:8px;">
+          <span class="chip active">共建伙伴</span>
+          <span class="chip">仅自己</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;border:1px solid #E0E0E0;border-radius:8px;padding:8px;">
+        <div class="label-sm" style="color:#8A8A8A;">Q6已确认：通知权限关闭时<br>App内红点/角标兜底 + 首次引导授权</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S09: 纪念日列表+倒计时 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S09 · 纪念日列表+倒计时</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-title">纪念日</span>
+      <span class="nav-btn">+</span>
+    </div>
+    <div class="content no-tab">
+      <div class="anni-card">
+        <div>
+          <div class="label-md">恋爱3周年</div>
+          <div class="label-sm">2026/11/14 · <span class="badge badge-couple">情侣</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="anni-countdown">82</div>
+          <div class="label-sm">天后</div>
+        </div>
+      </div>
+      <div class="anni-card">
+        <div>
+          <div class="label-md">宝宝第一次走路</div>
+          <div class="label-sm">2026/10/01 · <span class="badge badge-growth">成长</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="anni-countdown">38</div>
+          <div class="label-sm">天后</div>
+        </div>
+      </div>
+      <div class="anni-card">
+        <div>
+          <div class="label-md">毕业5周年</div>
+          <div class="label-sm">2027/06/30 · <span class="badge badge-friend">友情</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="anni-countdown">310</div>
+          <div class="label-sm">天后</div>
+        </div>
+      </div>
+      <div class="anni-card" style="border-style:dashed;">
+        <div>
+          <div class="label-md" style="color:#8A8A8A;">苏苏的生日</div>
+          <div class="label-sm" style="color:#8A8A8A;">2026/03/15 · 已过</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label-md" style="color:#8A8A8A;">162</div>
+          <div class="label-sm" style="color:#8A8A8A;">天前</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon circle"></div>记忆</div>
+      <div class="tab-item active"><div class="tab-icon"></div>纪念日</div>
+      <div class="tab-item"><div class="tab-icon"></div>我的</div>
+    </div>
+  </div>
+
+  <!-- S10: 共建系统-邀请伙伴 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S10 · 共建系统-邀请伙伴</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹</span>
+      <span class="nav-title">创建共建空间</span>
+      <span class="nav-btn">完成</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Relationship type toggle -->
+      <div class="label-md" style="margin-bottom:8px;">关系类型</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div class="chip active" style="padding:8px 20px;"><span class="badge badge-couple" style="margin-right:4px;">情侣</span>1对1排他</div>
+        <div class="chip" style="padding:8px 20px;"><span class="badge badge-friend" style="margin-right:4px;">友情</span>群组(≤6人)</div>
+      </div>
+      <!-- Space name -->
+      <div class="label-md" style="margin-bottom:6px;">空间名称</div>
+      <div class="input-field placeholder">如：陈昊 & 苏苏的记忆线</div>
+      <div class="label-sm" style="margin-bottom:16px;">Q2已确认：友情群组上限6人(含创建者)</div>
+      <!-- Invite section -->
+      <div class="label-md" style="margin-bottom:8px;">邀请伙伴</div>
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <!-- QR code -->
+        <div style="width:100px;height:100px;border:2px solid #333;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <div style="font-size:10px;color:#8A8A8A;text-align:center;">二维码<br>扫码加入</div>
+        </div>
+        <!-- Invite methods -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div class="btn" style="font-size:12px;padding:6px 12px;">分享链接</div>
+          <div class="btn" style="font-size:12px;padding:6px 12px;">邀请码</div>
+          <div class="btn" style="font-size:12px;padding:6px 12px;">通讯录邀请</div>
+        </div>
+      </div>
+      <div class="hr-dashed"></div>
+      <!-- Member list -->
+      <div class="label-md" style="margin-bottom:8px;">成员 (2/2)</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div class="avatar-sm">陈</div>
+        <div class="label-sm">陈昊（创建者）</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div class="avatar-sm" style="border-style:dashed;color:#BBB;">+</div>
+        <div class="label-sm" style="color:#8A8A8A;">等待伙伴加入…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 第三行：共建 & 成长 & 聚合 ============ -->
+<div class="grid">
+  <div class="row-label">第三行 — 共建 & 成长 & 聚合（S11-S15）</div>
+
+  <!-- S11: 共建时间线(多视角+留言) -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S11 · 共建时间线</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-title">陈昊 & 苏苏</span>
+      <span class="nav-btn">设置</span>
+    </div>
+    <div class="content">
+      <!-- Member avatars -->
+      <div class="avatar-row" style="margin-bottom:12px;">
+        <div class="avatar-sm" style="background:#F5E0E2;">陈</div>
+        <div class="avatar-sm" style="background:#E8EDF0;">苏</div>
+        <div class="label-sm" style="margin-left:4px;">共建记忆线 · 2人</div>
+      </div>
+      <!-- Timeline with multi-perspective -->
+      <div class="timeline-item">
+        <div class="timeline-time">8/24</div>
+        <div class="timeline-content">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+            <div class="avatar-sm" style="width:16px;height:16px;font-size:8px;background:#F5E0E2;">陈</div>
+            <div class="label-sm">陈昊</div>
+          </div>
+          <div class="timeline-img">照片</div>
+          <div class="label-md">路过外滩想你了</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+            <span class="label-sm" style="color:#4A90D9;">🎭 1条多视角</span>
+            <span class="label-sm">· 💬 0</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/20</div>
+        <div class="timeline-content">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+            <div class="avatar-sm" style="width:16px;height:16px;font-size:8px;background:#E8EDF0;">苏</div>
+            <div class="label-sm">苏苏</div>
+          </div>
+          <div class="timeline-img">视频</div>
+          <div class="label-md">给你看今天做的蛋糕！</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+            <span class="label-sm">💬 2</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/15</div>
+        <div class="timeline-content">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+            <div class="avatar-sm" style="width:16px;height:16px;font-size:8px;background:#F5E0E2;">陈</div>
+            <div class="label-sm">陈昊</div>
+            <span class="badge badge-couple" style="margin-left:auto;font-size:8px;">纪念日</span>
+          </div>
+          <div class="timeline-img">照片</div>
+          <div class="label-md">⏰ 自定义时间戳 · 在一起第1000天</div>
+        </div>
+      </div>
+    </div>
+    <button class="fab">+</button>
+    <div class="tab-bar">
+      <div class="tab-item active"><div class="tab-icon circle"></div>记忆</div>
+      <div class="tab-item"><div class="tab-icon"></div>纪念日</div>
+      <div class="tab-item"><div class="tab-icon"></div>我的</div>
+    </div>
+  </div>
+
+  <!-- S12: 个人中心-全场景时间轴 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S12 · 全场景时间轴</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹ 分场景</span>
+      <span class="nav-title">全部记忆</span>
+      <span class="nav-btn">筛选</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Filter chips -->
+      <div style="margin-bottom:12px;">
+        <span class="chip active">全部</span>
+        <span class="chip"><span class="tab-dot" style="background:#7B8FA1;"></span>个人</span>
+        <span class="chip"><span class="tab-dot" style="background:#D4737A;"></span>情侣</span>
+        <span class="chip"><span class="tab-dot" style="background:#5B9B7D;"></span>友情</span>
+        <span class="chip"><span class="tab-dot" style="background:#C4A45D;"></span>成长</span>
+      </div>
+      <!-- Mixed timeline -->
+      <div class="timeline-item">
+        <div class="timeline-time">8/24<br><span style="font-size:9px;">14:32</span></div>
+        <div class="timeline-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span class="badge badge-personal">个人</span>
+          </div>
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">今天天气真好，心情很平静</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/24<br><span style="font-size:9px;">09:00</span></div>
+        <div class="timeline-content">
+          <span class="badge badge-growth">成长</span>
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">宝宝第一次自己穿鞋！</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/23<br><span style="font-size:9px;">20:15</span></div>
+        <div class="timeline-content">
+          <span class="badge badge-couple">情侣</span>
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">陈昊：路过外滩想你了</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/22<br><span style="font-size:9px;">18:00</span></div>
+        <div class="timeline-content">
+          <span class="badge badge-friend">友情</span>
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">和小鹿的周末聚餐</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active"><div class="tab-icon circle"></div>记忆</div>
+      <div class="tab-item"><div class="tab-icon"></div>纪念日</div>
+      <div class="tab-item"><div class="tab-icon"></div>我的</div>
+    </div>
+  </div>
+
+  <!-- S13: 成长独立追踪-主体选择 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S13 · 成长独立追踪</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-title">成长追踪</span>
+      <span class="nav-btn">+</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Independent tracking label -->
+      <div style="border:1px solid #C4A45D;border-radius:8px;padding:8px;margin-bottom:16px;background:#F5EBD5;">
+        <div class="label-sm" style="color:#C4A45D;">📌 独立追踪 · 成长主体不参与共建</div>
+      </div>
+      <!-- Subject cards -->
+      <div class="growth-subject">
+        <div class="growth-subject-header">
+          <div class="growth-avatar">宝</div>
+          <div>
+            <div class="label-md">宝宝 · 1岁2个月</div>
+            <div class="label-sm">最新里程碑：第一次独立站立</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span class="label-sm">📸 48条记忆</span>
+          <span class="label-sm">🏆 12个里程碑</span>
+        </div>
+      </div>
+      <div class="growth-subject">
+        <div class="growth-subject-header">
+          <div class="growth-avatar">猫</div>
+          <div>
+            <div class="label-md">咪咪 · 3岁</div>
+            <div class="label-sm">最新里程碑：体检一切正常</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span class="label-sm">📸 22条记忆</span>
+          <span class="label-sm">🏆 5个里程碑</span>
+        </div>
+      </div>
+      <!-- Add new subject -->
+      <div style="border:1.5px dashed #D0D0D0;border-radius:14px;padding:20px;text-align:center;margin-top:8px;">
+        <div class="label-md" style="color:#8A8A8A;">+ 添加成长主体</div>
+        <div class="label-sm" style="margin-top:4px;">宝宝 / 宠物 / 其他</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon circle"></div>记忆</div>
+      <div class="tab-item"><div class="tab-icon"></div>纪念日</div>
+      <div class="tab-item active"><div class="tab-icon"></div>我的</div>
+    </div>
+  </div>
+
+  <!-- S14: 成长时间轴+里程碑 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S14 · 成长时间轴+里程碑</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹ 主体</span>
+      <span class="nav-title">宝宝 · 1岁2月</span>
+      <span class="nav-btn">对比</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Subject switcher -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <span class="chip active"><span class="tab-dot" style="background:#C4A45D;"></span>宝宝</span>
+        <span class="chip"><span class="tab-dot" style="background:#C4A45D;"></span>咪咪</span>
+      </div>
+      <!-- Milestone filter -->
+      <div style="margin-bottom:12px;">
+        <span class="chip">全部</span>
+        <span class="chip active">里程碑</span>
+        <span class="chip">照片</span>
+      </div>
+      <!-- Growth timeline -->
+      <div class="timeline-item">
+        <div class="timeline-time">8/20<br><span style="font-size:9px;">14月</span></div>
+        <div class="timeline-content">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span class="milestone-dot"></span>
+            <span class="label-md" style="color:#C4A45D;">🏆 第一次独立站立</span>
+          </div>
+          <div class="timeline-img" style="height:60px;">视频</div>
+          <div class="label-sm">太激动了！站了3秒！</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">8/10</div>
+        <div class="timeline-content">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span class="milestone-dot"></span>
+            <span class="label-md" style="color:#C4A45D;">🏆 第一次叫"妈妈"</span>
+          </div>
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">录到了！声音超可爱</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">7/15</div>
+        <div class="timeline-content">
+          <div class="timeline-img" style="height:60px;">照片</div>
+          <div class="label-sm">今天去公园玩</div>
+          <span class="badge badge-growth" style="margin-top:4px;">成长</span>
+        </div>
+      </div>
+      <!-- Growth comparison entry -->
+      <div style="border:1.5px solid #C4A45D;border-radius:10px;padding:10px;margin-top:8px;text-align:center;">
+        <div class="label-md" style="color:#C4A45D;">📊 成长对比 (then vs now)</div>
+        <div class="label-sm" style="margin-top:4px;">选择两张照片对比成长变化</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S15: 往年今日跨场景 -->
+  <div class="phone" style="position:relative;">
+    <div class="phone-label">S15 · 往年今日(V1.1)</div>
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+    <div class="nav-bar">
+      <span class="nav-btn">‹</span>
+      <span class="nav-title">往年今日</span>
+      <span class="nav-btn">分享</span>
+    </div>
+    <div class="content no-tab">
+      <!-- Year selector -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <span class="chip">1年前</span>
+        <span class="chip active">3年前</span>
+        <span class="chip">5年前</span>
+      </div>
+      <!-- Cross-scene cards -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="label-sm">2023/8/24</div>
+          <span class="badge badge-personal">个人</span>
+        </div>
+        <div class="timeline-img" style="height:70px;">照片</div>
+        <div class="label-md" style="margin-top:6px;">那年今天，刚搬进新家</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="label-sm">2023/8/24</div>
+          <span class="badge badge-couple">情侣</span>
+        </div>
+        <div class="timeline-img" style="height:70px;">照片</div>
+        <div class="label-md" style="margin-top:6px;">在一起的第一个夏天</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="label-sm">2023/8/25</div>
+          <span class="badge badge-friend">友情</span>
+        </div>
+        <div class="timeline-img" style="height:70px;">照片</div>
+        <div class="label-md" style="margin-top:6px;">和小鹿毕业前的最后一次聚餐</div>
+      </div>
+      <div style="border:1px dashed #D0D0D0;border-radius:8px;padding:8px;margin-top:8px;">
+        <div class="label-sm" style="text-align:center;color:#8A8A8A;">
+          Q10已确认：≥2条记忆才推送<br>
+          REQ-011 · V1.1版本 · 跨场景编织
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 交互标注 ============ -->
+<div style="max-width:1900px;margin:0 auto;padding:20px;border:1px solid #4A90D9;border-radius:12px;background:#FAFCFF;">
+  <div style="font-size:16px;font-weight:700;color:#4A90D9;margin-bottom:12px;">交互标注 — 核心用户旅程</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;">
+    <div><span style="color:#4A90D9;font-weight:600;">①</span> S01→S02：Onboarding 场景选择 → 引导(30秒首条记忆)</div>
+    <div><span style="color:#4A90D9;font-weight:600;">②</span> S02→S03：引导完成 → 个人中心聚合视图</div>
+    <div><span style="color:#4A90D9;font-weight:600;">③</span> S03→S04：点击"+" → 场景选择器弹出</div>
+    <div><span style="color:#4A90D9;font-weight:600;">④</span> S04→S05：选择场景 → 记忆创建页</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑤</span> S05→S06：选媒体+写感受 → 设置时间戳</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑥</span> S06→S03：保存 → 返回聚合视图</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑦</span> S03→S10：切到共建Tab → 邀请伙伴</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑧</span> S10→S11：邀请完成 → 共建时间线</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑨</span> S03→S13：切到成长Tab → 主体选择</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑩</span> S13→S14：选主体 → 成长时间轴</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑪</span> S03→S12：点"全部记忆" → 全场景时间轴</div>
+    <div><span style="color:#4A90D9;font-weight:600;">⑫</span> S07→S08：记忆详情 → 标记纪念日</div>
+  </div>
+</div>
+
+<!-- ============ v1.0 → v2.0 变更摘要 ============ -->
+<div style="max-width:1900px;margin:20px auto 0;padding:20px;border:1px solid #D0D0D0;border-radius:12px;background:#FAFAFA;">
+  <div style="font-size:16px;font-weight:700;color:#333;margin-bottom:12px;">v1.0 → v2.0 框线图变更摘要</div>
+  <table style="width:100%;font-size:12px;border-collapse:collapse;">
+    <tr style="background:#333;color:#fff;">
+      <th style="padding:6px;text-align:left;">v1.0 屏</th>
+      <th style="padding:6px;">状态</th>
+      <th style="padding:6px;text-align:left;">v2.0 屏</th>
+      <th style="padding:6px;text-align:left;">变更原因</th>
+    </tr>
+    <tr><td style="padding:4px 6px;">S01 Onboarding 场景选择</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S01 Onboarding 场景选择(4场景+渐进解锁)</td><td style="padding:4px 6px;">3→4场景，新增友情，渐进解锁</td></tr>
+    <tr><td style="padding:4px 6px;">S02 Onboarding 引导</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S02 Onboarding 引导(4场景)</td><td style="padding:4px 6px;">引导内容适配4场景</td></tr>
+    <tr><td style="padding:4px 6px;">S03 时间轴主页</td><td style="padding:4px 6px;text-align:center;">🔁 替换</td><td style="padding:4px 6px;">S03 个人中心聚合视图-分场景Tab</td><td style="padding:4px 6px;">新增聚合视图(REQ-005)</td></tr>
+    <tr><td style="padding:4px 6px;">S04 创建记忆-选媒体</td><td style="padding:4px 6px;text-align:center;">🔁 替换</td><td style="padding:4px 6px;">S04 场景选择器(新建入口)</td><td style="padding:4px 6px;">新增场景选择器(REQ-001)</td></tr>
+    <tr><td style="padding:4px 6px;">S05 创建记忆-写感受</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S05 创建记忆-选媒体+写感受</td><td style="padding:4px 6px;">统一编辑页+场景上下文</td></tr>
+    <tr><td style="padding:4px 6px;">S06 创建记忆-时间戳</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S06 创建记忆-自定义时间戳</td><td style="padding:4px 6px;">适配Q4(存储精确/显示控精度)</td></tr>
+    <tr><td style="padding:4px 6px;">S07 记忆详情</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S07 记忆详情(多视角折叠)</td><td style="padding:4px 6px;">新增多视角折叠/展开(Q9)</td></tr>
+    <tr><td style="padding:4px 6px;">S08 标记纪念日</td><td style="padding:4px 6px;text-align:center;">✅ 保留</td><td style="padding:4px 6px;">S08 标记纪念日</td><td style="padding:4px 6px;">基本不变</td></tr>
+    <tr><td style="padding:4px 6px;">S09 纪念日列表</td><td style="padding:4px 6px;text-align:center;">✅ 保留</td><td style="padding:4px 6px;">S09 纪念日列表+倒计时</td><td style="padding:4px 6px;">基本不变</td></tr>
+    <tr><td style="padding:4px 6px;">S10 双人共建-邀请</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S10 共建系统-邀请(情侣+友情)</td><td style="padding:4px 6px;">情侣+友情共用(REQ-003)</td></tr>
+    <tr><td style="padding:4px 6px;">S11 共建时间线</td><td style="padding:4px 6px;text-align:center;">🔄 更新</td><td style="padding:4px 6px;">S11 共建时间线(多视角+留言)</td><td style="padding:4px 6px;">新增多视角+留言(REQ-008)</td></tr>
+    <tr><td style="padding:4px 6px;">S12 个人中心-隐私</td><td style="padding:4px 6px;text-align:center;">🔁 替换</td><td style="padding:4px 6px;">S12 个人中心-全场景时间轴</td><td style="padding:4px 6px;">新增全场景聚合(REQ-005)</td></tr>
+    <tr><td style="padding:4px 6px;color:#8A8A8A;">— (新增)</td><td style="padding:4px 6px;text-align:center;color:#5B9B7D;">🆕 新增</td><td style="padding:4px 6px;">S13 成长独立追踪-主体选择</td><td style="padding:4px 6px;">新增成长场景(REQ-004)</td></tr>
+    <tr><td style="padding:4px 6px;color:#8A8A8A;">— (新增)</td><td style="padding:4px 6px;text-align:center;color:#5B9B7D;">🆕 新增</td><td style="padding:4px 6px;">S14 成长时间轴+里程碑</td><td style="padding:4px 6px;">新增成长场景(REQ-004)</td></tr>
+    <tr><td style="padding:4px 6px;color:#8A8A8A;">— (新增)</td><td style="padding:4px 6px;text-align:center;color:#5B9B7D;">🆕 新增</td><td style="padding:4px 6px;">S15 往年今日跨场景(V1.1)</td><td style="padding:4px 6px;">新增跨场景编织(REQ-011)</td></tr>
+  </table>
+</div>
+
+</body>
+</html>
