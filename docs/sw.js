@@ -1,8 +1,8 @@
 // 记忆漩涡 MemoryVortex · Service Worker
 // 缓存策略：app shell 预缓存，test_data.json 运行时缓存，IndexedDB 提供数据
-var CACHE_NAME = 'memory-vortex-v1';
+var CACHE_NAME = 'memory-vortex-v2';
 var APP_SHELL = [
-  './memory-vortex-prototype-v2-api.html',
+  './index.html',
   './localdb.js',
   './manifest.json',
   './icon.svg',
@@ -70,7 +70,7 @@ self.addEventListener('fetch', function(e) {
       }).catch(function() {
         // 离线回退到主页面
         if (url.pathname.endsWith('.html') || url.pathname === '/') {
-          return caches.match('./memory-vortex-prototype-v2-api.html');
+          return caches.match('./index.html');
         }
       });
     })
