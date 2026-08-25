@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.memoryvortex.app",
+      "sha256_cert_fingerprints": [
+        "33:D4:51:A9:E1:A5:28:52:D2:24:BE:EB:B4:31:48:9E:54:36:6D:53:8E:A6:82:7C:8A:38:0C:07:BB:62:88:8B"
+      ]
+    }
+  }
+]

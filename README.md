@@ -100,6 +100,17 @@ API 文档：启动后访问 `http://localhost:8000/docs`（Swagger UI）。
 3. 等待 1-2 分钟，访问 `https://rrme0111-dotcom.github.io/Memory/`
 4. 手机浏览器打开上面的地址 → 浏览器菜单 → **添加到主屏幕**
 
+### Android APK 安装包（下载即装，更像原生 App）
+
+已打包好 Android 安装包，手机浏览器直接下载安装即可（无需应用商店）：
+
+- **下载地址**：`https://rrme0111-dotcom.github.io/Memory/memory-vortex.apk`
+- 手机浏览器打开上面的链接 → 下载完成后点击安装
+- 安装时若提示「未知来源」，需在系统设置里允许「安装未知应用」
+- 安装后桌面出现「记忆漩涡」图标，点开即全屏使用
+
+> 说明：APK 基于 TWA（Trusted Web Activity）封装，打开的还是线上 PWA，数据存于浏览器 IndexedDB。iPhone 无法侧载安装，请用上方的「添加到主屏幕」。`docs/.well-known/assetlinks.json` 用于无地址栏全屏验证。
+
 ### 本地体验
 
 直接用浏览器打开 `backend/static/memory-vortex-prototype-v2-api.html` 即可。
