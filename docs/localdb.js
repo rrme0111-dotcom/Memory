@@ -68,7 +68,7 @@ function randomHex(n){
   return s;
 }
 function genFileKey(ext){
-  return randomHex(12)+'.'+ext;
+  return randomHex(24)+'.'+ext;
 }
 
 /* ---------- IndexedDB 打开 + 建表 ---------- */
