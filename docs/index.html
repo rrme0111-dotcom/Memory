@@ -440,13 +440,6 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   .phone{width:100vw;height:100vh;border-radius:0;border:none;box-shadow:none;}
   .data-error{position:fixed;inset:0;z-index:9999;}
 }
-/* 手机浏览器直接打开（未添加到主屏幕）也全屏：小屏隐藏侧栏，手机框铺满视口 */
-@media (max-width: 520px){
-  .stage{padding:0;gap:0;min-height:100dvh;}
-  .proto-nav{display:none;}
-  .phone{width:100vw;height:100vh;height:100dvh;border-radius:0;border:none;box-shadow:none;}
-  .data-error{position:fixed;inset:0;z-index:9999;}
-}
 </style>
 </head>
 <body>
@@ -745,6 +738,9 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="login-entry-sub" id="s12LoginSub" style="display:none">登录后记忆将绑定到你的账号<br>换设备也能找回</div>
     <div class="sec-label">数据管理</div>
     <div class="card-gray"><div class="prow"><span class="pt">导出全部数据</span><span class="pv"><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div><div class="divider"></div><div class="prow"><span class="pt">清除缓存</span><span class="pv">12.4MB<span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div></div>
+    <div style="height:10px"></div>
+    <div class="logout" id="s12WipeBtn" style="color:#c0392b;border-color:#e8c4bc">清除全部数据（重新开始）</div>
+    <div style="font-size:11px;color:var(--sub);text-align:center;padding:0 20px;margin-top:6px">删除所有记忆、纪念日、成长记录和上传的照片，清空后不可恢复</div>
     <div class="logout" id="s12Logout" style="display:none">退出登录</div><div style="height:8px"></div>
   </div></div>
   <div class="tabbar"><div class="pill">
@@ -2087,6 +2083,17 @@ function loadAppData(){
   if(s12LoginEntry)s12LoginEntry.addEventListener('click',function(e){e.stopPropagation();showAuth('login','s12')});
   var s12LogoutBtn=document.getElementById('s12Logout');
   if(s12LogoutBtn)s12LogoutBtn.addEventListener('click',function(e){e.stopPropagation();logout()});
+  var s12WipeBtn=document.getElementById('s12WipeBtn');
+  if(s12WipeBtn)s12WipeBtn.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(confirm('确定要清除全部数据吗？\n\n所有记忆、纪念日、成长记录和上传的照片都将被删除，且不可恢复。')){
+      if(window.__localdb&&window.__localdb.clearAll){
+        window.__localdb.clearAll();
+      }else{
+        alert('当前模式不支持清空操作');
+      }
+    }
+  });
   /* 初始化「我的」页登录态（若 initApp 先于本 IIFE 执行，这里兜底补渲染） */
   if(window.APP_DATA&&typeof renderS12==='function')renderS12();
 

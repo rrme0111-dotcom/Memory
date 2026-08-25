@@ -1230,9 +1230,30 @@ function init(){
   });
 }
 
+/* ---------- 清空全部数据 ---------- */
+function clearAll(){
+  var stores=['memories','perspectives','comments','anniversaries',
+    'growth_subjects','growth_milestones','timeline_nodes','invite_members',
+    'users','sessions','files','meta'];
+  return openDB().then(function(db){
+    var tx=db.transaction(stores,'readwrite');
+    stores.forEach(function(s){
+      tx.objectStore(s).clear();
+    });
+    return new Promise(function(res,rej){
+      tx.oncomplete=function(){res();};
+      tx.onerror=function(){rej(tx.error);};
+    });
+  }).then(function(){
+    console.log('[localdb] 全部数据已清空');
+    // 重新加载页面以重新初始化
+    location.reload();
+  });
+}
+
 /* ---------- 导出 ---------- */
 window.__localdb={init:init,reload:function(){
   return seedAll().then(function(){return loadAllBlobs();});
-}};
+},clearAll:clearAll};
 
 })();
