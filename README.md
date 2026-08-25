@@ -6,8 +6,8 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/<你的用户名>/memory-vortex.git
-cd memory-vortex/backend
+git clone https://github.com/rrme0111-dotcom/Memory.git
+cd Memory/backend
 
 # 2. 创建虚拟环境 + 安装依赖
 python -m venv ../venv
@@ -97,7 +97,7 @@ API 文档：启动后访问 `http://localhost:8000/docs`（Swagger UI）。
 
 1. 把仓库推送到 GitHub（`gh auth login` → `git push`）
 2. 仓库 Settings → Pages → Source 选 **`main` branch / `/docs` folder**
-3. 等待 1-2 分钟，访问 `https://<你的用户名>.github.io/<仓库名>/`
+3. 等待 1-2 分钟，访问 `https://rrme0111-dotcom.github.io/Memory/`
 4. 手机浏览器打开上面的地址 → 浏览器菜单 → **添加到主屏幕**
 
 ### 本地体验
