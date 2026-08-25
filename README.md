@@ -109,7 +109,7 @@ API 文档：启动后访问 `http://localhost:8000/docs`（Swagger UI）。
 - 安装时若提示「未知来源」，需在系统设置里允许「安装未知应用」
 - 安装后桌面出现「记忆漩涡」图标，点开即全屏使用
 
-> 说明：APK 基于 TWA（Trusted Web Activity）封装，打开的还是线上 PWA，数据存于浏览器 IndexedDB。iPhone 无法侧载安装，请用上方的「添加到主屏幕」。`docs/.well-known/assetlinks.json` 用于无地址栏全屏验证。
+> 说明：APK 基于 Capacitor 离线打包，网页资源内置在 App 内，打开即本地加载（不依赖网络、无需 Chrome），数据存于本地 IndexedDB。iPhone 无法侧载安装，请用上方的「添加到主屏幕」。
 
 ### 本地体验
 
