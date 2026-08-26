@@ -866,7 +866,16 @@ function localApiRouter(url,opts){
       return txGet('memories',mid).then(function(m){
         if(!m||m.deleted_at)return mockError(404,'记忆不存在');
         m.deleted_at=new Date().toISOString();
-        return txPut('memories',m).then(function(){return mockResponse({});});
+        return txPut('memories',m).then(function(){
+          /* v0.9.4：级联软删除关联的纪念日（记忆删了，纪念日不该残留成示例） */
+          return txGetAll('anniversaries').then(function(all){
+            var tasks=all.filter(function(a){return a.linked_memory_id===mid&&!a.deleted_at;}).map(function(a){
+              a.deleted_at=new Date().toISOString();
+              return txPut('anniversaries',a);
+            });
+            return Promise.all(tasks).then(function(){return mockResponse({});});
+          });
+        });
       });
     }
   }

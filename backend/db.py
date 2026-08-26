@@ -539,6 +539,12 @@ def soft_delete_memory(mid: int, owner: str = LOCAL_OWNER) -> bool:
             logger.warning("越权删除拦截：记忆 #%d 属于 %s，请求方 %s", mid, mem.owner_id, owner)
             return False
         mem.deleted_at = datetime.now()
+        # v0.9.4：级联软删除关联的纪念日（记忆删了，纪念日不该残留成示例）
+        for anniv in session.scalars(
+                select(Anniversary).where(
+                    Anniversary.linked_memory_id == mid,
+                    Anniversary.deleted_at.is_(None))):
+            anniv.deleted_at = datetime.now()
         session.commit()
         return True
 
