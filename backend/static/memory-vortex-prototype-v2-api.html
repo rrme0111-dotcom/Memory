@@ -1067,7 +1067,8 @@ function renderS06(){
   setT('s06nowLabel',ts.now.label);
   var fi=$('fuzzyInput');if(fi&&ts.fuzzy)fi.placeholder=ts.fuzzy.placeholder;
   var w=ts.wheels,d=w.default;
-  var _dv=d.year+'-'+pad(d.month)+'-'+pad(d.day);
+  var _mo=parseInt(d.month,10),_da=parseInt(d.day,10);
+  var _dv=d.year+'-'+(_mo<10?'0':'')+_mo+'-'+(_da<10?'0':'')+_da;
   var _tm=d.hour.slice(0,2)+':'+d.minute;
   var sd=$('s06date');if(sd)sd.value=_dv;
   var sd2=$('s06date2');if(sd2)sd2.value=_dv;
