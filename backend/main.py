@@ -718,7 +718,7 @@ def compose_bootstrap(owner: str = db.LOCAL_OWNER,
         (data.get("growth") or {}).get("desc", "为宝宝和宠物分别建立独立成长时间轴，系统自动归类里程碑"),
         db.list_growth_subjects(owner=owner), db.list_growth_milestones(owner=owner), now)
     # 共建时间线：节点走数据库（含实时视角/留言计数），pair/group 与徽章坐标保留模板
-    tl_nodes = db.list_timeline_nodes(owner=owner)
+    tl_nodes = db.list_timeline_nodes_shared(owner=owner)
     couple_nodes = [n for n in tl_nodes if n.kind == "couple"]
     friend_nodes = [n for n in tl_nodes if n.kind == "friend"]
     data["coupleTimeline"] = build_timeline_view(
@@ -1673,7 +1673,7 @@ async def list_timeline_nodes_api(kind: str | None = Query(default=None),
     if kind is not None and kind not in ("couple", "friend"):
         raise HTTPException(status_code=422, detail=f"非法空间: {kind}")
     pcounts, ccounts = db.engagement_counts()
-    nodes = db.list_timeline_nodes(kind, owner=owner)
+    nodes = db.list_timeline_nodes_shared(owner=owner, kind=kind)
     return ok([_timeline_node_view(n, pcounts, ccounts) for n in nodes])
 
 
@@ -1804,6 +1804,74 @@ async def delete_invite_member_api(mid: int,
     invalidate_bootstrap_cache()
     logger.info("移除共建成员 #%d（软删除）", mid)
     return ok({"id": mid, "deleted": True})
+
+
+# ---------------------------------------------------------------------------
+# 共建关系（v0.9.4）：邀请 / 接受 / 查询，实现真实用户间共建
+# ---------------------------------------------------------------------------
+class CollabInviteIn(BaseModel):
+    """生成共建邀请入参。"""
+
+    space: str = Field(description="空间: couple/friend")
+
+
+class CollabAcceptIn(BaseModel):
+    """接受共建邀请入参。"""
+
+    invite_code: str = Field(min_length=1, max_length=64, description="邀请码")
+
+
+def _collab_code() -> str:
+    """生成邀请码：MV + 8 位大写 hex。"""
+    return "MV" + secrets.token_hex(4).upper()
+
+
+def _collab_brief(c: db.Collaboration) -> dict:
+    return {
+        "id": c.id,
+        "space": c.space,
+        "inviteCode": c.invite_code,
+        "status": c.status,
+        "ownerId": c.owner_id,
+        "partnerId": c.partner_id,
+        "createdAt": c.created_at.strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+@app.post("/api/v1/collaborations/invite", status_code=201)
+async def create_collaboration_api(req: CollabInviteIn,
+                                   request: Request) -> JSONResponse:
+    """生成共建邀请码（邀请方发起，须登录）。"""
+    user = _require_login(request)
+    owner = db.user_owner_id(user.id)
+    if req.space not in ("couple", "friend"):
+        raise HTTPException(status_code=422, detail=f"非法空间: {req.space}")
+    c = db.create_collaboration(req.space, _collab_code(), owner)
+    invalidate_bootstrap_cache()
+    logger.info("生成共建邀请：%s 空间，邀请码 %s（owner=%s）", req.space, c.invite_code, owner)
+    return ok(_collab_brief(c), status=201)
+
+
+@app.post("/api/v1/collaborations/accept")
+async def accept_collaboration_api(req: CollabAcceptIn,
+                                   request: Request) -> JSONResponse:
+    """接受共建邀请（输入邀请码，建立共建关系，须登录）。"""
+    user = _require_login(request)
+    owner = db.user_owner_id(user.id)
+    c = db.accept_collaboration(req.invite_code.strip(), owner)
+    if c is None:
+        raise HTTPException(status_code=404, detail="邀请码无效或已被接受")
+    invalidate_bootstrap_cache()
+    logger.info("接受共建邀请：邀请码 %s（partner=%s）", req.invite_code, owner)
+    return ok(_collab_brief(c))
+
+
+@app.get("/api/v1/collaborations")
+async def list_collaborations_api(request: Request) -> JSONResponse:
+    """我参与的共建关系列表（须登录）。"""
+    user = _require_login(request)
+    owner = db.user_owner_id(user.id)
+    return ok([_collab_brief(c) for c in db.list_collaborations(owner)])
 
 
 # ---------------------------------------------------------------------------

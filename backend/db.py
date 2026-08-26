@@ -323,6 +323,27 @@ class InviteMember(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(default=None, comment="软删除时间")
 
 
+class Collaboration(Base):
+    """共建关系（v0.9.4）：两个用户之间的真实共建。
+
+    - owner_id / partner_id 存 user:{id} 形式，双方通过同一关系共享时间线数据；
+    - invite_code 唯一，用于分享（链接/二维码/复制）；
+    - status：pending（待接受）→ accepted（已建立）。
+    """
+
+    __tablename__ = "collaborations"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    space: Mapped[str] = mapped_column(comment="空间: couple/friend")
+    invite_code: Mapped[str] = mapped_column(unique=True, index=True, comment="邀请码（唯一）")
+    owner_id: Mapped[str] = mapped_column(comment="邀请方 owner（user:{id}）")
+    partner_id: Mapped[str | None] = mapped_column(default=None, comment="被邀请方 owner（接受后填充）")
+    status: Mapped[str] = mapped_column(default="pending", comment="pending/accepted")
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now, onupdate=datetime.now)
+    deleted_at: Mapped[datetime | None] = mapped_column(default=None, comment="软删除时间")
+
+
 class User(Base):
     """登录账号（v0.9：多用户体系落地）。
 
@@ -841,6 +862,29 @@ def list_timeline_nodes(kind: str | None = None,
         return list(session.scalars(stmt))
 
 
+def list_timeline_nodes_shared(owner: str,
+                               kind: str | None = None) -> list[TimelineNode]:
+    """自己 + 共建伙伴的未删除节点（v0.9.4：真实共建共享）。
+
+    接受共建关系后，双方的时间线节点互相可见；按 sort_order 升序。
+    """
+    owners = {owner}
+    for c in list_collaborations(owner):
+        if c.status == "accepted":
+            if c.owner_id:
+                owners.add(c.owner_id)
+            if c.partner_id:
+                owners.add(c.partner_id)
+    with Session(engine) as session:
+        stmt = (select(TimelineNode)
+                .where(TimelineNode.deleted_at.is_(None),
+                       TimelineNode.owner_id.in_(owners))
+                .order_by(TimelineNode.sort_order.asc(), TimelineNode.id.asc()))
+        if kind:
+            stmt = stmt.where(TimelineNode.kind == kind)
+        return list(session.scalars(stmt))
+
+
 def create_timeline_node(**kw: Any) -> TimelineNode:
     with Session(engine) as session:
         n = TimelineNode(**kw)
@@ -929,6 +973,58 @@ def soft_delete_invite_member(mid: int, owner: str = LOCAL_OWNER) -> bool:
         m.deleted_at = datetime.now()
         session.commit()
         return True
+
+
+# ---------------------------------------------------------------------------
+# 共建关系（v0.9.4）：邀请 / 接受 / 查询，实现真实用户间共建
+# ---------------------------------------------------------------------------
+def create_collaboration(space: str, invite_code: str, owner_id: str) -> Collaboration:
+    """创建共建关系（邀请方发起），生成唯一邀请码。"""
+    with Session(engine) as session:
+        c = Collaboration(space=space, invite_code=invite_code,
+                          owner_id=owner_id, status="pending")
+        session.add(c)
+        session.commit()
+        session.refresh(c)
+        return c
+
+
+def get_collaboration_by_code(invite_code: str) -> Collaboration | None:
+    """按邀请码查共建关系（未删除）。"""
+    with Session(engine) as session:
+        return session.scalar(
+            select(Collaboration).where(
+                Collaboration.invite_code == invite_code,
+                Collaboration.deleted_at.is_(None)))
+
+
+def accept_collaboration(invite_code: str, partner_id: str) -> Collaboration | None:
+    """接受邀请：填充 partner_id，状态 pending → accepted。"""
+    with Session(engine) as session:
+        c = session.scalar(
+            select(Collaboration).where(
+                Collaboration.invite_code == invite_code,
+                Collaboration.deleted_at.is_(None)))
+        if c is None or c.status != "pending":
+            return None
+        if c.owner_id == partner_id:
+            return None  # 不能接受自己的邀请
+        c.partner_id = partner_id
+        c.status = "accepted"
+        c.updated_at = datetime.now()
+        session.commit()
+        session.refresh(c)
+        return c
+
+
+def list_collaborations(owner_id: str) -> list[Collaboration]:
+    """某用户参与的共建关系（作为邀请方或被邀请方，未删除）。"""
+    with Session(engine) as session:
+        return list(session.scalars(
+            select(Collaboration).where(
+                Collaboration.deleted_at.is_(None),
+                (Collaboration.owner_id == owner_id)
+                | (Collaboration.partner_id == owner_id)).order_by(Collaboration.id.asc())))
 
 
 # ---- 聚合计数（避免 N+1：一次分组查询拿全部计数）----
