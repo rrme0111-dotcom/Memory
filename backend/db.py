@@ -404,7 +404,18 @@ def _migrate() -> None:
         conn.exec_driver_sql(
             "UPDATE memories SET owner_id='seed' "
             "WHERE source='seed' AND owner_id<>'seed'")
-        logger.info("迁移检查完成：模型列与索引已对齐")
+        # v0.9.3：清除历史导入的演示种子（假）数据——新装不再导入种子；
+        # 先删挂在种子记忆上的互动（留言/多视角），再删各表的种子行
+        conn.exec_driver_sql(
+            "DELETE FROM comments WHERE memory_id IN "
+            "(SELECT id FROM memories WHERE owner_id='seed')")
+        conn.exec_driver_sql(
+            "DELETE FROM perspectives WHERE memory_id IN "
+            "(SELECT id FROM memories WHERE owner_id='seed')")
+        for _table in ("memories", "anniversaries", "growth_milestones",
+                       "growth_subjects", "timeline_nodes", "invite_members"):
+            conn.exec_driver_sql(f"DELETE FROM {_table} WHERE owner_id='seed'")
+        logger.info("迁移检查完成：模型列与索引已对齐（历史种子数据已清除）")
 
 
 def _ensure_columns(conn, model: type) -> None:
@@ -424,388 +435,25 @@ def _ensure_columns(conn, model: type) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 初始化：建表 + 迁移 + 种子导入
+# 初始化：建表 + 迁移
 # ---------------------------------------------------------------------------
 def init_db(template: dict[str, Any]) -> None:
-    """建表/迁移；memories 为空则导入模板种子；互动数据（多视角/留言）为空则补种。"""
+    """建表/迁移。
+
+    v0.9.3：不再从模板导入演示种子数据（陈昊/苏苏等假数据），
+    全新安装从空库开始；历史库中的种子行由 _migrate() 统一清除。
+    template 入参保留以兼容调用方签名（lifespan），当前未使用。
+    """
     Base.metadata.create_all(engine)
     _migrate()
     with Session(engine) as session:
-        count = session.scalar(select(func.count(Memory.id)))
-        if not count:
-            rows = _extract_seed_rows(template)
-            if rows:
-                session.add_all(rows)
-                session.commit()
-                logger.info("首次建库完成：从 test_data 导入 %d 条种子记忆 → %s",
-                            len(rows), DB_PATH.name)
-            else:
-                logger.warning("模板中未解析到任何记忆，memories 表为空")
-        else:
-            logger.info("数据库就绪：memories 表已有 %d 条记忆（%s）", count, DB_PATH.name)
-
-        # 互动种子（多视角/留言）：兼容「记忆已存在、互动表为空」的旧库升级
-        pc = session.scalar(select(func.count(Perspective.id))) or 0
-        cc = session.scalar(select(func.count(Comment.id))) or 0
-        if not pc and not cc:
-            p_rows, c_rows = _extract_seed_engagement(template, session)
-            if p_rows or c_rows:
-                session.add_all(p_rows)
-                session.add_all(c_rows)
-                session.commit()
-                logger.info("互动种子导入：%d 条多视角 · %d 条留言", len(p_rows), len(c_rows))
-
-        # 纪念日种子：兼容「v0.5 旧库无 anniversaries 表数据」的升级
-        ac = session.scalar(select(func.count(Anniversary.id))) or 0
-        if not ac:
-            a_rows = _extract_seed_anniversaries(template)
-            if a_rows:
-                session.add_all(a_rows)
-                session.commit()
-                logger.info("纪念日种子导入：%d 条", len(a_rows))
-
-        # 成长追踪种子：兼容「v0.6 旧库无 growth 表数据」的升级
-        gc = session.scalar(select(func.count(GrowthSubject.id))) or 0
-        if not gc:
-            gs_rows, gm_groups = _extract_seed_growth(template)
-            if gs_rows:
-                session.add_all(gs_rows)
-                session.flush()               # 拿到主体 id，供里程碑外键引用
-                for sub, group in zip(gs_rows, gm_groups):
-                    for m in group:
-                        m.subject_id = sub.id
-                session.add_all([m for g in gm_groups for m in g])
-                session.commit()
-                logger.info("成长种子导入：%d 个主体 · %d 条里程碑",
-                            len(gs_rows), sum(len(g) for g in gm_groups))
-
-        # 共建时间线节点种子：兼容「v0.7 旧库无 timeline_nodes 表数据」的升级
-        tnc = session.scalar(select(func.count(TimelineNode.id))) or 0
-        if not tnc:
-            tn_rows = _extract_seed_timeline_nodes(template)
-            if tn_rows:
-                session.add_all(tn_rows)
-                session.commit()
-                logger.info("时间线节点种子导入：%d 条（情侣/友情）", len(tn_rows))
-
-        # 共建空间成员种子：兼容「v0.7 旧库无 invite_members 表数据」的升级
-        imc = session.scalar(select(func.count(InviteMember.id))) or 0
-        if not imc:
-            im_rows = _extract_seed_invite_members(template)
-            if im_rows:
-                session.add_all(im_rows)
-                session.commit()
-                logger.info("共建成员种子导入：%d 条", len(im_rows))
-
-
-def _extract_seed_rows(tpl: dict[str, Any]) -> list[Memory]:
-    """从 test_data 模板解析种子记忆。
-
-    来源与去重策略：
-    - home.timeline 的全部条目（各场景的日期分组）；
-    - home.sceneView.cards 中与 timeline 重复的条目（按 feel 文本去重）跳过，
-      仅补充 timeline 没有的（如「那天特别孤独…」）；
-    - otd（往年今日）保持模板静态展示，不入库。
-    """
-    rows: list[Memory] = []
-    seen_feels: set[str] = set()
-
-    # 参考日期：模板第一个 timeline 分组的日期（用于「今晚/8月21日」这类相对时间）
-    ref_year = 2026
-    groups = tpl.get("home", {}).get("timeline", [])
-    if groups:
-        m = re.search(r"(\d{4})年", groups[0].get("date", ""))
-        if m:
-            ref_year = int(m.group(1))
-
-    # 1) home.timeline
-    for g in groups:
-        m = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", g.get("date", ""))
-        if not m:
-            continue
-        base = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        for it in g.get("items", []):
-            feel = (it.get("feel") or "").strip()
-            if not feel or feel in seen_feels:
-                continue
-            seen_feels.add(feel)
-            hh, mm = _parse_hhmm(it.get("time", ""))
-            rows.append(Memory(
-                scene=it.get("scene", "personal"),
-                feel=feel,
-                emotions=[],
-                voice="0:30" if "语音" in (it.get("meta") or "") else None,
-                timestamp_type="precise",
-                precise_at=base.replace(hour=hh, minute=mm),
-                meta_override=it.get("meta"),
-                source="seed",
-                owner_id=SEED_OWNER,
-            ))
-
-    # 2) home.sceneView.cards（去重后补充）
-    for c in tpl.get("home", {}).get("sceneView", {}).get("cards", []):
-        feel = (c.get("feel") or "").strip()
-        if not feel or feel in seen_feels:
-            continue
-        seen_feels.add(feel)
-        t = str(c.get("time", ""))
-        if "今晚" in t:
-            base = datetime(ref_year, 8, 24)  # 模板语境的「今天」
-        else:
-            m = re.search(r"(\d{1,2})月(\d{1,2})日", t)
-            base = datetime(ref_year, int(m.group(1)), int(m.group(2))) if m else datetime(ref_year, 1, 1)
-        hh, mm = _parse_hhmm(t)
-        rows.append(Memory(
-            scene=c.get("scene", "personal"),
-            feel=feel,
-            emotions=list(c.get("emotions") or []),
-            voice=c.get("voice"),
-            timestamp_type="precise",
-            precise_at=base.replace(hour=hh, minute=mm),
-            meta_override=c.get("meta"),
-            source="seed",
-            owner_id=SEED_OWNER,
-        ))
-    return rows
-
-
-def _extract_seed_engagement(tpl: dict[str, Any],
-                             session: Session) -> tuple[list[Perspective], list[Comment]]:
-    """导入互动种子：多视角（模板 memoryDetail）+ 留言（演示文案）。
-
-    - 「外滩」记忆 ← 模板 memoryDetail.perspectives（陈昊/苏苏，真实模板内容）；
-    - 「日落」情侣记忆 ← 演示文案 2 视角 + 3 留言（对齐其 meta「2条多视角 · 3条留言」）。
-    时间策略：视角/留言的 created_at 落在所属记忆时间附近，展示自然。
-    """
-    p_rows: list[Perspective] = []
-    c_rows: list[Comment] = []
-
-    seeds = list(session.scalars(
-        select(Memory).where(Memory.source == "seed", Memory.deleted_at.is_(None))))
-    by_feel = {m.feel: m for m in seeds}
-
-    # 1) 外滩记忆 ← 模板多视角
-    md = tpl.get("memoryDetail", {})
-    md_feel = (md.get("feel") or "").strip()
-    target = None
-    for feel, m in by_feel.items():
-        if feel and (md_feel.startswith(feel) or feel.startswith(md_feel[:10])):
-            target = m
-            break
-    if target is not None:
-        for i, p in enumerate(md.get("perspectives", [])):
-            p_rows.append(Perspective(
-                memory_id=target.id,
-                author_name=p.get("name", "TA"),
-                author_avatar=p.get("avatar"),
-                author_bg=p.get("bg"),
-                feel=(p.get("feel") or "").strip(),
-                created_at=target.precise_at + timedelta(minutes=15 * i),
-            ))
-
-    # 2) 日落情侣记忆 ← 演示视角 + 留言
-    sunset = None
-    for feel, m in by_feel.items():
-        if "日落" in feel and m.scene == "couple":
-            sunset = m
-            break
-    if sunset is not None:
-        base = sunset.precise_at or sunset.created_at
-        p_rows += [
-            Perspective(memory_id=sunset.id, author_name="陈昊", author_avatar="陈",
-                        feel="和苏苏一起看了日落，她说这是今年最美的天。",
-                        created_at=base),
-            Perspective(memory_id=sunset.id, author_name="苏苏", author_avatar="苏",
-                        author_bg="#F2EBE3",
-                        feel="日落只有十分钟，但他牵着我的手看了很久。",
-                        created_at=base + timedelta(minutes=15)),
-        ]
-        c_rows += [
-            Comment(memory_id=sunset.id, author_name="苏苏", author_avatar="苏",
-                    author_bg="#F2EBE3", content="照片已经在我的相册置顶了",
-                    created_at=base + timedelta(minutes=30)),
-            Comment(memory_id=sunset.id, author_name="陈昊", author_avatar="陈",
-                    content="下次带相机去，手机拍不出当时的颜色",
-                    created_at=base + timedelta(minutes=48)),
-            Comment(memory_id=sunset.id, author_name="苏苏", author_avatar="苏",
-                    author_bg="#F2EBE3", content="说好了，今年再去看一次海边的日落",
-                    created_at=base + timedelta(hours=2)),
-        ]
-    return p_rows, c_rows
+        count = session.scalar(select(func.count(Memory.id))) or 0
+        logger.info("数据库就绪：memories 表当前 %d 条记忆（%s）", count, DB_PATH.name)
 
 
 def _parse_hhmm(s: str) -> tuple[int, int]:
     m = re.search(r"(\d{1,2}):(\d{2})", str(s))
     return (int(m.group(1)), int(m.group(2))) if m else (12, 0)
-
-
-def _extract_seed_anniversaries(tpl: dict[str, Any]) -> list[Anniversary]:
-    """从模板 anniversaries.list 解析种子纪念日（3 条演示数据）。
-
-    month/day 从展示串解析为整数锚点；note 中的「农历X月X日」抽取为
-    lunar_label 展示标签；模板全部视为每年重复（is_recurring=True）。
-    """
-    rows: list[Anniversary] = []
-    for it in tpl.get("anniversaries", {}).get("list", []):
-        m = re.search(r"(\d{1,2})月", it.get("month", ""))
-        d = re.search(r"(\d{1,2})", str(it.get("day", "")))
-        if not m or not d:
-            continue
-        note = it.get("note") or ""
-        lm = re.search(r"(农历[\u4e00-\u9fa5]+)", note)
-        rows.append(Anniversary(
-            name=(it.get("name") or "纪念日").strip(),
-            month=int(m.group(1)),
-            day=int(d.group(1)),
-            is_lunar=lm is not None,
-            lunar_label=lm.group(1) if lm else None,
-            is_recurring=True,
-            source="seed",
-            owner_id=SEED_OWNER,
-        ))
-    return rows
-
-
-def _extract_seed_growth(tpl: dict[str, Any]) -> tuple[list[GrowthSubject], list[list[GrowthMilestone]]]:
-    """从模板 growth 模块解析种子：2 个主体 + 8 条里程碑。
-
-    返回 (主体列表, 里程碑分组列表)，两组按索引对齐——主体 id 要等
-    session.flush() 之后才存在，外键回填在调用方（init_db）完成。
-
-    - kind 从 subjects[].icon 映射（baby/pet，缺省 baby）；
-    - birthday：优先从副标题「出生于 YYYY年M月D日」解析；否则取时间轴上
-      最早一条 go=false 的里程碑日期（如「出生」「来到家」）；
-    - birth_label：副标题「·」后的展示串（出生/来到家语义都保留）；
-    - 里程碑日期从「YYYY.MM.DD · N天前」解析为 date；pic → has_pic；
-      go=false（出生/来到家这类根节点）不回链记忆。
-    """
-    growth = tpl.get("growth", {})
-    timelines = growth.get("timelines", {})
-
-    subs: list[GrowthSubject] = []
-    ms_by_subject: list[list[GrowthMilestone]] = []
-    for s in growth.get("subjects", []):
-        name = (s.get("name") or "").strip()
-        if not name:
-            continue
-        tl = timelines.get(name, {})
-        subtitle = tl.get("subtitle", "")
-
-        kind = s.get("icon") if s.get("icon") in ("baby", "pet") else "baby"
-        bm = re.search(r"出生于\s*(\d{4})年(\d{1,2})月(\d{1,2})日", subtitle)
-        birthday: date | None = None
-        if bm:
-            try:
-                birthday = date(int(bm.group(1)), int(bm.group(2)), int(bm.group(3)))
-            except ValueError:
-                birthday = None
-        birth_label = None
-        if "·" in subtitle:
-            birth_label = subtitle.split("·")[-1].strip() or None
-
-        # 里程碑（先解析，便于生日兜底 + 复用 happened_on）
-        ms_rows: list[GrowthMilestone] = []
-        for m in tl.get("milestones", []):
-            dm = re.search(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", str(m.get("date", "")))
-            if not dm:
-                continue
-            try:
-                happened = date(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)))
-            except ValueError:
-                continue
-            ms_rows.append(GrowthMilestone(
-                title=(m.get("title") or "").strip() or "里程碑",
-                content=m.get("desc"),
-                happened_on=happened,
-                is_major=bool(m.get("major")),
-                has_pic=bool(m.get("pic")),
-                source="seed",
-                owner_id=SEED_OWNER,
-            ))
-        ms_rows.sort(key=lambda x: x.happened_on)
-
-        # 生日兜底：最早一条「根节点」（模板 go=false，即出生/来到家）
-        if birthday is None and ms_rows:
-            for m in tl.get("milestones", []):
-                if m.get("go") is False:
-                    dm = re.search(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", str(m.get("date", "")))
-                    if dm:
-                        try:
-                            birthday = date(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)))
-                        except ValueError:
-                            pass
-                    break
-
-        # 宠物的 meta（宠物 · 金毛 · 3岁）中间段 → note（品种/备注）
-        note = None
-        if kind == "pet":
-            meta_parts = [p.strip() for p in (s.get("meta") or "").split("·")]
-            if len(meta_parts) >= 3:
-                note = meta_parts[1] or None
-
-        subs.append(GrowthSubject(
-            name=name, kind=kind, birthday=birthday,
-            birth_label=birth_label, note=note,
-            source="seed", owner_id=SEED_OWNER,
-        ))
-        ms_by_subject.append(ms_rows)
-
-    # 外键回填在调用方完成（flush 后主体才有 id）
-    return subs, ms_by_subject
-
-
-def _extract_seed_timeline_nodes(tpl: dict[str, Any]) -> list[TimelineNode]:
-    """从模板 coupleTimeline.nodes / friendTimeline.nodes 解析种子节点。
-
-    - date_str 取 d 中的「YYYY.MM」段；badge_hint 抽 d 里的「N视角/M留言」计数
-      （无回链记忆时由派生层用它兜底展示）；
-    - node/label 坐标数组 → node_x/node_y/label_x/label_y；
-    - sort_order 按模板顺序（旧→新），latest 节点保持末尾标记。
-    """
-    rows: list[TimelineNode] = []
-    for kind, key in (("couple", "coupleTimeline"), ("friend", "friendTimeline")):
-        for i, n in enumerate(tpl.get(key, {}).get("nodes", [])):
-            d = str(n.get("d", ""))
-            dm = re.search(r"\d{4}\.\d{1,2}", d)
-            hints = re.findall(r"(\d+视角|\d+留言)", d)
-            node = n.get("node") or [0, 0]
-            label = n.get("label") or [0, 0]
-            rows.append(TimelineNode(
-                kind=kind,
-                node_key=str(n.get("k") or f"n{i}"),
-                icon=str(n.get("icon") or "heart"),
-                title=(n.get("n") or "").strip(),
-                desc=n.get("s"),
-                date_str=dm.group(0) if dm else None,
-                badge_hint=" · ".join(hints) if hints else None,
-                node_x=float(node[0]), node_y=float(node[1]),
-                label_x=float(label[0]), label_y=float(label[1]),
-                is_latest=bool(n.get("latest")),
-                sort_order=i,
-                source="seed", owner_id=SEED_OWNER,
-            ))
-    return rows
-
-
-def _extract_seed_invite_members(tpl: dict[str, Any]) -> list[InviteMember]:
-    """从模板 invites 模块解析种子成员：情侣 pending + 友情 members。"""
-    rows: list[InviteMember] = []
-    invites = tpl.get("invites", {})
-    for i, m in enumerate(invites.get("couple", {}).get("pending", [])):
-        rows.append(InviteMember(
-            space="couple", name=(m.get("name") or "").strip(),
-            avatar=m.get("avatar"), bg=m.get("bg"),
-            state=m.get("state", "待接受"), note=m.get("note"),
-            sort_order=i, source="seed", owner_id=SEED_OWNER,
-        ))
-    for i, m in enumerate(invites.get("friend", {}).get("members", [])):
-        rows.append(InviteMember(
-            space="friend", name=(m.get("name") or "").strip(),
-            avatar=m.get("avatar"), bg=m.get("bg"),
-            state=m.get("state", "待接受"), note=m.get("note"),
-            sort_order=i, source="seed", owner_id=SEED_OWNER,
-        ))
-    return rows
 
 
 # ---------------------------------------------------------------------------

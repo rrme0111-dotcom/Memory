@@ -120,14 +120,7 @@
       "label": "现在 · 8月24日 20:15"
     },
     "fuzzy": {
-      "options": [
-        "去年夏天",
-        "某个晚上",
-        "大学时期",
-        "童年某天",
-        "记不清了"
-      ],
-      "placeholder": "补充描述（可选），如：大理旅行的那几天"
+      "placeholder": "输入大致时期，如：某个夏天的晚上"
     },
     "wheels": {
       "years": [
@@ -700,8 +693,8 @@
         "type": "couple",
         "icon": "couple",
         "name": "情侣时间轴",
-        "meta": "陈昊 × 苏苏 · 87 条记忆 · 1对1共建",
-        "last": "最近：外滩晨光 · 今天",
+        "meta": "情侣时间轴 · 0 条记忆 · 1对1共建",
+        "last": "最近：暂无节点",
         "action": "timeline",
         "target": "couple"
       },
@@ -709,8 +702,8 @@
         "type": "friend",
         "icon": "friend",
         "name": "友情时间轴",
-        "meta": "大学室友群 · 6人共建 · 142 条记忆",
-        "last": "最近：五年聚会 · 今天",
+        "meta": "友情时间轴 · 1人共建 · 0 条记忆",
+        "last": "最近：暂无节点",
         "action": "timeline",
         "target": "friend"
       },
@@ -718,8 +711,8 @@
         "type": "growth",
         "icon": "growth",
         "name": "成长时间轴",
-        "meta": "小橙子 · 豆豆 · 2 个独立主体",
-        "last": "最近里程碑：会叫\"妈妈\"了 · 4天前",
+        "meta": "成长时间轴 · 0 个独立主体",
+        "last": "最近里程碑：暂无",
         "action": "go",
         "target": "s14"
       },

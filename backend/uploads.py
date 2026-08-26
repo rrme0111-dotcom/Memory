@@ -20,7 +20,8 @@ v0.8 引入：预签名上传（对齐阿里云 OSS「客户端直传」模型�
 安全约束：
     - 文件标识（fileKey）由服务端生成（hex + 白名单扩展名），落盘前
       再次校验格式，杜绝路径穿越；
-    - 大小上限 5MB；扩展名白名单覆盖图片/视频/音频。
+    - 大小上限 100MB（v0.9.3：原 5MB 无法容纳视频，放宽）；
+      扩展名白名单覆盖图片/视频/音频（含 .webm，浏览器 MediaRecorder 回退格式）。
 """
 
 import re
@@ -31,13 +32,13 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "data" / "uploads"
 
-MAX_SIZE_BYTES = 5 * 1024 * 1024          # 5MB
+MAX_SIZE_BYTES = 100 * 1024 * 1024        # 100MB
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp",
-               ".mp4", ".mov", ".m4a", ".mp3"}
+               ".mp4", ".mov", ".webm", ".m4a", ".mp3"}
 DEFAULT_TYPES = {
     ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
     ".gif": "image/gif", ".webp": "image/webp",
-    ".mp4": "video/mp4", ".mov": "video/quicktime",
+    ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
     ".m4a": "audio/mp4", ".mp3": "audio/mpeg",
 }
 EXPIRES_S = 3600                          # 预签名有效期 1 小时

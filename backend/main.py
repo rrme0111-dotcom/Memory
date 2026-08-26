@@ -357,9 +357,13 @@ def build_scene_view(memories: list[db.Memory], now: datetime,
 
 
 def build_otd(template_otd: dict, memories: list[db.Memory], now: datetime) -> dict:
-    """往年今日：模板演示卡片 + 数据库中同月同日（往年）的真实记忆。"""
+    """往年今日：仅展示数据库中同月同日（往年）的真实记忆。
+
+    v0.9.3：不再把模板里的演示卡片（婚礼前夜/搬来上海/大学聚会等假数据）
+    拼进响应——新用户看到的是真实的空状态。
+    """
     otd = deepcopy(template_otd)
-    cards = list(otd.get("cards", []))
+    cards = []
     for m in memories:
         if (m.precise_at is None or m.precise_at.year >= now.year
                 or m.precise_at.month != now.month or m.precise_at.day != now.day):
@@ -645,8 +649,11 @@ def _invite_member_view(m: db.InviteMember) -> dict:
 def build_timeline_hub(tpl_hub: dict, couple_tpl: dict, friend_tpl: dict,
                        couple_nodes: list[db.TimelineNode],
                        friend_nodes: list[db.TimelineNode],
-                       memories: list[db.Memory]) -> dict:
-    """时间线枢纽：couple/friend 卡的记忆数与最近节点实时派生，其余保留模板。"""
+                       memories: list[db.Memory],
+                       growth_subjects: list | None = None,
+                       growth_milestones: list | None = None,
+                       now: datetime | None = None) -> dict:
+    """时间线枢纽：couple/friend/growth 卡的记忆数、最近节点、里程碑实时派生，其余保留模板。"""
     hub = deepcopy(tpl_hub)
     couple_count = sum(1 for m in memories if m.scene == "couple")
     friend_count = sum(1 for m in memories if m.scene == "friend")
@@ -654,6 +661,10 @@ def build_timeline_hub(tpl_hub: dict, couple_tpl: dict, friend_tpl: dict,
     group = friend_tpl.get("group") or {}
     latest_c = max(couple_nodes, key=lambda n: n.sort_order) if couple_nodes else None
     latest_f = max(friend_nodes, key=lambda n: n.sort_order) if friend_nodes else None
+    # growth 卡：主体数 + 最近里程碑
+    g_subs = growth_subjects or []
+    g_ms = growth_milestones or []
+    latest_ms = max(g_ms, key=lambda m: m.created_at) if g_ms else None
     for card in hub.get("cards", []):
         if card.get("type") == "couple":
             card["meta"] = (f"{pair.get('title', '情侣时间轴')} · {couple_count} 条记忆 · 1对1共建")
@@ -665,6 +676,10 @@ def build_timeline_hub(tpl_hub: dict, couple_tpl: dict, friend_tpl: dict,
                             f"{friend_count} 条记忆")
             card["last"] = (f"最近：{latest_f.title} · 今天" if latest_f
                             else "最近：暂无节点")
+        elif card.get("type") == "growth":
+            card["meta"] = f"成长时间轴 · {len(g_subs)} 个独立主体"
+            card["last"] = (f"最近里程碑：{latest_ms.title}" if latest_ms
+                            else "最近里程碑：暂无")
     return hub
 
 
@@ -701,11 +716,41 @@ def compose_bootstrap(owner: str = db.LOCAL_OWNER,
         data.get("friendTimeline", {}), friend_nodes, now, pcounts, ccounts)
     # 共建邀请：成员走数据库，邀请码/容量保留模板
     data["invites"] = build_invites(data.get("invites", {}), db.list_invite_members(owner=owner))
-    # 时间线枢纽：couple/friend 卡记忆数与最近节点实时派生
+    # 时间线枢纽：couple/friend/growth 卡记忆数、最近节点、里程碑实时派生
+    g_subs = db.list_growth_subjects(owner=owner)
+    g_ms = db.list_growth_milestones(owner=owner)
     data["timelineHub"] = build_timeline_hub(
         data.get("timelineHub", {}), data.get("coupleTimeline", {}),
-        data.get("friendTimeline", {}), couple_nodes, friend_nodes, memories)
-    data["timeSettings"]["now"]["label"] = f"现在 · {now.month}月{now.day}日 {now.hour:02d}:{now.minute:02d}"
+        data.get("friendTimeline", {}), couple_nodes, friend_nodes, memories,
+        g_subs, g_ms, now)
+    # v0.9.3：清除模板演示假数据 —— 共建时间线的 pair/group 头卡换成中性占位，
+    # 螺旋上的多视角/留言徽章坐标清空（真实计数已由节点 d 字段实时派生）
+    if isinstance(data.get("coupleTimeline"), dict):
+        data["coupleTimeline"]["pair"] = {
+            "left": {"name": "我", "avatar": "我"},
+            "right": {"name": "待邀请", "avatar": "邀", "bg": "#F2EBE3"},
+            "title": "情侣时间线", "sub": "邀请一位伙伴，共建专属时间线", "badge": "待共建",
+        }
+        data["coupleTimeline"]["multiViewBadges"] = []
+        data["coupleTimeline"]["commentBadges"] = []
+    if isinstance(data.get("friendTimeline"), dict):
+        data["friendTimeline"]["group"] = {
+            "avatars": [{"t": "我"}], "more": 0,
+            "title": "友情时间线", "sub": "邀请最多 5 位好友，共建群组记忆线", "badge": "待共建",
+        }
+        data["friendTimeline"]["multiViewBadges"] = []
+        data["friendTimeline"]["commentBadges"] = []
+    # v0.9.3：时间设置 —— "现在"标签与滚轮默认值都取服务器当前时间，
+    # 年份数组动态生成（近 8 年，含今年），不再使用模板写死的 2026/8/24
+    ts = data.setdefault("timeSettings", {})
+    ts.setdefault("now", {})["label"] = f"现在 · {now.month}月{now.day}日 {now.hour:02d}:{now.minute:02d}"
+    wheels = ts.setdefault("wheels", {})
+    wheels["years"] = [str(y) for y in range(now.year - 7, now.year + 1)]
+    wheels.setdefault("dayCount", 31)
+    wheels["default"] = {
+        "year": str(now.year), "month": f"{now.month}月", "day": str(now.day),
+        "hour": f"{now.hour:02d}:00", "minute": f"{now.minute:02d}",
+    }
     data["meta"]["note"] = f"真实数据模式 · SQLite 数据库 · {len(memories)} 条记忆"
     data["meta"]["apiToken"] = API_TOKEN      # 游客/本地模式写令牌
     data["meta"]["auth"] = {
@@ -713,7 +758,7 @@ def compose_bootstrap(owner: str = db.LOCAL_OWNER,
         "owner": owner,
         "user": _user_brief(user) if user else None,
     }
-    data["meta"]["version"] = "3.2"
+    data["meta"]["version"] = "3.3"   # v0.9.3：登录引导/种子清除/真录音/100MB/时间修复
 
     _BOOTSTRAP_CACHE[owner] = {"data": data, "ts": now_mono}
     return data
@@ -1962,6 +2007,13 @@ uploads.upload_dir().mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads.upload_dir()), name="uploads")
 
 STATIC_DIR.mkdir(exist_ok=True)
+
+# 根路径重定向到主页面（StaticFiles html=True 只认 index.html，文件名不匹配会 404）
+@app.get("/", include_in_schema=False)
+async def _root_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/memory-vortex-prototype-v2-api.html", status_code=302)
+
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 

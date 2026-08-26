@@ -39,8 +39,8 @@ python main.py
 
 或直接双击 `start-server.bat`。服务运行在 http://127.0.0.1:8000
 
-首次启动自动建库并把 test_data 中的**记忆 + 多视角/留言演示 + 纪念日 + 成长追踪 +
-时间线节点 + 邀请成员**导入为**种子数据**（source=seed），保证界面初始不为空；
+首次启动自动建库；**v0.9.3 起不再导入演示种子数据**（历史库中的 seed 行由迁移自动清除，
+新用户看到真实空状态），模板仅用于 UI 结构与文案。
 **旧库自动迁移**（补列 + 索引，不丢用户数据），要清空重来删掉 `data/memory_vortex.db` 重启即可。
 
 ## v0.5 安全机制（本地单用户阶段）
@@ -152,7 +152,7 @@ python main.py
   |                    |-- 生成 fileKey + Content-Type headers
   |<- {fileKey, uploadUrl, method:PUT, headers} --|
   |-- PUT uploadUrl（原始字节） ->
-  |                    |-- save_file() 校验 key + 5MB 落盘 data/uploads/
+  |                    |-- save_file() 校验 key + 100MB 上限落盘 data/uploads/
   |<- {fileKey, url} --|
   |-- POST /memories/{id}/media {file_key} ->
   |                    |-- 追加 memories.media JSON 数组
@@ -208,14 +208,14 @@ python main.py
 ## 升级 PostgreSQL
 
 只改 `db.py` 一行：`DATABASE_URL = "postgresql+psycopg://user:pass@host/dbname"`，
-`pip install psycopg[binary]`，重启即自动建表（种子导入逻辑复用）。
+`pip install psycopg[binary]`，重启即自动建表。
 
 ## 目录结构
 
 ```
 backend/
 ├── main.py              # FastAPI 应用（安全中间件 + bootstrap 聚合 + 全部业务接口）
-├── db.py                # SQLAlchemy 模型 / 建库 / 轻量迁移 / 种子导入 / CRUD
+├── db.py                # SQLAlchemy 模型 / 建库 / 轻量迁移（含 seed 清理）/ CRUD
 ├── uploads.py           # 媒体存储层（预签名 + 本地落盘；替换 OSS 只改此文件）
 ├── llm.py               # AI 生成（休眠）
 ├── requirements.txt
@@ -231,7 +231,7 @@ backend/
     ├── icon.svg             # SVG 图标
     ├── icon-192.png         # PNG 图标 192×192
     ├── icon-512.png         # PNG 图标 512×512
-    └── test_data.json       # 种子模板（PWA 运行时 fetch 加载）
+    └── test_data.json       # 静态模板（PWA 运行时 fetch 加载；不再作种子导入）
 ```
 
 ## 前端接入说明

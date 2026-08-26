@@ -24,7 +24,7 @@ var LOCAL_OWNER='local';
 var SCENE_NAMES={personal:'个人',couple:'情侣',friend:'友情',growth:'成长'};
 var GROWTH_KIND_NAMES={baby:'宝宝',pet:'宠物',other:'成长主体'};
 var GROWTH_KIND_ICONS={baby:'baby',pet:'pet',other:'baby'};
-var ALLOWED_EXT={jpg:1,jpeg:1,png:1,gif:1,webp:1,mp4:1,mov:1,m4a:1,mp3:1};
+var ALLOWED_EXT={jpg:1,jpeg:1,png:1,gif:1,webp:1,mp4:1,mov:1,webm:1,m4a:1,mp3:1};
 var DB=null;            // IndexedDB 实例
 var TEMPLATE=null;      // test_data.json 模板（启动时加载）
 var blobCache={};       // fileKey → objectURL（运行时 blob URL 缓存）
@@ -190,250 +190,32 @@ function loadTemplate(){
   return fetch('test_data.json').then(function(r){return r.json();});
 }
 
-/* ---------- 种子导入（对齐 db.py _extract_seed_*） ---------- */
-function seedAll(){
+/* ---------- 种子数据清除（对齐 db.py _migrate 的 seed 清理） ----------
+ * v0.9.3：不再把模板假数据导入 IndexedDB；同时把历史版本已导入的
+ * owner_id === 'seed' 行全部删除（含级联的多视角/留言），保证新用户
+ * 看到真实的空状态，而不是测试演示数据。
+ */
+function purgeSeeds(){
   return Promise.all([
-    txCount('memories'),txCount('anniversaries'),
-    txCount('growth_subjects'),txCount('timeline_nodes'),txCount('invite_members')
-  ]).then(function(counts){
-    var memCount=counts[0],annCount=counts[1],gsCount=counts[2],tnCount=counts[3],imCount=counts[4];
-    var tasks=[];
-    if(memCount===0)tasks.push(seedMemories());
-    if(annCount===0)tasks.push(seedAnniversaries());
-    if(gsCount===0)tasks.push(seedGrowth());
-    if(tnCount===0)tasks.push(seedTimelineNodes());
-    if(imCount===0)tasks.push(seedInviteMembers());
-    return Promise.all(tasks);
-  }).then(function(){
-    // 互动种子（多视角/留言）
-    return txCount('perspectives').then(function(pc){
-      if(pc===0)return seedEngagement();
+    txGetAll('memories'),txGetAll('anniversaries'),
+    txGetAll('growth_subjects'),txGetAll('growth_milestones'),
+    txGetAll('timeline_nodes'),txGetAll('invite_members')
+  ]).then(function(res){
+    var seedIds={};
+    res[0].forEach(function(m){if(m.owner_id===SEED_OWNER)seedIds[m.id]=1;});
+    return Promise.all([txGetAll('perspectives'),txGetAll('comments')]).then(function(eng){
+      var tasks=[];
+      eng[0].forEach(function(p){if(seedIds[p.memory_id])tasks.push(txDelete('perspectives',p.id));});
+      eng[1].forEach(function(c){if(seedIds[c.memory_id])tasks.push(txDelete('comments',c.id));});
+      res[0].forEach(function(m){if(m.owner_id===SEED_OWNER)tasks.push(txDelete('memories',m.id));});
+      res[1].forEach(function(a){if(a.owner_id===SEED_OWNER)tasks.push(txDelete('anniversaries',a.id));});
+      res[2].forEach(function(s){if(s.owner_id===SEED_OWNER)tasks.push(txDelete('growth_subjects',s.id));});
+      res[3].forEach(function(ms){if(ms.owner_id===SEED_OWNER)tasks.push(txDelete('growth_milestones',ms.id));});
+      res[4].forEach(function(n){if(n.owner_id===SEED_OWNER)tasks.push(txDelete('timeline_nodes',n.id));});
+      res[5].forEach(function(im){if(im.owner_id===SEED_OWNER)tasks.push(txDelete('invite_members',im.id));});
+      return Promise.all(tasks);
     });
   });
-}
-
-function seedMemories(){
-  var groups=TEMPLATE.home.timeline||[];
-  var cards=(TEMPLATE.home.sceneView||{}).cards||[];
-  var rows=[],seen={};
-  // timeline 条目
-  groups.forEach(function(g){
-    var m=/(\d{4})年(\d{1,2})月(\d{1,2})日/.exec(g.date||'');
-    if(!m)return;
-    var base=new Date(+m[1],+m[2]-1,+m[3]);
-    (g.items||[]).forEach(function(it){
-      var feel=(it.feel||'').trim();
-      if(!feel||seen[feel])return;
-      seen[feel]=1;
-      var hhmm=/(\d{1,2}):(\d{2})/.exec(it.time||'');
-      var d=new Date(base);
-      if(hhmm){d.setHours(+hhmm[1]);d.setMinutes(+hhmm[2]);}
-      rows.push({
-        id:0,scene:it.scene||'personal',feel:feel,emotions:[],
-        voice:/语音/.test(it.meta||'')?'0:30':null,
-        timestamp_type:'precise',precise_at:d.toISOString(),
-        fuzzy_label:null,fuzzy_note:null,meta_override:it.meta,
-        media:[],source:'seed',owner_id:SEED_OWNER,
-        created_at:d.toISOString(),updated_at:d.toISOString(),deleted_at:null
-      });
-    });
-  });
-  // sceneView 补充
-  cards.forEach(function(c){
-    var feel=(c.feel||'').trim();
-    if(!feel||seen[feel])return;
-    seen[feel]=1;
-    var d=new Date();
-    var t=c.time||'';
-    if(/今晚/.test(t))d=new Date(2026,7,24);
-    else{var m=/(\d{1,2})月(\d{1,2})日/.exec(t);if(m)d=new Date(2026,+m[1]-1,+m[2]);}
-    var hhmm=/(\d{1,2}):(\d{2})/.exec(t);
-    if(hhmm){d.setHours(+hhmm[1]);d.setMinutes(+hhmm[2]);}
-    rows.push({
-      id:0,scene:c.scene||'personal',feel:feel,emotions:c.emotions||[],
-      voice:c.voice||null,timestamp_type:'precise',precise_at:d.toISOString(),
-      fuzzy_label:null,fuzzy_note:null,meta_override:c.meta,
-      media:[],source:'seed',owner_id:SEED_OWNER,
-      created_at:d.toISOString(),updated_at:d.toISOString(),deleted_at:null
-    });
-  });
-  return rows.reduce(function(p,row){
-    return p.then(function(){return getNextId('memories');}).then(function(id){
-      row.id=id;return txPut('memories',row);
-    });
-  },Promise.resolve());
-}
-
-function seedEngagement(){
-  return txGetAll('memories').then(function(mems){
-    var byFeel={};
-    mems.forEach(function(m){byFeel[m.feel]=m;});
-    // 多视角：模板 memoryDetail
-    var md=TEMPLATE.memoryDetail||{};
-    var mdFeel=(md.feel||'').trim();
-    var target=null;
-    for(var f in byFeel){
-      if(f&&mdFeel&&f.indexOf(mdFeel.slice(0,10))>=0){target=byFeel[f];break;}
-    }
-    // 收集所有要插入的行（不并行，串行执行避免 ID 竞态）
-    var perspRows=[],cmtRows=[];
-    if(target){
-      (md.perspectives||[]).forEach(function(p,i){
-        var d=new Date(target.precise_at);d.setMinutes(d.getMinutes()+15*i);
-        perspRows.push({memory_id:target.id,author_name:p.name||'TA',author_avatar:p.avatar||null,author_bg:p.bg||null,feel:(p.feel||'').trim(),created_at:d.toISOString(),updated_at:d.toISOString(),deleted_at:null});
-      });
-    }
-    // 日落情侣记忆：演示视角 + 留言
-    var sunset=null;
-    for(var f2 in byFeel){
-      if(/日落/.test(f2)&&byFeel[f2].scene==='couple'){sunset=byFeel[f2];break;}
-    }
-    if(sunset){
-      var base=new Date(sunset.precise_at);
-      perspRows.push({memory_id:sunset.id,author_name:'陈昊',author_avatar:'陈',author_bg:null,feel:'和苏苏一起看了日落，她说这是今年最美的天。',created_at:base.toISOString(),updated_at:base.toISOString(),deleted_at:null});
-      var d15=new Date(base);d15.setMinutes(d15.getMinutes()+15);
-      perspRows.push({memory_id:sunset.id,author_name:'苏苏',author_avatar:'苏',author_bg:'#F2EBE3',feel:'日落只有十分钟，但他牵着我的手看了很久。',created_at:d15.toISOString(),updated_at:d15.toISOString(),deleted_at:null});
-      var cmts=[
-        {n:'苏苏',a:'苏',b:'#F2EBE3',t:'照片已经在我的相册置顶了',m:30},
-        {n:'陈昊',a:'陈',b:null,t:'下次带相机去，手机拍不出当时的颜色',m:48},
-        {n:'苏苏',a:'苏',b:'#F2EBE3',t:'说好了，今年再去看一次海边的日落',m:120}
-      ];
-      cmts.forEach(function(c){
-        var d=new Date(base);d.setMinutes(d.getMinutes()+c.m);
-        cmtRows.push({memory_id:sunset.id,author_name:c.n,author_avatar:c.a,author_bg:c.b,content:c.t,created_at:d.toISOString(),updated_at:d.toISOString(),deleted_at:null});
-      });
-    }
-    // 串行插入
-    return perspRows.reduce(function(p,row){
-      return p.then(function(){return getNextId('perspectives');}).then(function(id){
-        row.id=id;return txPut('perspectives',row);
-      });
-    },Promise.resolve()).then(function(){
-      return cmtRows.reduce(function(p,row){
-        return p.then(function(){return getNextId('comments');}).then(function(id){
-          row.id=id;return txPut('comments',row);
-        });
-      },Promise.resolve());
-    });
-  });
-}
-
-function seedAnniversaries(){
-  var list=(TEMPLATE.anniversaries||{}).list||[];
-  return list.reduce(function(p,it){
-    return p.then(function(){
-      var m=/(\d{1,2})月/.exec(it.month||'');
-      var d=/(\d{1,2})/.exec(it.day||'');
-      if(!m||!d)return;
-      var note=it.note||'';
-      var lm=/(农历[\u4e00-\u9fa5]+)/.exec(note);
-      return getNextId('anniversaries').then(function(id){
-        return txPut('anniversaries',{
-          id:id,owner_id:SEED_OWNER,name:(it.name||'纪念日').trim(),
-          month:+m[1],day:+d[1],is_lunar:!!lm,
-          lunar_label:lm?lm[1]:null,is_recurring:true,remind_days_before:3,
-          note:note,linked_memory_id:null,source:'seed',
-          created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null
-        });
-      });
-    });
-  },Promise.resolve());
-}
-
-function seedGrowth(){
-  var growth=TEMPLATE.growth||{};
-  var subjects=growth.subjects||[];
-  var timelines=growth.timelines||{};
-  return subjects.reduce(function(p,s){
-    return p.then(function(){
-      var name=(s.name||'').trim();
-      if(!name)return null;
-      var tl=timelines[name]||{};
-      var subtitle=tl.subtitle||'';
-      var kind=s.icon==='pet'?'pet':'baby';
-      var bm=/出生于\s*(\d{4})年(\d{1,2})月(\d{1,2})日/.exec(subtitle);
-      var birthday=bm?new Date(+bm[1],+bm[2]-1,+bm[3]):null;
-      var birthLabel=null;
-      if(subtitle.indexOf('·')>=0)birthLabel=subtitle.split('·').slice(-1)[0].trim()||null;
-      var note=null;
-      if(kind==='pet'){
-        var parts=(s.meta||'').split('·');
-        if(parts.length>=3)note=parts[1].trim()||null;
-      }
-      return getNextId('growth_subjects').then(function(sid){
-        return txPut('growth_subjects',{
-          id:sid,owner_id:SEED_OWNER,name:name,kind:kind,
-          birthday:birthday?birthday.toISOString():null,
-          birth_label:birthLabel,note:note,source:'seed',
-          created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null
-        }).then(function(){return sid;});
-      }).then(function(sid){
-        // 里程碑
-        return (tl.milestones||[]).reduce(function(mp,m,i){
-          return mp.then(function(){
-            var dm=/(\d{4})\.(\d{1,2})\.(\d{1,2})/.exec(m.date||'');
-            if(!dm)return;
-            var happened=new Date(+dm[1],+dm[2]-1,+dm[3]);
-            return getNextId('growth_milestones').then(function(mid){
-              return txPut('growth_milestones',{
-                id:mid,subject_id:sid,memory_id:null,
-                title:(m.title||'里程碑').trim(),content:m.desc,
-                happened_on:happened.toISOString(),
-                is_major:!!m.major,has_pic:!!m.pic,
-                owner_id:SEED_OWNER,source:'seed',
-                created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null
-              });
-            });
-          });
-        },Promise.resolve());
-      });
-    });
-  },Promise.resolve());
-}
-
-function seedTimelineNodes(){
-  var rows=[];
-  [['couple','coupleTimeline'],['friend','friendTimeline']].forEach(function(pair){
-    var kind=pair[0],key=pair[1];
-    ((TEMPLATE[key]||{}).nodes||[]).forEach(function(n,i){
-      var d=n.d||'';
-      var dm=/\d{4}\.\d{1,2}/.exec(d);
-      var hints=d.match(/\d+视角|\d+留言/g)||[];
-      var node=n.node||[0,0],label=n.label||[0,0];
-      rows.push({
-        kind:kind,node_key:n.k||('n'+i),icon:n.icon||'heart',
-        title:(n.n||'').trim(),desc:n.s,
-        date_str:dm?dm[0]:null,
-        badge_hint:hints.length?hints.join(' · '):null,
-        memory_id:null,node_x:+node[0],node_y:+node[1],
-        label_x:+label[0],label_y:+label[1],
-        is_latest:!!n.latest,sort_order:i,
-        source:'seed',owner_id:SEED_OWNER,
-        created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null
-      });
-    });
-  });
-  return rows.reduce(function(p,row){
-    return p.then(function(){return getNextId('timeline_nodes');}).then(function(id){
-      row.id=id;return txPut('timeline_nodes',row);
-    });
-  },Promise.resolve());
-}
-
-function seedInviteMembers(){
-  var rows=[];
-  var invites=TEMPLATE.invites||{};
-  ((invites.couple||{}).pending||[]).forEach(function(m,i){
-    rows.push({space:'couple',name:(m.name||'').trim(),avatar:m.avatar,bg:m.bg,state:m.state||'待接受',note:m.note,sort_order:i,source:'seed',owner_id:SEED_OWNER,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null});
-  });
-  ((invites.friend||{}).members||[]).forEach(function(m,i){
-    rows.push({space:'friend',name:(m.name||'').trim(),avatar:m.avatar,bg:m.bg,state:m.state||'待接受',note:m.note,sort_order:i,source:'seed',owner_id:SEED_OWNER,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),deleted_at:null});
-  });
-  return rows.reduce(function(p,row){
-    return p.then(function(){return getNextId('invite_members');}).then(function(id){
-      row.id=id;return txPut('invite_members',row);
-    });
-  },Promise.resolve());
 }
 
 /* ---------- 文件 / Blob URL 管理 ---------- */
@@ -483,7 +265,7 @@ function fmtMemoryDate(m,now){
 function timelineItem(m,now,pcount,ccount){
   return {
     mid:m.id,scene:m.scene,
-    time:fmtHM(new Date(m.precise_at))||m.fuzzy_note||m.fuzzy_label||'',
+    time:m.precise_at?fmtHM(new Date(m.precise_at)):(m.fuzzy_note||m.fuzzy_label||''),
     feel:m.feel,meta:memoryMeta(m,pcount,ccount),
     dateLabel:fmtMemoryDate(m,now),cover:fixCover(firstCover(m))
   };
@@ -535,7 +317,9 @@ function buildSceneView(memories,now,pcounts,ccounts){
   return {groupTitle:now.getFullYear()+'年'+(now.getMonth()+1)+'月',cards:cards};
 }
 function buildOtd(templateOtd,memories,now){
-  var cards=(templateOtd.cards||[]).slice();
+  /* v0.9.3：不再把模板演示卡片（婚礼前夜/搬来上海等假数据）拼进响应，
+   * 仅展示数据库中同月同日（往年）的真实记忆，新用户看到空状态。 */
+  var cards=[];
   memories.forEach(function(m){
     if(!m.precise_at)return;
     var d=new Date(m.precise_at);
@@ -701,12 +485,15 @@ function buildInvites(tpl,members){
   inv.friend.members=members.filter(function(m){return m.space==='friend';}).map(function(m){return {id:m.id,name:m.name,avatar:m.avatar||m.name.slice(0,1),bg:m.bg,state:m.state,note:m.note};});
   return inv;
 }
-function buildTimelineHub(tplHub,coupleTpl,friendTpl,coupleNodes,friendNodes,memories){
+function buildTimelineHub(tplHub,coupleTpl,friendTpl,coupleNodes,friendNodes,memories,growthSubs,growthMs){
   var hub=JSON.parse(JSON.stringify(tplHub));
   var coupleCount=memories.filter(function(m){return m.scene==='couple';}).length;
   var friendCount=memories.filter(function(m){return m.scene==='friend';}).length;
   var latestC=coupleNodes.length?coupleNodes.reduce(function(a,b){return b.sort_order>a.sort_order?b:a;}):null;
   var latestF=friendNodes.length?friendNodes.reduce(function(a,b){return b.sort_order>a.sort_order?b:a;}):null;
+  var gSubs=growthSubs||[];
+  var gMs=growthMs||[];
+  var latestMs=gMs.length?gMs.reduce(function(a,b){return new Date(b.created_at)>new Date(a.created_at)?b:a;}):null;
   (hub.cards||[]).forEach(function(card){
     if(card.type==='couple'){
       card.meta=(coupleTpl.pair||{}).title||'情侣时间轴'+' · '+coupleCount+' 条记忆 · 1对1共建';
@@ -715,6 +502,9 @@ function buildTimelineHub(tplHub,coupleTpl,friendTpl,coupleNodes,friendNodes,mem
       var g=friendTpl.group||{};
       card.meta=(g.title||'友情时间轴')+' · '+((g.avatars||[]).length+(g.more||0))+'人共建 · '+friendCount+' 条记忆';
       card.last=latestF?'最近：'+latestF.title+' · 今天':'最近：暂无节点';
+    } else if(card.type==='growth'){
+      card.meta='成长时间轴 · '+gSubs.length+' 个独立主体';
+      card.last=latestMs?'最近里程碑：'+latestMs.title:'最近里程碑：暂无';
     }
   });
   return hub;
@@ -724,6 +514,7 @@ function buildTimelineHub(tplHub,coupleTpl,friendTpl,coupleNodes,friendNodes,mem
 function composeBootstrap(owner,user){
   var nowD=new Date();
   var data=JSON.parse(JSON.stringify(TEMPLATE));
+  var _gSubs=[],_gMs=[];
   return txGetAll('memories').then(function(allMems){
     // 过滤未删除 + owner 可见
     var memories=allMems.filter(function(m){
@@ -755,6 +546,7 @@ function composeBootstrap(owner,user){
       var ms=res[1].filter(function(m){return !m.deleted_at&&(m.owner_id===SEED_OWNER||m.owner_id===owner);});
       var desc=(data.growth||{}).desc||'为宝宝和宠物分别建立独立成长时间轴';
       data.growth=buildGrowth(desc,subs,ms,nowD);
+      _gSubs=subs;_gMs=ms;   /* 暂存供 timelineHub 使用 */
       return txGetAll('timeline_nodes');
     }).then(function(allNodes){
       var nodes=allNodes.filter(function(n){return !n.deleted_at&&(n.owner_id===SEED_OWNER||n.owner_id===owner);});
@@ -777,14 +569,40 @@ function composeBootstrap(owner,user){
         var nodes2=allNodes.filter(function(n){return !n.deleted_at&&(n.owner_id===SEED_OWNER||n.owner_id===owner);});
         var coupleN=nodes2.filter(function(n){return n.kind==='couple';});
         var friendN=nodes2.filter(function(n){return n.kind==='friend';});
-        data.timelineHub=buildTimelineHub(data.timelineHub||{},data.coupleTimeline||{},data.friendTimeline||{},coupleN,friendN,visibleMems);
+        data.timelineHub=buildTimelineHub(data.timelineHub||{},data.coupleTimeline||{},data.friendTimeline||{},coupleN,friendN,visibleMems,_gSubs,_gMs);
       });
     }).then(function(){
       data.timeSettings.now.label='现在 · '+(nowD.getMonth()+1)+'月'+nowD.getDate()+'日 '+fmtHM(nowD);
+      // v0.9.3：时间滚轮默认值取当前本地时间，年份数组动态生成（近 8 年，含今年）
+      if(!data.timeSettings.wheels)data.timeSettings.wheels={};
+      data.timeSettings.wheels.years=[];
+      for(var yy=nowD.getFullYear()-7;yy<=nowD.getFullYear();yy++)data.timeSettings.wheels.years.push(String(yy));
+      if(!data.timeSettings.wheels.dayCount)data.timeSettings.wheels.dayCount=31;
+      data.timeSettings.wheels.default={
+        year:String(nowD.getFullYear()),month:(nowD.getMonth()+1)+'月',day:String(nowD.getDate()),
+        hour:pad2(nowD.getHours())+':00',minute:pad2(nowD.getMinutes())
+      };
+      // v0.9.3：清除模板演示假数据 —— 共建时间线 pair/group 头卡换中性占位，徽章坐标清空
+      if(data.coupleTimeline){
+        data.coupleTimeline.pair={
+          left:{name:'我',avatar:'我'},right:{name:'待邀请',avatar:'邀',bg:'#F2EBE3'},
+          title:'情侣时间线',sub:'邀请一位伙伴，共建专属时间线',badge:'待共建'
+        };
+        data.coupleTimeline.multiViewBadges=[];
+        data.coupleTimeline.commentBadges=[];
+      }
+      if(data.friendTimeline){
+        data.friendTimeline.group={
+          avatars:[{t:'我'}],more:0,
+          title:'友情时间线',sub:'邀请最多 5 位好友，共建群组记忆线',badge:'待共建'
+        };
+        data.friendTimeline.multiViewBadges=[];
+        data.friendTimeline.commentBadges=[];
+      }
       data.meta.note='本地模式 · IndexedDB · '+memories.length+' 条记忆';
       data.meta.apiToken='local-mode';
       data.meta.auth={loggedIn:!!user,owner:owner,user:user?{id:user.id,username:user.username,nickname:user.nickname,avatar:user.avatar}:null};
-      data.meta.version='3.2';
+      data.meta.version='3.3';
       return data;
     });
   });
@@ -946,15 +764,33 @@ function localApiRouter(url,opts){
       var owner=user?'user:'+user.id:LOCAL_OWNER;
       return getNextId('memories').then(function(id){
         var nowISO=new Date().toISOString();
-        var preciseAt=null;
-        if(body.time_mode==='custom'&&body.custom_time)preciseAt=body.custom_time;
-        else if(body.time_mode==='now')preciseAt=nowISO.slice(0,16);
+        /* 时间戳归一化（对齐 main.py）：
+         * fuzzy → precise_at=null，label/note 落库；
+         * now → 当前本地时间；custom → custom_date+custom_time 组合（缺省回落当前值） */
+        var preciseAt=null,fuzzyLabel=null,fuzzyNote=null;
+        if(body.time_mode==='fuzzy'){
+          fuzzyLabel=(body.fuzzy_label||'').trim()||'记不清了';
+          fuzzyNote=(body.fuzzy_note||'').trim()||null;
+        }else{
+          var d=new Date();
+          if(body.time_mode==='custom'){
+            var ds=String(body.custom_date||'').split('-');
+            if(ds.length===3)d=new Date(+ds[0],+ds[1]-1,+ds[2]);
+            var ts=String(body.custom_time||'').split(':');
+            if(ts.length>=2){d.setHours(+ts[0]);d.setMinutes(+ts[1]);}
+          }
+          preciseAt=d.toISOString();
+        }
+        var mediaItems=(body.media||[]).map(function(f){
+          var key=f.file_key||f.key;
+          return {key:key,url:resolveFileUrl(key),kind:key.split('.').pop()};
+        });
         var m={
           id:id,scene:body.scene||'personal',feel:body.feel||'无',
           emotions:body.emotion?[body.emotion]:[],
-          voice:null,timestamp_type:body.time_mode==='fuzzy'?'fuzzy':'precise',
-          precise_at:preciseAt,fuzzy_label:body.fuzzy_label||null,
-          fuzzy_note:null,meta_override:null,media:[],source:'user',owner_id:owner,
+          voice:body.voice||null,timestamp_type:body.time_mode==='fuzzy'?'fuzzy':'precise',
+          precise_at:preciseAt,fuzzy_label:fuzzyLabel,
+          fuzzy_note:fuzzyNote,meta_override:null,media:mediaItems,source:'user',owner_id:owner,
           created_at:nowISO,updated_at:nowISO,deleted_at:null
         };
         return txPut('memories',m).then(function(){return mockResponse({id:m.id,scene:m.scene,feel:m.feel},201);});
@@ -968,16 +804,18 @@ function localApiRouter(url,opts){
     if(method==='GET'){
       return txGet('memories',mid).then(function(m){
         if(!m||m.deleted_at)return mockError(404,'记忆不存在');
-        return engagementCounts().then(function(ec){
-          return txGetAllByIndex('perspectives','memory_id',mid);
-        }).then(function(persps){
-          return txGetAllByIndex('comments','memory_id',mid);
-        }).then(function(cmts){
+        return Promise.all([
+          txGetAllByIndex('perspectives','memory_id',mid),
+          txGetAllByIndex('comments','memory_id',mid)
+        ]).then(function(results){
+          var persps=results[0],cmts=results[1];
           var perspView=persps.filter(function(p){return !p.deleted_at;}).map(function(p){
-            return {id:p.id,authorName:p.author_name,authorAvatar:p.author_avatar,authorBg:p.author_bg,feel:p.feel};
+            var pd=new Date(p.created_at);
+            return {id:p.id,name:p.author_name,avatar:p.author_avatar||p.author_name.slice(0,1),bg:p.author_bg,feel:p.feel,time:(pd.getMonth()+1)+'月'+pd.getDate()+'日 '+fmtHM(pd)};
           });
           var cmtsView=cmts.filter(function(c){return !c.deleted_at;}).map(function(c){
-            return {id:c.id,authorName:c.author_name,authorAvatar:c.author_avatar,authorBg:c.author_bg,content:c.content};
+            var cd=new Date(c.created_at);
+            return {id:c.id,name:c.author_name,avatar:c.author_avatar||c.author_name.slice(0,1),bg:c.author_bg,content:c.content,time:(cd.getMonth()+1)+'月'+cd.getDate()+'日 '+fmtHM(cd)};
           });
           return mockResponse({
             id:m.id,scene:m.scene,feel:m.feel,emotions:m.emotions||[],voice:m.voice,
@@ -985,7 +823,8 @@ function localApiRouter(url,opts){
             preciseAt:m.precise_at?m.precise_at.replace('T',' ').slice(0,16):null,
             fuzzyLabel:m.fuzzy_label,fuzzyNote:m.fuzzy_note,
             media:(m.media||[]).map(function(c){return {key:c.key,url:resolveFileUrl(c.key),kind:c.kind};}),
-            source:m.source,perspectives:perspView,comments:cmtsView
+            source:m.source,timeLabel:fmtMemoryDate(m,new Date()),
+            perspectives:perspView,comments:cmtsView
           });
         });
       });
@@ -1017,7 +856,8 @@ function localApiRouter(url,opts){
   if(pMatch&&method==='GET'){
     return txGetAllByIndex('perspectives','memory_id',+pMatch[1]).then(function(all){
       return mockResponse(all.filter(function(p){return !p.deleted_at;}).map(function(p){
-        return {id:p.id,authorName:p.author_name,authorAvatar:p.author_avatar,authorBg:p.author_bg,feel:p.feel};
+        var pd=new Date(p.created_at);
+        return {id:p.id,name:p.author_name,avatar:p.author_avatar||p.author_name.slice(0,1),bg:p.author_bg,feel:p.feel,time:(pd.getMonth()+1)+'月'+pd.getDate()+'日 '+fmtHM(pd)};
       }));
     });
   }
@@ -1040,7 +880,8 @@ function localApiRouter(url,opts){
   if(cMatch&&method==='GET'){
     return txGetAllByIndex('comments','memory_id',+cMatch[1]).then(function(all){
       return mockResponse(all.filter(function(c){return !c.deleted_at;}).map(function(c){
-        return {id:c.id,authorName:c.author_name,authorAvatar:c.author_avatar,authorBg:c.author_bg,content:c.content};
+        var cd=new Date(c.created_at);
+        return {id:c.id,name:c.author_name,avatar:c.author_avatar||c.author_name.slice(0,1),bg:c.author_bg,content:c.content,time:(cd.getMonth()+1)+'月'+cd.getDate()+'日 '+fmtHM(cd)};
       }));
     });
   }
@@ -1202,7 +1043,7 @@ function init(){
     return loadTemplate();
   }).then(function(tpl){
     TEMPLATE=tpl;
-    return seedAll();
+    return purgeSeeds();   /* v0.9.3：清除历史版本导入的种子假数据，不再导入 */
   }).then(function(){
     return loadAllBlobs();
   }).then(function(){
@@ -1253,7 +1094,7 @@ function clearAll(){
 
 /* ---------- 导出 ---------- */
 window.__localdb={init:init,reload:function(){
-  return seedAll().then(function(){return loadAllBlobs();});
+  return purgeSeeds().then(function(){return loadAllBlobs();});
 },clearAll:clearAll};
 
 })();

@@ -440,6 +440,78 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   .phone{width:100vw;height:100vh;border-radius:0;border:none;box-shadow:none;}
   .data-error{position:fixed;inset:0;z-index:9999;}
 }
+/* ============ 自定义弹窗系统（替代 alert / confirm / prompt） ============ */
+.mc-overlay{position:fixed;inset:0;background:rgba(61,46,36,.45);backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);z-index:3000;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .22s;}
+.mc-overlay.show{opacity:1;}
+.mc-dialog{width:330px;background:var(--white);border-radius:22px;padding:26px 24px 20px;
+  box-shadow:0 24px 56px rgba(0,0,0,.18);transform:scale(.9) translateY(8px);transition:transform .22s;}
+.mc-overlay.show .mc-dialog{transform:scale(1) translateY(0);}
+.mc-dlg-icon{width:56px;height:56px;border-radius:28px;margin:0 auto 16px;
+  display:flex;align-items:center;justify-content:center;}
+.mc-dlg-icon.ic-mic{background:linear-gradient(135deg,#D4737A,#E899A0);}
+.mc-dlg-icon.ic-trash{background:linear-gradient(135deg,#B03A3A,#D86060);}
+.mc-dlg-icon.ic-warn{background:linear-gradient(135deg,#C4A45D,#D8B872);}
+.mc-dlg-icon.ic-info{background:linear-gradient(135deg,#7A5E4E,#9B8271);}
+.mc-dlg-icon.ic-plus{background:linear-gradient(135deg,#B07A5E,#C89880);}
+.mc-dlg-icon.ic-logout{background:linear-gradient(135deg,#7A5E4E,#9B8271);}
+.mc-dlg-icon.ic-wipe{background:linear-gradient(135deg,#B03A3A,#D86060);}
+.mc-dlg-title{font-size:16px;font-weight:600;text-align:center;color:var(--ink);margin-bottom:8px;}
+.mc-dlg-msg{font-size:13px;color:var(--muted);text-align:center;line-height:1.65;margin-bottom:20px;
+  white-space:pre-line;}
+.mc-dlg-input{width:100%;height:44px;border:1.5px solid var(--line);border-radius:12px;
+  padding:0 14px;font-size:14px;font-family:var(--font);margin-bottom:20px;outline:none;
+  background:var(--fill);transition:border-color .15s,background .15s;}
+.mc-dlg-input:focus{border-color:var(--ink);background:var(--white);}
+.mc-dlg-btns{display:flex;justify-content:space-between;gap:24px;}
+.mc-dlg-btn{flex:1;height:48px;border-radius:24px;border:none;font-size:15px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:opacity .12s,transform .12s;}
+.mc-dlg-btn:active{opacity:.75;transform:scale(.97);}
+.mc-dlg-cancel{background:var(--fill);color:var(--muted);}
+.mc-dlg-ok{background:var(--ink);color:#fff;}
+.mc-dlg-ok.danger{background:var(--danger);}
+.mc-dlg-ok.mic{background:var(--sc-c);}
+.mc-dlg-single{width:100%;}
+/* ============ 自定义 Action Sheet（底部弹窗，替代文件选择器） ============ */
+.mc-as{position:fixed;left:12px;right:12px;bottom:12px;z-index:3001;
+  background:var(--white);border-radius:22px;padding:8px 18px 20px;
+  box-shadow:0 -8px 40px rgba(0,0,0,.12);
+  transform:translateY(120%);transition:transform .32s cubic-bezier(.32,.72,0,1);}
+.mc-overlay.show .mc-as{transform:translateY(0);}
+.mc-as-grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 14px;}
+.mc-as-title{font-size:14px;font-weight:600;text-align:center;color:var(--muted);margin-bottom:12px;}
+.mc-as-item{display:flex;align-items:center;gap:14px;height:56px;
+  border-bottom:1px solid var(--fill);font-size:16px;color:var(--ink);cursor:pointer;
+  transition:background .12s;}
+.mc-as-item:last-of-type{border-bottom:none;}
+.mc-as-item:active{background:var(--fill);}
+.mc-as-item.danger{color:var(--danger);}
+.mc-as-item.danger .mc-as-ic{background:linear-gradient(135deg,#B03A3A,#D86060);}
+.mc-as-ic{width:36px;height:36px;border-radius:18px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--fill);}
+.mc-as-ic.ic-cam{background:linear-gradient(135deg,#B07A5E,#C89880);}
+.mc-as-ic.ic-album{background:linear-gradient(135deg,#7A5E4E,#9B8271);}
+.mc-as-cancel{margin-top:14px;height:48px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:14px;background:var(--fill);
+  transition:opacity .12s;}
+.mc-as-cancel:active{opacity:.75;}
+/* ============ 自定义日期选择器（替代 input[type=date]） ============ */
+.mc-dp{padding:0 4px;}
+.mc-dp-wheel{display:flex;height:180px;overflow:hidden;position:relative;
+  mask-image:linear-gradient(to bottom,transparent 0,#000 30%,#000 70%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 30%,#000 70%,transparent 100%);}
+.mc-dp-col{flex:1;overflow-y:scroll;
+  scrollbar-width:none;-ms-overflow-style:none;
+  padding:70px 0;}
+.mc-dp-col::-webkit-scrollbar{display:none;}
+.mc-dp-opt{height:40px;line-height:40px;text-align:center;font-size:16px;
+  color:var(--muted);transition:color .15s;}
+.mc-dp-opt.sel{color:var(--ink);font-weight:600;}
+.mc-dp-line{position:absolute;left:8%;right:8%;top:70px;height:40px;
+  border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);
+  pointer-events:none;border-radius:8px;}
 </style>
 </head>
 <body>
@@ -572,8 +644,6 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <input type="file" id="s05file" accept="image/*,video/*" multiple style="display:none">
     <div class="sec-title">写感受</div>
     <textarea class="textarea" placeholder="写下此刻的感受…"></textarea>
-    <div class="sec-title">此刻的情绪</div>
-    <div class="emotions" id="emoGroup"></div>
     <div class="record-wrap"><div class="record-btn" id="recBtn"><svg width="26" height="26" viewBox="0 0 30 30" fill="none"><rect x="10" y="3" width="10" height="17" rx="5" fill="#fff"/><path d="M5.5 14a9.5 9.5 0 0019 0M15 23.5V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></div><div class="record-hint">长按录音 · 最多 60 秒</div></div>
     <button class="btn-primary" data-go="s06">下一步</button>
   </div>
@@ -591,10 +661,8 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="precision-toggle" id="precToggle"><div class="pt-opt on" data-prec="ymd">年月日</div><div class="pt-opt" data-prec="hm">时分</div></div>
     <div class="wheels" id="wheels3"><div class="wheel" id="wy"></div><div class="wheel" id="wm"></div><div class="wheel" id="wd"></div><div class="wheel-band"></div></div>
     <div class="wheels wheels-5" id="wheels5" style="display:none"><div class="wheel" id="wy2"></div><div class="wheel" id="wm2"></div><div class="wheel" id="wd2"></div><div class="wheel" id="wh"></div><div class="wheel" id="wmi"></div><div class="wheel-band"></div></div>
-    <div class="opt" data-timeopt="fuzzy"><div><div class="ot">模糊时间</div><div class="od">去年夏天 / 某个晚上 / 大学时期</div></div><div class="radio"></div></div>
+    <div class="opt" data-timeopt="fuzzy"><div><div class="ot">模糊时间</div><div class="od">自己输入大致时期，如：某个夏天的晚上</div></div><div class="radio"></div></div>
     <div class="fuzzy-panel" id="fuzzyPanel">
-      <div class="fp-label">大概是哪个时期？</div>
-      <div class="fp-chips" id="fuzzyChips"></div>
       <input class="input" id="fuzzyInput">
     </div>
     <button class="btn-primary" data-go="s07" style="margin-top:20px">保存记忆</button>
@@ -635,7 +703,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   <div class="navbar"><span class="back" data-go="s07"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">标记纪念日</span><span class="right" data-go="s07">关闭</span></div>
   <div class="content">
     <div class="label">纪念日名称</div><input class="input" id="annName" placeholder="给这个日子起个名字" maxlength="100">
-    <div class="label">日期</div><input class="input" id="annDate" type="date">
+    <div class="label">日期</div><div class="input" id="annDate" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--muted)">点击选择日期 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B8271" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
     <div class="label">纪念日提醒</div>
     <div class="card-gray">
       <div class="setrow"><div><div class="st">提前 3 天提醒</div></div><div class="switch" id="annRemindSwitch"><span class="knob"></span></div></div>
@@ -698,13 +766,13 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 <!-- S11 -->
 <section class="screen" id="s11">
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
-  <div class="navbar"><span class="back" data-go="s10"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建时间线</span><span class="avatar" style="width:26px;height:26px;font-size:12px;background:#F2EBE3">林</span></div>
+  <div class="navbar"><span class="back" data-go="s10"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建时间线</span><span class="right"></span></div>
   <div class="content">
     <div class="rel-toggle" id="s11toggle"><div class="rt-opt on" data-rel="couple"><span class="sdot c"></span>情侣</div><div class="rt-opt" data-rel="friend"><span class="sdot f"></span>友情</div></div>
     <!-- 情侣共建时间线 -->
     <div id="coupleTimeline">
       <div class="duo" id="s11duo"></div>
-      <div class="chips" style="padding:14px 0 0"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span><span class="chip">苏苏的</span><span class="chip" style="font-size:11px"><span class="sdot c"></span>多视角</span></div>
+      <div class="chips" style="padding:14px 0 0" id="s11coupleChips"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span></div>
       <div class="spiral-note">记忆螺旋 · 由内到外，由远及近</div>
       <div class="spiral-area" id="spiralArea">
         <svg id="spiralSvg" width="350" height="590" viewBox="0 0 350 590"></svg><div class="sp-center"></div>
@@ -716,8 +784,8 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <!-- 友情共建时间线 -->
     <div id="friendTimeline" style="display:none">
       <div class="duo" id="s11duo2"></div>
-      <div class="chips" style="padding:14px 0 0"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span><span class="chip">小鹿的</span><span class="chip">苏然的</span><span class="chip" style="font-size:11px"><span class="sdot f"></span>多视角</span></div>
-      <div class="spiral-note">记忆螺旋 · 6人共同编织，由远及近</div>
+      <div class="chips" style="padding:14px 0 0" id="s11friendChips"><span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span></div>
+      <div class="spiral-note">记忆螺旋 · 由远及近</div>
       <div class="spiral-area" id="spiralArea2">
         <svg id="spiralSvg2" width="350" height="590" viewBox="0 0 350 590"></svg><div class="sp-center"></div>
         <div id="s11nodes2"></div>
@@ -742,6 +810,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="logout" id="s12WipeBtn" style="color:#c0392b;border-color:#e8c4bc">清除全部数据（重新开始）</div>
     <div style="font-size:11px;color:var(--sub);text-align:center;padding:0 20px;margin-top:6px">删除所有记忆、纪念日、成长记录和上传的照片，清空后不可恢复</div>
     <div class="logout" id="s12Logout" style="display:none">退出登录</div><div style="height:8px"></div>
+    <div style="font-size:10px;color:var(--sub);text-align:center;padding:8px 20px 0;opacity:.5">MemoryVortex v0.9.6 · UI-Rev6</div>
   </div></div>
   <div class="tabbar"><div class="pill">
     <div class="tab" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
@@ -779,7 +848,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="add-subj" id="msAddBtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span>记录里程碑</span></div>
     <div style="height:12px"></div>
     <div class="growth-timeline" id="s14timeline"></div>
-    <div class="compare-entry"><div><div class="ce-t">成长对比</div><div class="ce-s">对比小橙子和豆豆的同月龄成长</div></div><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    <div class="compare-entry" id="s14compare" style="display:none"><div><div class="ce-t">成长对比</div><div class="ce-s" id="s14compareSub"></div></div><span class="arrow-r"><svg width="9" height="14" viewBox="0 0 9 14" fill="none"><path d="M1.5 1l5.5 6-5.5 6" stroke="#B5A293" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
     <div style="height:12px"></div>
   </div></div>
   <div class="tabbar"><div class="pill">
@@ -849,10 +918,9 @@ function openTimeline(rel){var t=document.getElementById('s11toggle');if(t){t.qu
 document.addEventListener('click',function(e){var tl=e.target.closest('[data-timeline]');if(tl){openTimeline(tl.dataset.timeline);return}var go=e.target.closest('[data-go]');if(go){show(go.dataset.go);return}var tab=e.target.closest('[data-tab]');if(tab){var id=tab.dataset.tab;document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)});show(id);return}})
 document.querySelectorAll('#protoNav button').forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s)})})
 window.addEventListener('hashchange',function(){var id=location.hash.slice(1);if(document.getElementById(id))show(id)});(function(){var id=location.hash.slice(1);if(document.getElementById(id))show(id)})()
-document.querySelectorAll('.chips,.scene-tabs,.filter-chips,.subj-switcher,.year-selector,.fp-chips').forEach(function(g){g.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;g.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel')});c.classList.add('sel')})})
+document.querySelectorAll('.chips,.scene-tabs,.filter-chips,.subj-switcher,.year-selector').forEach(function(g){g.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;g.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel')});c.classList.add('sel')})})
 var s03tabs=document.getElementById('s03tabs');if(s03tabs)s03tabs.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;var view=c.dataset.view;var all=document.getElementById('s03all'),scene=document.getElementById('s03scene');if(!all||!scene)return;s03tabs.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('sel',x===c)});if(view==='all'){all.style.display='';scene.style.display='none';return}all.style.display='none';scene.style.display='';var sv=APP_DATA.home&&APP_DATA.home.sceneView,cards=(sv&&sv.cards||[]).filter(function(x){return x.scene===view});renderSceneCards(cards)})
 var s05g=document.getElementById('s05grid');if(s05g){s05g.addEventListener('click',function(e){var cell=e.target.closest('.cell');if(!cell||cell.classList.contains('cam')||cell.classList.contains('pick'))return;cell.classList.toggle('sel');var sel=s05g.querySelectorAll('.cell.sel');s05g.querySelectorAll('.cell.sel .badge').forEach(function(b,i){b.textContent=i+1})})}
-var emoG=document.getElementById('emoGroup');if(emoG)emoG.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;emoG.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel')});c.classList.add('sel')})
 function s06Apply(mode){var prec=document.getElementById('precToggle'),w3=document.getElementById('wheels3'),w5=document.getElementById('wheels5'),fp=document.getElementById('fuzzyPanel');if(!prec)return;var isCustom=mode==='custom';prec.style.display=isCustom?'':'none';var pon=document.querySelector('#precToggle .pt-opt.on');var isHM=!!pon&&pon.dataset.prec==='hm';w3.style.display=(isCustom&&!isHM)?'':'none';w5.style.display=(isCustom&&isHM)?'':'none';fp.style.display=mode==='fuzzy'?'block':'none'}
 document.addEventListener('click',function(e){var o=e.target.closest('#s06 .opt');if(!o)return;document.querySelectorAll('#s06 .opt').forEach(function(x){x.classList.remove('on');var r=x.querySelector('.radio');if(r)r.classList.remove('on')});o.classList.add('on');var r=o.querySelector('.radio');if(r)r.classList.add('on');s06Apply(o.dataset.timeopt)})
 document.querySelectorAll('#precToggle .pt-opt').forEach(function(p){p.addEventListener('click',function(){document.querySelectorAll('#precToggle .pt-opt').forEach(function(x){x.classList.remove('on')});p.classList.add('on');var isHM=p.dataset.prec==='hm';document.getElementById('wheels3').style.display=isHM?'none':'';document.getElementById('wheels5').style.display=isHM?'':'none'})})
@@ -870,7 +938,7 @@ function openPop(k){var d=APP_DATA&&nodeByKey(APP_DATA.coupleTimeline,k);if(!d)r
 function openPop2(k){var d=APP_DATA&&nodeByKey(APP_DATA.friendTimeline,k);if(!d)return;document.getElementById('popName2').textContent=d.n;document.getElementById('popDate2').textContent=d.d;document.getElementById('popDesc2').textContent=d.s;var pb=document.querySelector('#spPop2 .pbtn');if(pb){if(d.mid){pb.style.display='';pb.dataset.mid=d.mid}else{pb.style.display='none';delete pb.dataset.mid}}pop2.classList.add('show');document.querySelectorAll('#s11nodes2 .sp-node,#s11nodes2 .sp-label').forEach(function(x){x.classList.toggle('on',x.dataset.k===k)})}
 var popClose=document.getElementById('popClose');if(popClose)popClose.addEventListener('click',function(){pop.classList.remove('show');document.querySelectorAll('#s11nodes .sp-node,#s11nodes .sp-label').forEach(function(x){x.classList.remove('on')})})
 var popClose2=document.getElementById('popClose2');if(popClose2)popClose2.addEventListener('click',function(){pop2.classList.remove('show');document.querySelectorAll('#s11nodes2 .sp-node,#s11nodes2 .sp-label').forEach(function(x){x.classList.remove('on')})})
-var rec=document.getElementById('recBtn');if(rec){var hint=rec.parentElement.querySelector('.record-hint');var timer=null;var start=function(){rec.style.transform='scale(1.06)';var s=0;timer=setInterval(function(){s++;hint.textContent='录音中 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000)};var end=function(){clearInterval(timer);rec.style.transform='';hint.textContent='长按录音 · 最多 60 秒'};rec.addEventListener('mousedown',start);rec.addEventListener('mouseup',end);rec.addEventListener('mouseleave',end);rec.addEventListener('touchstart',function(e){e.preventDefault();start()});rec.addEventListener('touchend',end)}
+/* v0.9.3：录音改为真实采集（MediaRecorder），实现移至下方 API 数据链路脚本（需访问上传接口） */
 
 /* ============ 逻辑与数据分离：渲染层（数据来自 memory-vortex-data.json） ============ */
 var APP_DATA=null;
@@ -949,11 +1017,11 @@ function cardPic(cov,iconKey){
 function renderS03(){
   var h=APP_DATA.home,all=$('s03all'),scene=$('s03scene');
   if(all&&h.timeline){
-    all.innerHTML=h.timeline.map(function(g){
+    all.innerHTML=(h.timeline||[]).length?h.timeline.map(function(g){
       return '<div class="ts-date">'+esc(g.date)+'</div>'+g.items.map(function(it){
         return '<div class="ts-card" data-go="s07"'+(it.mid?' data-mid="'+it.mid+'"':'')+'>'+(it.mid?'<span class="ts-del" data-mid="'+it.mid+'" title="删除这条记忆">×</span>':'')+cardPic(it.cover,'photo20')+'<div class="body"><div class="r1">'+sceneTag(it.scene)+'<span style="font-family:var(--font-num);font-size:11px;color:var(--sub)">'+esc(it.time)+'</span></div><div class="feel">'+esc(it.feel)+'</div><div class="r3">'+esc(it.meta)+'</div></div></div>'
       }).join('')
-    }).join('')
+    }).join(''):'<div style="padding:48px 24px;text-align:center;font-size:13px;color:var(--sub);line-height:1.8">还没有记忆<br>点下方「记录」按钮，写下第一条吧</div>';
   }
   if(scene&&h.sceneView){
     renderSceneCards(h.sceneView.cards||[]);
@@ -990,15 +1058,9 @@ function renderS04(){
 /* 场景状态同步：进入 S04 时按 CUR_SCENE 高亮；进入 S05 时刷新"当前场景"标签 */
 function syncS04Scene(){var g=$('s04grid');if(!g)return;g.querySelectorAll('.scene-opt').forEach(function(x){x.classList.toggle('sel',x.dataset.scene===CUR_SCENE)})}
 function syncS05Scene(){var el=$('s05scene');if(el)el.innerHTML=CUR_SCENE?sceneTag(CUR_SCENE,SCENE_NAMES[CUR_SCENE]):''}
-function renderS05(){
-  var e=$('emoGroup');if(!e||!APP_DATA.emotions)return;
-  e.innerHTML=APP_DATA.emotions.map(function(x,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(x)+'</span>'}).join('')
-}
 function renderS06(){
   var ts=APP_DATA.timeSettings;if(!ts)return;
   setT('s06nowLabel',ts.now.label);
-  var f=$('fuzzyChips');
-  if(f&&ts.fuzzy)f.innerHTML=ts.fuzzy.options.map(function(o,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(o)+'</span>'}).join('');
   var fi=$('fuzzyInput');if(fi&&ts.fuzzy)fi.placeholder=ts.fuzzy.placeholder;
   var w=ts.wheels,d=w.default,months=[],days=[],hours=[],mins=[],i;
   for(i=1;i<=12;i++)months.push(i+'月');
@@ -1017,6 +1079,7 @@ function renderS07(){
   setT('s07time',d.time);
   var sc=$('s07scene');if(sc)sc.innerHTML=sceneTag(d.scene);
   setT('s07emo',d.emotion);
+  var emEl=$('s07emo');if(emEl)emEl.style.display=d.emotion?'':'none';   /* v0.9.3：无情绪时隐藏标签 */
   var vv=$('s07vava'),hasVoice=!!(d.voice&&d.voice.by);
   if(vv){var vbox=vv.closest('.voice')||vv.parentElement;if(vbox)vbox.style.display=hasVoice?'':'none'}
   setT('s07vava',hasVoice?d.voice.by:'');setT('s07vdur',hasVoice?d.voice.duration:'');
@@ -1058,9 +1121,9 @@ function renderS07(){
       var inner;
       if(ext==='mov')inner='<div class="media-live"><video src="'+esc(url)+'" controls playsinline></video><span class="live-flag">LIVE 实况</span></div>';
       else if(ext==='mp4')inner='<video src="'+esc(url)+'" controls playsinline></video>';
-      else if(ext==='m4a'||ext==='mp3')inner='<audio src="'+esc(url)+'" controls></audio>';
+      else if(ext==='m4a'||ext==='mp3'||ext==='webm')inner='<audio src="'+esc(url)+'" controls></audio>';
       else inner='<img src="'+esc(url)+'" alt="" loading="lazy">';
-      strip+='<div class="m-item" style="'+(ext==='mp4'||ext==='mov'||ext==='m4a'||ext==='mp3'?'width:100%':'')+'">'+inner
+      strip+='<div class="m-item" style="'+(ext==='mp4'||ext==='mov'||ext==='m4a'||ext==='mp3'||ext==='webm'?'width:100%':'')+'">'+inner
         +(editing?'<span class="media-rm" data-s07-rm="'+i+'" title="移除">×</span>':'')+'</div>';
     });
     if(editing)strip+='<div class="media-add" id="s07AddMedia"><b>+</b><span>添加</span></div>';
@@ -1136,7 +1199,23 @@ function renderS11(){
   var duo=$('s11duo');
   if(duo&&ct&&ct.pair)duo.innerHTML='<div class="avs"><span class="avatar" style="width:36px;height:36px;font-size:13px">'+esc(ct.pair.left.avatar)+'</span><span class="avatar" style="width:36px;height:36px;font-size:13px'+(ct.pair.right.bg?';background:'+ct.pair.right.bg:'')+'">'+esc(ct.pair.right.avatar)+'</span></div><div style="flex:1"><div class="dt">'+esc(ct.pair.title)+'</div><div class="ds">'+esc(ct.pair.sub)+'</div></div><span class="co-badge">'+esc(ct.pair.badge)+'</span>';
   var duo2=$('s11duo2');
-  if(duo2&&ft&&ft.group)duo2.innerHTML='<div class="avs-group">'+ft.group.avatars.map(function(a){return '<span class="avatar"'+(a.bg?' style="background:'+a.bg+'"':'')+'>'+esc(a.t)+'</span>'}).join('')+'<span class="avatar more">+'+ft.group.more+'</span></div><div style="flex:1"><div class="dt">'+esc(ft.group.title)+'</div><div class="ds">'+esc(ft.group.sub)+'</div></div><span class="co-badge friend">'+esc(ft.group.badge)+'</span>';
+  if(duo2&&ft&&ft.group)duo2.innerHTML='<div class="avs-group">'+ft.group.avatars.map(function(a){return '<span class="avatar"'+(a.bg?' style="background:'+a.bg+'"':'')+'>'+esc(a.t)+'</span>'}).join('')+(ft.group.more>0?'<span class="avatar more">+'+ft.group.more+'</span>':'')+'</div><div style="flex:1"><div class="dt">'+esc(ft.group.title)+'</div><div class="ds">'+esc(ft.group.sub)+'</div></div><span class="co-badge friend">'+esc(ft.group.badge)+'</span>';
+  /* 动态生成筛选标签：基于实际邀请成员，不再硬编码假名 */
+  var inv=APP_DATA.invites||{};
+  var cpChips=$('s11coupleChips');
+  if(cpChips){
+    var cpMembers=(inv.couple&&inv.couple.pending)?inv.couple.pending:[];
+    var cpHtml='<span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span>';
+    cpMembers.forEach(function(m){if(m.name&&m.name!=='我')cpHtml+='<span class="chip">'+esc(m.name)+'的</span>';});
+    cpChips.innerHTML=cpHtml;
+  }
+  var frChips=$('s11friendChips');
+  if(frChips){
+    var frMembers=(inv.friend&&inv.friend.members)?inv.friend.members:[];
+    var frHtml='<span class="chip sel" style="background:#EDE3D9;color:#3D2E24;font-weight:500">全部</span><span class="chip">我的</span>';
+    frMembers.forEach(function(m){if(m.name&&m.name!=='我')frHtml+='<span class="chip">'+esc(m.name)+'的</span>';});
+    frChips.innerHTML=frHtml;
+  }
   var nw=$('s11nodes');if(nw&&ct)nw.innerHTML=spiralHtml(ct);
   var nw2=$('s11nodes2');if(nw2&&ft)nw2.innerHTML=spiralHtml(ft);
   bindSpiral('s11nodes',openPop);bindSpiral('s11nodes2',openPop2);
@@ -1171,6 +1250,17 @@ function renderS14(){
   var sw=$('s14switcher');
   if(sw)sw.innerHTML=subs.map(function(s){return '<span class="chip'+(s.name===s14Cur?' sel':'')+'" data-subj="'+esc(s.name)+'" data-sid="'+s.id+'">'+esc(s.name)+'</span>'}).join('');
   renderS14Timeline();
+  /* 成长对比入口：仅在 ≥2 个主体时显示，文案用实际主体名 */
+  var cmpEl=$('s14compare');
+  if(cmpEl){
+    var subs=g.subjects||[];
+    if(subs.length>=2){
+      cmpEl.style.display='';
+      setT('s14compareSub','对比 '+subs.map(function(s){return s.name}).join(' 和 ')+' 的同月龄成长');
+    }else{
+      cmpEl.style.display='none';
+    }
+  }
   var swEl=$('s14switcher');
   if(swEl&&!swEl.dataset.bound){
     swEl.dataset.bound='1';
@@ -1183,9 +1273,9 @@ function renderS15(){
   var y=$('s15years');
   if(y&&o.years)y.innerHTML=o.years.map(function(x,i){return '<span class="chip'+(i===0?' sel':'')+'">'+esc(x)+'</span>'}).join('');
   var c=$('s15cards');
-  if(c&&o.cards)c.innerHTML=o.cards.map(function(x){
+  if(c&&o.cards)c.innerHTML=o.cards.length?o.cards.map(function(x){
     return '<div class="otd-card" data-go="s07"><div class="otd-top">'+sceneTag(x.scene)+'<span style="font-family:var(--font-num);font-size:11px;color:var(--sub)">'+esc(x.date)+'</span></div><div class="otd-pic ph">'+ICONS.photo30+'</div><div class="otd-feel">'+esc(x.feel)+'</div><div class="otd-meta">'+esc(x.meta)+'</div></div>'
-  }).join('')
+  }).join(''):'<div style="padding:48px 24px;text-align:center;font-size:13px;color:var(--sub);line-height:1.8">往年的今天还没有记忆<br>继续记录，未来的今天会有回响</div>'
 }
 function renderS16(){
   var h=APP_DATA.timelineHub;if(!h)return;
@@ -1211,7 +1301,7 @@ function renderMeta(){
 function initApp(D){
   APP_DATA=D;
   renderMeta();
-  renderS01();renderS03();renderS04();renderS05();renderS06();renderS07();renderS09();renderS10();renderS11();renderS13();renderS14();renderS15();renderS16();
+  renderS01();renderS03();renderS04();renderS06();renderS07();renderS09();renderS10();renderS11();renderS13();renderS14();renderS15();renderS16();
   if(typeof renderS12==='function')renderS12();
 }
 /* ============ 真假数据源分离 ============
@@ -1245,14 +1335,17 @@ function loadAppData(){
     return loadAppData();
   }).then(function(D){
     initApp(D);
-    /* v0.9 登录态：URL hash 优先（原型调试）；已登录用户直接进主界面；游客保留欢迎屏 */
+    /* v0.9.3 登录态：URL hash 优先（原型调试）；已登录用户直接进主界面；
+       未登录（含首次进入）先弹登录/注册页，也可选择游客模式进入 */
     var hashId=location.hash.slice(1);
     if(hashId&&document.getElementById(hashId)){
       show(hashId);
     }else if(D&&D.meta&&D.meta.auth&&D.meta.auth.loggedIn){
       show('s03');
+    }else if(window.MC_AUTH&&window.MC_AUTH.showAuth){
+      window.MC_AUTH.showAuth('login','s01');
     }else{
-      show('s01');
+      show('s17');
     }
   }).catch(function(err){
     console.error('数据加载失败：',err);
@@ -1261,6 +1354,295 @@ function loadAppData(){
     d.innerHTML='<div class="box"><h2>数据加载失败</h2>'+(DATA_MODE==='mock'?'未能读取测试数据 <code>test_data.js</code><br>请确认该文件与本页面在同一目录':'后端接口请求失败：<code>'+String(err&&err.message||err)+'</code><br>请确认后端服务已启动')+'</div>';
     document.body.appendChild(d)
   })
+})();
+</script>
+<script>
+/* ============ 自定义弹窗系统（替代 alert / confirm / prompt） ============
+ * 所有弹窗均为 Promise 异步，调用方用 .then() 接收结果：
+ * confirm(title,msg,opts) → Promise<boolean>
+ * alert(title,msg,opts)   → Promise<true>
+ * prompt(title,msg,val,opts) → Promise<string|null>
+ * permission(title,msg,icon)  → Promise<boolean>
+ */
+window.MC_DIALOG=(function(){
+  var ICONS={
+    mic:'<svg width="26" height="26" viewBox="0 0 30 30" fill="none"><rect x="10" y="3" width="10" height="17" rx="5" fill="#fff"/><path d="M5.5 14a9.5 9.5 0 0019 0M15 23.5V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    trash:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>',
+    warn:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2L1 21h22L12 2zM12 9v5M12 18v.01"/></svg>',
+    info:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8v.01"/></svg>',
+    plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    logout:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+    wipe:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/><path d="M10 11v6M14 11v6"/></svg>'
+  };
+  function build(opts){
+    return new Promise(function(resolve){
+      var resolved=false;
+      function done(val){if(resolved)return;resolved=true;ov.classList.remove('show');
+        setTimeout(function(){if(ov.parentElement)ov.remove()},220);resolve(val);}
+      var ov=document.createElement('div');
+      ov.className='mc-overlay';
+      var ic=ICONS[opts.icon]||ICONS.info;
+      var icClass='mc-dlg-icon ic-'+(opts.icon||'info');
+      var okClass='mc-dlg-ok';if(opts.danger)okClass+=' danger';if(opts.icon==='mic')okClass+=' mic';
+      if(opts.single)okClass+=' mc-dlg-single';
+      var inputHtml='';
+      if(opts.input){
+        inputHtml='<input class="mc-dlg-input" type="'+(opts.inputType||'text')+'" placeholder="'+
+          (opts.placeholder||'')+'" value="'+(opts.value!=null?String(opts.value).replace(/"/g,'&quot;'):'')+'" />'+
+          (opts.hint?'<div style="font-size:11px;color:var(--sub);text-align:center;margin:-12px 0 16px;">'+opts.hint+'</div>':'');
+      }
+      var btnsHtml;
+      if(opts.single){
+        btnsHtml='<div class="mc-dlg-btns"><button class="mc-dlg-btn '+okClass+'" data-act="ok">'+(opts.okText||'知道了')+'</button></div>';
+      }else{
+        btnsHtml='<div class="mc-dlg-btns">'+
+          '<button class="mc-dlg-btn mc-dlg-cancel" data-act="cancel">'+(opts.cancelText||'取消')+'</button>'+
+          '<button class="mc-dlg-btn '+okClass+'" data-act="ok">'+(opts.okText||'确认')+'</button>'+
+          '</div>';
+      }
+      ov.innerHTML='<div class="mc-dialog">'+
+        '<div class="'+icClass+'">'+ic+'</div>'+
+        '<div class="mc-dlg-title">'+opts.title+'</div>'+
+        (opts.msg?'<div class="mc-dlg-msg">'+opts.msg+'</div>':'')+
+        inputHtml+btnsHtml+'</div>';
+      ov.addEventListener('click',function(e){
+        var act=e.target.closest('[data-act]');
+        if(act){
+          if(act.dataset.act==='ok'){
+            if(opts.input){
+              var inp=ov.querySelector('.mc-dlg-input');
+              done(inp?(inp.value!=null?inp.value.trim():null):null);
+            }else{done(true);}
+          }else{done(opts.input?null:false);}
+          return;
+        }
+        if(e.target===ov&&!opts.single)done(opts.input?null:false);
+      });
+      document.body.appendChild(ov);
+      requestAnimationFrame(function(){
+        ov.classList.add('show');
+        if(opts.input){
+          var inp=ov.querySelector('.mc-dlg-input');
+          if(inp){inp.focus();if(inp.select)inp.select();
+            inp.addEventListener('keydown',function(e){
+              if(e.key==='Enter'){e.preventDefault();done(inp.value!=null?inp.value.trim():null);}
+              if(e.key==='Escape'){e.preventDefault();done(null);}
+            });
+          }
+        }
+      });
+    });
+  }
+  return {
+    confirm:function(title,msg,opts){
+      opts=opts||{};
+      return build({title:title,msg:msg,icon:opts.icon||'warn',
+        okText:opts.okText,cancelText:opts.cancelText,danger:opts.danger});
+    },
+    alert:function(title,msg,opts){
+      opts=opts||{};
+      return build({title:title,msg:msg,icon:opts.icon||'info',
+        okText:opts.okText||'知道了',single:true});
+    },
+    prompt:function(title,msg,val,opts){
+      opts=opts||{};
+      return build({title:title,msg:msg,input:true,value:val,
+        placeholder:opts.placeholder,hint:opts.hint,inputType:opts.inputType,
+        icon:opts.icon||'plus',okText:opts.okText||'确定',cancelText:opts.cancelText||'取消'});
+    },
+    permission:function(title,msg,icon){
+      return build({title:title,msg:msg,icon:icon||'mic',
+        okText:'允许',cancelText:'拒绝'});
+    },
+    /* 底部 Action Sheet（替代直接触发系统文件选择器） */
+    actionSheet:function(title,items){
+      items=items||[];
+      return new Promise(function(resolve){
+        var resolved=false;
+        function done(val){if(resolved)return;resolved=true;
+          ov.classList.remove('show');
+          setTimeout(function(){if(ov.parentElement)ov.remove()},300);
+          resolve(val);}
+        var ov=document.createElement('div');
+        ov.className='mc-overlay';
+        var icons={cam:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="6.5" width="20" height="14" rx="3"/><circle cx="12" cy="13.5" r="4"/><path d="M8 6.5l2-3h4l2 3"/></svg>',
+          album:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.8" fill="#fff"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>',
+          trash:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>',
+          info:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8v.01"/></svg>'};
+        var itemHtml=items.map(function(it,i){
+          var ic=icons[it.icon]||icons.info;
+          return '<div class="mc-as-item'+(it.danger?' danger':'')+'" data-idx="'+i+'">'+
+            '<div class="mc-as-ic ic-'+(it.icon||'info')+'">'+ic+'</div>'+
+            '<span>'+it.label+'</span></div>';
+        }).join('');
+        ov.innerHTML='<div class="mc-as">'+
+          '<div class="mc-as-grab"></div>'+
+          (title?'<div class="mc-as-title">'+title+'</div>':'')+
+          itemHtml+
+          '<div class="mc-as-cancel" data-idx="-1">取消</div>'+
+          '</div>';
+        ov.addEventListener('click',function(e){
+          var it=e.target.closest('[data-idx]');
+          if(!it)return;
+          var idx=parseInt(it.dataset.idx,10);
+          done(idx>=0?idx:null);
+        });
+        /* 点击遮罩关闭 */
+        ov.addEventListener('click',function(e){
+          if(e.target===ov)done(null);
+        });
+        document.body.appendChild(ov);
+        requestAnimationFrame(function(){ov.classList.add('show');});
+      });
+    },
+    /* 自定义日期选择器（替代 input[type=date]） */
+    datePicker:function(title,defaultValue,opts){
+      opts=opts||{};
+      return new Promise(function(resolve){
+        var resolved=false;
+        function done(val){if(resolved)return;resolved=true;
+          ov.classList.remove('show');
+          setTimeout(function(){if(ov.parentElement)ov.remove()},220);
+          resolve(val);}
+        var now=new Date();
+        var d=defaultValue?new Date(defaultValue+'T00:00:00'):new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        if(isNaN(d.getTime()))d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        var curY=d.getFullYear(),curM=d.getMonth()+1,curD=d.getDate();
+        var yearMin=opts.minYear||(now.getFullYear()-80);
+        var yearMax=opts.maxYear||(now.getFullYear()+5);
+        ov=document.createElement('div');
+        ov.className='mc-overlay';
+        var ic='info';
+        var okClass='mc-dlg-ok';if(opts.icon==='mic')okClass+=' mic';
+        ov.innerHTML='<div class="mc-dialog">'+
+          '<div class="mc-dlg-icon ic-'+ic+'"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>'+
+          '<div class="mc-dlg-title">'+(title||'选择日期')+'</div>'+
+          '<div class="mc-dp"><div class="mc-dp-wheel">'+
+            '<div class="mc-dp-col" data-col="year"></div>'+
+            '<div class="mc-dp-col" data-col="month"></div>'+
+            '<div class="mc-dp-col" data-col="day"></div>'+
+            '</div><div class="mc-dp-line"></div></div>'+
+            '<div class="mc-dlg-btns" style="margin-top:16px">'+
+              '<button class="mc-dlg-btn mc-dlg-cancel" data-act="cancel">'+(opts.cancelText||'取消')+'</button>'+
+              '<button class="mc-dlg-btn '+okClass+'" data-act="ok">'+(opts.okText||'确定')+'</button>'+
+            '</div></div>';
+        var isProgScroll=false;   /* 程序化滚动标记，防止 onScroll 误触发 */
+        function fillCol(col,vals,sel){
+          isProgScroll=true;
+          col.innerHTML=vals.map(function(v){
+            return '<div class="mc-dp-opt'+(v==sel?' sel':'')+'" data-val="'+v+'">'+v+'</div>';
+          }).join('');
+          /* 滚动到选中项（padding-top:70px 下，scrollTop=idx*40 即居中） */
+          var idx=vals.indexOf(String(sel));
+          if(idx<0)col.scrollTop=0;
+          /* 若元素已在 DOM 中，立即滚动；否则返回 idx 由 setupCols 在挂载后处理 */
+          if(col.isConnected&&col.scrollHeight>col.clientHeight){
+            col.scrollTop=idx*40;
+          }
+          fillCol._pending=fillCol._pending||[];
+          if(!col.isConnected){
+            fillCol._pending.push({col:col,idx:Math.max(0,idx)});
+          }
+          setTimeout(function(){isProgScroll=false},150);
+        }
+        var yearCol=ov.querySelector('[data-col="year"]');
+        var monthCol=ov.querySelector('[data-col="month"]');
+        var dayCol=ov.querySelector('[data-col="day"]');
+        var years=[];for(var y=yearMin;y<=yearMax;y++)years.push(String(y));
+        var months=[];for(var m=1;m<=12;m++)months.push(m+'月');
+        function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+        function getDayVals(){
+          var max=daysInMonth(curY,curM);
+          var ds=[];for(var dd=1;dd<=max;dd++)ds.push(String(dd));
+          if(curD>max)curD=max;
+          return ds;
+        }
+        /* 用中文月 */
+        var monthVals=months;
+        var monthSel=curM+'月';
+        fillCol(yearCol,years,curY);
+        fillCol(monthCol,monthVals,monthSel);
+        fillCol(dayCol,getDayVals(),curD);
+        /* 滚动事件 */
+        function onScroll(col,cb){
+          var timer=null;
+          col.addEventListener('scroll',function(){
+            if(isProgScroll)return;   /* 程序化滚动时忽略 */
+            if(timer)clearTimeout(timer);
+            timer=setTimeout(function(){
+              var idx=Math.round(col.scrollTop/40);
+              var opts_=col.querySelectorAll('.mc-dp-opt');
+              if(opts_.length===0)return;
+              if(idx<0)idx=0;if(idx>=opts_.length)idx=opts_.length-1;
+              opts_.forEach(function(o,i){o.classList.toggle('sel',i===idx)});
+              var val=opts_[idx].dataset.val;
+              cb(val);
+              if(col.scrollTop!==idx*40){
+                isProgScroll=true;
+                col.scrollTop=idx*40;
+                setTimeout(function(){isProgScroll=false},120);
+              }
+            },100);
+          });
+        }
+        onScroll(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
+        onScroll(monthCol,function(v){
+          curM=parseInt(v.replace('月',''),10);
+          fillCol(dayCol,getDayVals(),curD);
+        });
+        onScroll(dayCol,function(v){curD=parseInt(v,10)});
+        /* 点击选项 → 滚动居中 */
+        function tapToCenter(col,cb){
+          col.addEventListener('click',function(e){
+            var opt=e.target.closest('.mc-dp-opt');
+            if(!opt)return;
+            var idx=Array.prototype.indexOf.call(col.querySelectorAll('.mc-dp-opt'),opt);
+            if(idx<0)return;
+            isProgScroll=true;
+            col.scrollTop=idx*40;
+            col.querySelectorAll('.mc-dp-opt').forEach(function(o,i){o.classList.toggle('sel',i===idx)});
+            var val=opt.dataset.val;
+            if(cb)cb(val);
+            setTimeout(function(){isProgScroll=false},120);
+          });
+        }
+        tapToCenter(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
+        tapToCenter(monthCol,function(v){curM=parseInt(v.replace('月',''),10);fillCol(dayCol,getDayVals(),curD)});
+        tapToCenter(dayCol,function(v){curD=parseInt(v,10)});
+        ov.addEventListener('click',function(e){
+          var act=e.target.closest('[data-act]');
+          if(!act)return;
+          if(act.dataset.act==='ok'){
+            var mm=String(curM).padStart(2,'0');
+            var dd=String(curD).padStart(2,'0');
+            done(curY+'-'+mm+'-'+dd);
+          }else{done(null);}
+        });
+        ov.addEventListener('click',function(e){
+          if(e.target===ov)done(null);
+        });
+        document.body.appendChild(ov);
+        /* ov 挂载到 DOM 后，处理 fillCol 期间未生效的滚动（元素未挂载时 scrollTop 设置无效） */
+        requestAnimationFrame(function(){
+          ov.classList.add('show');
+          isProgScroll=true;
+          var p=fillCol._pending||[];
+          fillCol._pending=[];
+          p.forEach(function(it){
+            if(it.col.isConnected){it.col.scrollTop=it.idx*40;}
+          });
+          /* 兜底：主动设置三个列的初始 scrollTop */
+          var yIdx=years.indexOf(String(curY));
+          var mIdx=monthVals.indexOf(curM+'月');
+          var dIdx=getDayVals().indexOf(String(curD));
+          if(yIdx>=0)yearCol.scrollTop=yIdx*40;
+          if(mIdx>=0)monthCol.scrollTop=mIdx*40;
+          if(dIdx>=0)dayCol.scrollTop=dIdx*40;
+          setTimeout(function(){isProgScroll=false},200);
+        });
+      });
+    }
+  };
 })();
 </script>
 <script>
@@ -1353,13 +1735,25 @@ function loadAppData(){
   var s05file=document.getElementById('s05file');
   ['s05cam','s05album'].forEach(function(id){
     var el=document.getElementById(id);
-    if(el)el.addEventListener('click',function(e){e.stopPropagation();if(s05file)s05file.click()});
+    if(el)el.addEventListener('click',function(e){
+      e.stopPropagation();
+      MC_DIALOG.actionSheet('选择来源',[
+        {label:'拍照',icon:'cam'},
+        {label:'从相册选择',icon:'album'}
+      ]).then(function(idx){
+        if(idx===null)return;
+        if(!s05file)return;
+        if(idx===0){s05file.setAttribute('capture','environment')}
+        else{s05file.removeAttribute('capture')}
+        s05file.click();
+      });
+    });
   });
   if(s05file)s05file.addEventListener('change',function(){
     var files=s05file.files||[],i;
     for(i=0;i<files.length;i++){
       var f=files[i];
-      if(f.size>5*1024*1024){toast('「'+(f.name||'文件')+'」超过 5MB，已跳过');continue}
+      if(f.size>100*1024*1024){toast('「'+(f.name||'文件')+'」超过 100MB，已跳过');continue}
       S05_MEDIA.push({file:f,url:URL.createObjectURL(f),kind:s05KindOf(f)});
     }
     s05file.value='';
@@ -1418,17 +1812,116 @@ function loadAppData(){
     renderS05Grid();
   }
 
+  /* ---------- 0b) S05 录音（v0.9.3 真实实现：MediaRecorder 采集 → 预签名直传 → 随记忆保存） ---------- */
+  var S05_REC=null;   /* {blob, url, dur, mime} */
+  var recBtn=document.getElementById('recBtn');
+  var recHint=recBtn?(recBtn.parentElement.querySelector('.record-hint')):null;
+  var recAudioEl=null,recStream=null,recorder=null,recChunks=[],recTimer=null,recSec=0,recActive=false;
+  function s05RecFmt(s){return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+  function clearS05Rec(){
+    if(S05_REC){try{URL.revokeObjectURL(S05_REC.url)}catch(_){}}
+    S05_REC=null;
+    if(recAudioEl)recAudioEl.removeAttribute('src');
+    if(recHint)recHint.textContent='长按录音 · 最多 60 秒';
+  }
+  function recPreview(){
+    if(!recAudioEl){
+      recAudioEl=document.createElement('audio');
+      recAudioEl.controls=true;
+      recAudioEl.style.cssText='width:100%;height:36px;margin-top:8px';
+      recBtn.parentElement.appendChild(recAudioEl);
+    }
+    recAudioEl.src=S05_REC.url;
+  }
+  function recStart(){
+    if(recActive)return;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==='undefined'){
+      MC_DIALOG.alert('不支持录音','当前浏览器环境不支持录音功能。',{icon:'info'});
+      return;
+    }
+    clearS05Rec();
+    MC_DIALOG.permission('麦克风权限','录音需要访问你的麦克风。\n录音仅保存在你的记忆中，不会上传到其他地方。','mic').then(function(granted){
+      if(!granted){if(recHint)recHint.textContent='长按录音 · 最多 60 秒';return}
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        recStream=stream;recChunks=[];
+        var mime=['audio/mp4','audio/webm'].filter(function(m){return MediaRecorder.isTypeSupported(m)})[0]||'';
+        recorder=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+        recorder.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data)};
+        recorder.onstop=function(){
+          try{if(recStream)recStream.getTracks().forEach(function(t){t.stop()})}catch(_){}
+          var type=recorder.mimeType||mime||'audio/mp4';
+          var blob=new Blob(recChunks,{type:type});
+          if(blob.size>200){          /* 过短的误触不保留 */
+            S05_REC={blob:blob,url:URL.createObjectURL(blob),dur:recSec,mime:type};
+            if(recHint)recHint.textContent='已录音 '+s05RecFmt(recSec)+' · 长按可重录';
+            recPreview();
+            toast('录音完成 '+s05RecFmt(recSec));
+          }else if(recHint){
+            recHint.textContent='长按录音 · 最多 60 秒';
+          }
+        };
+        recActive=true;recSec=0;
+        recBtn.style.transform='scale(1.06)';
+        if(recHint)recHint.textContent='录音中 0:00 · 松开结束';
+        recTimer=setInterval(function(){
+          recSec++;
+          if(recSec>=60){recStop()}
+          else if(recHint){recHint.textContent='录音中 '+s05RecFmt(recSec)+' · 松开结束'}
+        },1000);
+        recorder.start();
+      }).catch(function(err){
+        var name=(err&&err.name)||'';
+        var msg=name==='NotAllowedError'?'麦克风权限被拒绝，请在浏览器设置中允许访问。':
+          name==='NotFoundError'?'未找到麦克风设备。':
+          '无法访问麦克风：'+(name||'请检查浏览器权限');
+        MC_DIALOG.alert('录音失败',msg,{icon:'mic'});
+        if(recHint)recHint.textContent='长按录音 · 最多 60 秒';
+      });
+    });
+  }
+  function recStop(){
+    if(!recActive)return;
+    recActive=false;
+    clearInterval(recTimer);
+    if(recBtn)recBtn.style.transform='';
+    try{if(recorder&&recorder.state!=='inactive')recorder.stop()}catch(_){}
+  }
+  if(recBtn){
+    recBtn.addEventListener('mousedown',function(e){e.preventDefault();recStart()});
+    recBtn.addEventListener('mouseup',recStop);
+    recBtn.addEventListener('mouseleave',recStop);
+    recBtn.addEventListener('touchstart',function(e){e.preventDefault();recStart()},{passive:false});
+    recBtn.addEventListener('touchend',function(e){e.preventDefault();recStop()},{passive:false});
+  }
+  /* 录音上传：预签名直传，返回 fileKey（无录音返回 null） */
+  function uploadS05Rec(){
+    if(!S05_REC)return Promise.resolve(null);
+    var mime=S05_REC.mime||'';
+    var ext=/mp4/.test(mime)?'m4a':(/webm/.test(mime)?'webm':'m4a');
+    var file=new File([S05_REC.blob],'voice-memo.'+ext,{type:mime||'audio/mp4'});
+    toast('正在上传录音…');
+    return apiFetch('/api/v1/uploads/presign',{
+      method:'POST',body:JSON.stringify({filename:file.name,contentType:file.type})
+    }).then(apiOk).then(function(res){
+      var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+      var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+      return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
+        if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
+        return cred.fileKey;
+      });
+    });
+  }
+
   /* ---------- 1) 保存记忆 ---------- */
   function collectAndSave(btn){
     var ta=document.querySelector('#s05 .textarea');
     var feel=(ta&&ta.value||'').trim();
     /* v0.8.4：未写下感受时自动写入「无」，不阻碍保存（后端 min_length=1 亦满足） */
     if(!feel)feel='无';
-    var emoEl=document.querySelector('#emoGroup .chip.sel');
     var scene=(typeof CUR_SCENE!=='undefined'&&CUR_SCENE)||'personal';
     var onOpt=document.querySelector('#s06 .opt.on');
     var mode=onOpt?onOpt.dataset.timeopt:'custom';
-    var body={scene:scene,feel:feel,emotion:emoEl?emoEl.textContent:null,time_mode:mode};
+    var body={scene:scene,feel:feel,emotion:null,time_mode:mode};
 
     if(mode==='custom'){
       var pon=document.querySelector('#precToggle .pt-opt.on');
@@ -1445,15 +1938,22 @@ function loadAppData(){
       body.custom_date=(y||now.getFullYear())+'-'+pad((mo||'').replace('月',''))+'-'+pad((d||'').replace('日',''));
       if(!body.custom_time)body.custom_time=pad(now.getHours())+':'+pad(now.getMinutes());
     }else if(mode==='fuzzy'){
-      var fc=document.querySelector('#fuzzyChips .chip.sel');
-      body.fuzzy_label=fc?fc.textContent:'记不清了';
+      /* v0.9.3：模糊时间只保留手输文本，不再有预设 chips */
       var fi=document.getElementById('fuzzyInput');
-      body.fuzzy_note=fi?(fi.value||'').trim():null;
+      body.fuzzy_label=(fi?(fi.value||'').trim():'')||'记不清了';
     }
 
     var old=btn.textContent;btn.disabled=true;btn.textContent='保存中…';
+    var mediaList=[];
     uploadS05Media().then(function(media){
-      if(media&&media.length)body.media=media;
+      mediaList=media||[];
+      return uploadS05Rec();          /* 录音存在时随记忆一并上传 */
+    }).then(function(recKey){
+      if(recKey){
+        mediaList.push({file_key:recKey});
+        body.voice=s05RecFmt(S05_REC.dur);   /* 详情页语音留言时长展示 */
+      }
+      if(mediaList.length)body.media=mediaList;
       return apiFetch('/api/v1/memories',{
         method:'POST',body:JSON.stringify(body)
       });
@@ -1468,6 +1968,7 @@ function loadAppData(){
       show('s03');                    /* 回首页时间轴，新记忆在最上面 */
       if(ta)ta.value='';              /* 清空表单，方便连续记录 */
       clearS05Media();                /* 清空已上传的媒体选择 */
+      clearS05Rec();                  /* 清空已上传的录音 */
       toast('✦ 记忆已卷入漩涡');
     }).catch(function(err){
       toast('保存失败：'+(err&&err.message||err));
@@ -1503,10 +2004,15 @@ function loadAppData(){
   function buildDetailFallback(it,mid){
     /* 接口异常时的兜底：用时间线条目本地构建 */
     var t=it.dateLabel||it.time||'';
+    var media=[];
+    if(it.cover&&it.cover.url){
+      var ck=(it.cover.kind||it.cover.ext||'').toLowerCase();
+      media=[{key:it.cover.key||'',url:it.cover.url,kind:ck}];
+    }
     APP_DATA.memoryDetail={
       mid:mid,time:t,scene:it.scene,
       emotion:(it.emotions&&it.emotions[0])||'',
-      feel:it.feel,voice:null,comments:[],
+      feel:it.feel,voice:null,media:media,comments:[],
       perspectives:[{name:'我',avatar:'我',feel:it.feel,time:t}]
     };
     renderS07();renderComments();
@@ -1576,7 +2082,7 @@ function loadAppData(){
       var t=d.timeLabel||'';
       var ps=(d.perspectives||[]);
       APP_DATA.memoryDetail={
-        mid:CUR_MID,time:APP_DATA.memoryDetail&&APP_DATA.memoryDetail.time||t,
+        mid:CUR_MID,time:t,
         scene:d.scene,emotion:(d.emotions&&d.emotions[0])||'',
         feel:d.feel,voice:d.voice?{by:'我',duration:d.voice}:null,
         media:d.media||[],
@@ -1623,15 +2129,17 @@ function loadAppData(){
     var del=e.target.closest('.cmt-del');
     if(!del||!del.dataset.cid)return;
     e.stopPropagation();e.preventDefault();
-    if(!window.confirm('删除这条留言？'))return;
-    apiFetch('/api/v1/comments/'+del.dataset.cid,{method:'DELETE'})
-      .then(function(r){
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        return r.json();
-      })
-      .then(function(){return refetchDetail()})
-      .then(function(){toast('留言已删除')})
-      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('删除留言','确定删除这条留言吗？删除后不可恢复。',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/comments/'+del.dataset.cid,{method:'DELETE'})
+        .then(function(r){
+          if(!r.ok)throw new Error('HTTP '+r.status);
+          return r.json();
+        })
+        .then(function(){return refetchDetail()})
+        .then(function(){toast('留言已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
   },true);
 
   /* ---------- 2c) 编辑记忆（v0.8.3：feel + 媒体增删 → PATCH 全量替换） ---------- */
@@ -1703,12 +2211,31 @@ function loadAppData(){
     var el=document.getElementById(id);
     return !!el&&!el.classList.contains('off');
   }
-  /* 打开 S08 时默认日期 = 今天 */
+  /* 打开 S08 时默认日期 = 今天；点击日期打开自定义选择器 */
+  var annDateVal='';
+  function annDateFmt(s){if(!s)return '点击选择日期';var p=s.split('-');return p[1]+'月'+p[2]+'日 '+p[0]}
+  function annDateSet(el,val){
+    annDateVal=val;
+    if(el){el.dataset.date=val||'';el.innerHTML=annDateFmt(val)+' <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B8271" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>';el.style.color=val?'var(--ink)':'var(--muted)'}
+  }
   document.addEventListener('click',function(e){
     if(!e.target.closest('[data-go="s08"]'))return;
     var d=document.getElementById('annDate');
-    if(d&&!d.value){var n=new Date();d.value=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())}
+    if(d&&!annDateVal){var n=new Date();annDateSet(d,n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate()))}
   },true);
+  /* 点击日期 div → 自定义日期选择器 */
+  var annDateTries=0,annDateTimer=setInterval(function(){
+    var d=document.getElementById('annDate');
+    if(d){
+      clearInterval(annDateTimer);
+      d.addEventListener('click',function(e){
+        e.stopPropagation();
+        MC_DIALOG.datePicker('选择日期',annDateVal||null,{}).then(function(val){
+          if(val)annDateSet(d,val);
+        });
+      });
+    }else if(++annDateTries>100){clearInterval(annDateTimer)}
+  },50);
   /* 「完成标记」按钮：拦截 data-go 跳转，先入库再刷新进 S09 */
   var annTries=0,annTimer=setInterval(function(){
     var btn=document.getElementById('annSaveBtn');
@@ -1719,7 +2246,7 @@ function loadAppData(){
         var nameEl=document.getElementById('annName');
         var dateEl=document.getElementById('annDate');
         var name=(nameEl&&nameEl.value||'').trim();
-        var date=(dateEl&&dateEl.value||'').trim();
+        var date=annDateVal;
         if(!name){toast('先给纪念日起个名字吧');if(nameEl)nameEl.focus();return}
         if(!date){toast('请选择日期');if(dateEl)dateEl.focus();return}
         var body={
@@ -1742,6 +2269,9 @@ function loadAppData(){
           .then(function(){
             show('s09');                     /* 列表已含新标记的纪念日 */
             if(nameEl)nameEl.value='';
+            annDateVal='';                    /* 重置日期选择器 */
+            var dd=document.getElementById('annDate');
+            if(dd)annDateSet(dd,'');
             toast('✦ 纪念日已标记');
           })
           .catch(function(err){toast('标记失败：'+(err&&err.message||err))})
@@ -1756,17 +2286,19 @@ function loadAppData(){
     if(!del)return;
     e.stopPropagation();e.preventDefault();
     var mid=del.dataset.mid;
-    if(!window.confirm('删除这条记忆？删除后不可恢复。'))return;
-    apiFetch('/api/v1/memories/'+mid,{method:'DELETE'})
-      .then(function(r){
-        if(!r.ok)return r.json().catch(function(){}).then(function(j){
-          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
-        });
-        return r.json();
-      })
-      .then(function(){return refreshApp()})
-      .then(function(){toast('已删除')})
-      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('删除记忆','确定删除这条记忆吗？删除后不可恢复。',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/memories/'+mid,{method:'DELETE'})
+        .then(function(r){
+          if(!r.ok)return r.json().catch(function(){}).then(function(j){
+            throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+          });
+          return r.json();
+        })
+        .then(function(){return refreshApp()})
+        .then(function(){toast('已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
   },true);
 
   /* ---------- 4) 删除纪念日（capture 拦截，S09 列表卡片上的 ×） ---------- */
@@ -1776,17 +2308,19 @@ function loadAppData(){
     e.stopPropagation();e.preventDefault();
     var aid=del.dataset.aid;
     if(!aid)return;
-    if(!window.confirm('删除这个纪念日？'))return;
-    apiFetch('/api/v1/anniversaries/'+aid,{method:'DELETE'})
-      .then(function(r){
-        if(!r.ok)return r.json().catch(function(){}).then(function(j){
-          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
-        });
-        return r.json();
-      })
-      .then(function(){return refreshApp()})
-      .then(function(){toast('纪念日已删除')})
-      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('删除纪念日','确定删除这个纪念日吗？',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/anniversaries/'+aid,{method:'DELETE'})
+        .then(function(r){
+          if(!r.ok)return r.json().catch(function(){}).then(function(j){
+            throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+          });
+          return r.json();
+        })
+        .then(function(){return refreshApp()})
+        .then(function(){toast('纪念日已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
   },true);
 
   /* ---------- 5) 成长追踪：S13 主体 / S14 里程碑 ---------- */
@@ -1803,12 +2337,14 @@ function loadAppData(){
     e.stopPropagation();e.preventDefault();
     var sid=del.dataset.sid;
     if(!sid)return;
-    if(!window.confirm('删除这个主体？其时间轴上的里程碑也会一并删除。'))return;
-    apiFetch('/api/v1/growth/subjects/'+sid,{method:'DELETE'})
-      .then(apiOk)
-      .then(function(){return refreshApp()})
-      .then(function(){toast('主体已删除')})
-      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('删除主体','确定删除这个主体吗？其时间轴上的里程碑也会一并删除。',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/growth/subjects/'+sid,{method:'DELETE'})
+        .then(apiOk)
+        .then(function(){return refreshApp()})
+        .then(function(){toast('主体已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
   },true);
   /* 5b) 点击主体卡 → 直达该主体的时间轴（capture 先于 data-go 委托执行） */
   document.addEventListener('click',function(e){
@@ -1827,19 +2363,27 @@ function loadAppData(){
     var add=e.target.closest('#s13 .add-subj');
     if(!add)return;
     e.stopPropagation();e.preventDefault();
-    var name=prompt('主体名称（如：小橙子）');if(!name)return;
-    var kindTxt=(prompt('类型：宝宝 / 宠物 / 其他','宝宝')||'宝宝').trim();
-    var kind=kindTxt==='宠物'?'pet':(kindTxt==='宝宝'?'baby':'other');
-    var note=prompt('备注（如品种「金毛」，可留空）','');if(note===null)return;
-    var bday=prompt('生日或开始日期 YYYY-MM-DD（可留空）','');if(bday===null)return;
-    apiFetch('/api/v1/growth/subjects',{method:'POST',body:JSON.stringify({
-      name:name.trim(),kind:kind,
-      note:note.trim()||null,birthday:bday.trim()||null
-    })})
-      .then(apiOk)
-      .then(function(){return refreshApp()})
-      .then(function(){toast('✦ 主体已创建')})
-      .catch(function(err){toast('创建失败：'+(err&&err.message||err))});
+    MC_DIALOG.prompt('新增主体','输入主体名称',null,{placeholder:'如：小橙子',icon:'plus'}).then(function(name){
+      if(!name)return;
+      return MC_DIALOG.prompt('主体类型','宝宝 / 宠物 / 其他','宝宝',{hint:'直接确定默认为「宝宝」',icon:'plus'}).then(function(kindTxt){
+        if(kindTxt===null)kindTxt='宝宝';
+        var kind=kindTxt==='宠物'?'pet':(kindTxt==='宝宝'?'baby':'other');
+        return MC_DIALOG.prompt('备注','如品种「金毛」，可留空','',{icon:'info'}).then(function(note){
+          if(note===null)note='';
+          return MC_DIALOG.prompt('生日或开始日期','格式 YYYY-MM-DD，可留空','',{placeholder:'YYYY-MM-DD',icon:'info'}).then(function(bday){
+            if(bday===null)bday='';
+            apiFetch('/api/v1/growth/subjects',{method:'POST',body:JSON.stringify({
+              name:name.trim(),kind:kind,
+              note:note.trim()||null,birthday:bday.trim()||null
+            })})
+              .then(apiOk)
+              .then(function(){return refreshApp()})
+              .then(function(){toast('✦ 主体已创建')})
+              .catch(function(err){toast('创建失败：'+(err&&err.message||err))});
+          });
+        });
+      });
+    });
   });
   /* 5d) 记录里程碑（S14 的「记录里程碑」按钮，落在当前切换的主体上） */
   document.addEventListener('click',function(e){
@@ -1847,19 +2391,25 @@ function loadAppData(){
     if(!btn)return;
     e.stopPropagation();e.preventDefault();
     if(!s14Id){toast('请先选择一个主体');return}
-    var title=prompt('里程碑（如：第一次独立走路）');if(!title)return;
-    var d=prompt('发生日期 YYYY-MM-DD（留空 = 今天）','');
-    if(d===null)return;
-    if(!d){var n=new Date();d=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())}
-    var desc=prompt('补充描述（可留空）','');if(desc===null)return;
-    var major=window.confirm('是重要里程碑吗？（时间轴上的大节点）');
-    apiFetch('/api/v1/growth/subjects/'+s14Id+'/milestones',{method:'POST',body:JSON.stringify({
-      title:title.trim(),date:d,desc:desc.trim()||null,is_major:major
-    })})
-      .then(apiOk)
-      .then(function(){return refreshApp()})
-      .then(function(){toast('✦ 里程碑已记录')})
-      .catch(function(err){toast('记录失败：'+(err&&err.message||err))});
+    MC_DIALOG.prompt('记录里程碑','如：第一次独立走路',null,{placeholder:'里程碑标题',icon:'plus'}).then(function(title){
+      if(!title)return;
+      return MC_DIALOG.prompt('发生日期','格式 YYYY-MM-DD，留空=今天','',{placeholder:'YYYY-MM-DD',icon:'info'}).then(function(d){
+        if(d===null)return;
+        if(!d){var n=new Date();d=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())}
+        return MC_DIALOG.prompt('补充描述','可留空','',{icon:'info'}).then(function(desc){
+          if(desc===null)desc='';
+          return MC_DIALOG.confirm('重要里程碑','是重要里程碑吗？时间轴上的大节点',{icon:'warn',okText:'是重要里程碑',cancelText:'普通里程碑'}).then(function(major){
+            apiFetch('/api/v1/growth/subjects/'+s14Id+'/milestones',{method:'POST',body:JSON.stringify({
+              title:title.trim(),date:d,desc:desc.trim()||null,is_major:!!major
+            })})
+              .then(apiOk)
+              .then(function(){return refreshApp()})
+              .then(function(){toast('✦ 里程碑已记录')})
+              .catch(function(err){toast('记录失败：'+(err&&err.message||err))});
+          });
+        });
+      });
+    });
   });
   /* 5e) 里程碑删除（capture 拦截，S14 时间轴卡片上的 ×） */
   document.addEventListener('click',function(e){
@@ -1868,12 +2418,14 @@ function loadAppData(){
     e.stopPropagation();e.preventDefault();
     var msid=del.dataset.msid;
     if(!msid)return;
-    if(!window.confirm('删除这条里程碑？'))return;
-    apiFetch('/api/v1/growth/milestones/'+msid,{method:'DELETE'})
-      .then(apiOk)
-      .then(function(){return refreshApp()})
-      .then(function(){toast('里程碑已删除')})
-      .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('删除里程碑','确定删除这条里程碑吗？',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/growth/milestones/'+msid,{method:'DELETE'})
+        .then(apiOk)
+        .then(function(){return refreshApp()})
+        .then(function(){toast('里程碑已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
   },true);
 
   /* ---------- 6) 邀请成员移除（capture 拦截，S10 成员卡上的 ×） ---------- */
@@ -1882,12 +2434,14 @@ function loadAppData(){
     if(!del||!del.dataset.mid)return;
     e.stopPropagation();e.preventDefault();
     var mid=del.dataset.mid;
-    if(!window.confirm('移除这位成员？'))return;
-    apiFetch('/api/v1/invites/members/'+mid,{method:'DELETE'})
-      .then(apiOk)
-      .then(function(){return refreshApp()})
-      .then(function(){toast('成员已移除')})
-      .catch(function(err){toast('移除失败：'+(err&&err.message||err))});
+    MC_DIALOG.confirm('移除成员','确定移除这位成员吗？',{icon:'trash',danger:true,okText:'移除'}).then(function(ok){
+      if(!ok)return;
+      apiFetch('/api/v1/invites/members/'+mid,{method:'DELETE'})
+        .then(apiOk)
+        .then(function(){return refreshApp()})
+        .then(function(){toast('成员已移除')})
+        .catch(function(err){toast('移除失败：'+(err&&err.message||err))});
+    });
   },true);
 
   /* ---------- 7) S07 媒体上传（预签名直传三步走） ---------- */
@@ -1896,9 +2450,17 @@ function loadAppData(){
   var fileInput=document.getElementById('s07file');
   function openS07FilePicker(multi){
     if(!CUR_MID){toast('请先选择一条记忆');return}
-    fileInput.multiple=!!multi;
-    fileInput.value='';
-    fileInput.click();
+    MC_DIALOG.actionSheet('添加媒体',[
+      {label:'拍照',icon:'cam'},
+      {label:'从相册选择',icon:'album'}
+    ]).then(function(idx){
+      if(idx===null)return;
+      fileInput.multiple=!!multi;
+      if(idx===0){fileInput.setAttribute('capture','environment')}
+      else{fileInput.removeAttribute('capture')}
+      fileInput.value='';
+      fileInput.click();
+    });
   }
   /* 串行直传一批文件 → [{key,url,kind}] */
   function uploadS07Files(files){
@@ -1906,7 +2468,7 @@ function loadAppData(){
     function next(){
       if(idx>=files.length)return Promise.resolve([]);
       var file=files[idx++];
-      if(file.size>5*1024*1024){toast('跳过超大文件：'+(file.name||''));return next()}
+      if(file.size>100*1024*1024){toast('跳过超大文件（上限 100MB）：'+(file.name||''));return next()}
       return apiFetch('/api/v1/uploads/presign',{
         method:'POST',body:JSON.stringify({filename:file.name||'upload',contentType:file.type||''})
       }).then(apiOk).then(function(res){
@@ -2018,13 +2580,15 @@ function loadAppData(){
       .then(function(){if(btn){btn.disabled=false;btn.textContent=old}});
   }
   function logout(){
-    if(!window.confirm('确定要退出登录吗？'))return;
-    var t=getToken();
-    if(t){fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
-    setToken('');
-    refreshApp().then(function(){
-      toast('已退出登录');
-      show('s12');
+    MC_DIALOG.confirm('退出登录','确定要退出当前账号吗？',{icon:'logout',okText:'退出'}).then(function(ok){
+      if(!ok)return;
+      var t=getToken();
+      if(t){fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
+      setToken('');
+      refreshApp().then(function(){
+        toast('已退出登录');
+        show('s12');
+      });
     });
   }
   /* 「我的」页：登录态 vs 游客态动态渲染 */
@@ -2086,13 +2650,14 @@ function loadAppData(){
   var s12WipeBtn=document.getElementById('s12WipeBtn');
   if(s12WipeBtn)s12WipeBtn.addEventListener('click',function(e){
     e.stopPropagation();
-    if(confirm('确定要清除全部数据吗？\n\n所有记忆、纪念日、成长记录和上传的照片都将被删除，且不可恢复。')){
+    MC_DIALOG.confirm('清除全部数据','所有记忆、纪念日、成长记录和上传的照片都将被删除，且不可恢复。',{icon:'wipe',danger:true,okText:'全部清除'}).then(function(ok){
+      if(!ok)return;
       if(window.__localdb&&window.__localdb.clearAll){
         window.__localdb.clearAll();
       }else{
-        alert('当前模式不支持清空操作');
+        MC_DIALOG.alert('不支持清空','当前模式不支持清空操作',{icon:'info'});
       }
-    }
+    });
   });
   /* 初始化「我的」页登录态（若 initApp 先于本 IIFE 执行，这里兜底补渲染） */
   if(window.APP_DATA&&typeof renderS12==='function')renderS12();
