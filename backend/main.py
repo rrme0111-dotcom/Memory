@@ -667,13 +667,11 @@ def build_timeline_hub(tpl_hub: dict, couple_tpl: dict, friend_tpl: dict,
     latest_ms = max(g_ms, key=lambda m: m.created_at) if g_ms else None
     for card in hub.get("cards", []):
         if card.get("type") == "couple":
-            card["meta"] = (f"{pair.get('title', '情侣时间轴')} · {couple_count} 条记忆 · 1对1共建")
+            card["meta"] = f"情侣时间轴 · {couple_count} 条记忆 · 1对1共建"
             card["last"] = (f"最近：{latest_c.title} · 今天" if latest_c
                             else "最近：暂无节点")
         elif card.get("type") == "friend":
-            card["meta"] = (f"{group.get('title', '友情时间轴')} · "
-                            f"{len(group.get('avatars') or []) + (group.get('more') or 0)}人共建 · "
-                            f"{friend_count} 条记忆")
+            card["meta"] = f"友情时间轴 · 1人共建 · {friend_count} 条记忆"
             card["last"] = (f"最近：{latest_f.title} · 今天" if latest_f
                             else "最近：暂无节点")
         elif card.get("type") == "growth":

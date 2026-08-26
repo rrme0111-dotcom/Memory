@@ -496,11 +496,10 @@ function buildTimelineHub(tplHub,coupleTpl,friendTpl,coupleNodes,friendNodes,mem
   var latestMs=gMs.length?gMs.reduce(function(a,b){return new Date(b.created_at)>new Date(a.created_at)?b:a;}):null;
   (hub.cards||[]).forEach(function(card){
     if(card.type==='couple'){
-      card.meta=(coupleTpl.pair||{}).title||'情侣时间轴'+' · '+coupleCount+' 条记忆 · 1对1共建';
+      card.meta='情侣时间轴 · '+coupleCount+' 条记忆 · 1对1共建';
       card.last=latestC?'最近：'+latestC.title+' · 今天':'最近：暂无节点';
     } else if(card.type==='friend'){
-      var g=friendTpl.group||{};
-      card.meta=(g.title||'友情时间轴')+' · '+((g.avatars||[]).length+(g.more||0))+'人共建 · '+friendCount+' 条记忆';
+      card.meta='友情时间轴 · 1人共建 · '+friendCount+' 条记忆';
       card.last=latestF?'最近：'+latestF.title+' · 今天':'最近：暂无节点';
     } else if(card.type==='growth'){
       card.meta='成长时间轴 · '+gSubs.length+' 个独立主体';

@@ -27,7 +27,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--white);}
 .screen.active{display:flex;}
 .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;}.scroll::-webkit-scrollbar{display:none;}
-.proto-nav{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:16px;width:196px;
+.proto-nav{display:none;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:16px;width:196px;
   flex-shrink:0;max-height:92vh;overflow-y:auto;}
 .proto-nav::-webkit-scrollbar{width:3px;}.proto-nav::-webkit-scrollbar-thumb{background:#E0D5C9;border-radius:2px;}
 .proto-nav h3{font-size:13px;font-weight:600;margin-bottom:10px;}
@@ -37,7 +37,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   border-radius:9px;padding:6px 10px;font-size:12px;color:var(--sub);cursor:pointer;font-family:var(--font);margin-bottom:2px;}
 .proto-nav button:hover{background:var(--fill);}.proto-nav button.on{background:var(--ink);color:#fff;}
 .proto-nav .tip{font-size:11px;color:var(--sub);line-height:1.6;margin-top:10px;border-top:1px solid var(--line-light);padding-top:10px;}
-.statusbar{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 32px 10px 36px;flex-shrink:0;}
+.statusbar{display:none;}
 .statusbar .time{font-family:var(--font-num);font-size:15px;font-weight:600;}
 .statusbar .icons{display:flex;align-items:center;gap:6px;}
 .sig{display:flex;align-items:flex-end;gap:2px;height:11px;}.sig i{width:3px;background:var(--ink);border-radius:1px;display:block;}
@@ -171,6 +171,9 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .wheel .it.cur{background:var(--fill-dark);border-radius:8px;margin:0 8px;width:calc(100% - 16px);font-weight:600;color:var(--ink);font-size:16px;}
 .wheel-band{position:absolute;left:8px;right:8px;top:50px;height:50px;border-top:1px solid #F2EBE3;border-bottom:1px solid #F2EBE3;pointer-events:none;}
 .wheels-5 .wheel{flex:.8;}
+.date-panel{margin:4px 0 16px;}
+.date-input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 14px;font-family:var(--font);font-size:15px;color:var(--ink);box-sizing:border-box;}
+.date-panel .date-input+.date-input{margin-top:10px;}
 /* S07 */
 #s07 .content{padding:0 20px 20px;overflow-y:auto;flex:1;}
 #s07 .hero{width:300px;height:300px;margin:10px auto 16px;display:block;}
@@ -642,6 +645,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
       <div class="cell cam" id="s05album"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="#9B8271" stroke-width="1.7"/><circle cx="8.5" cy="9.5" r="1.8" fill="#9B8271"/><path d="M4 17l5-5 4 4 3-3 4 4" stroke="#9B8271" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>相册·实况</span></div>
     </div>
     <input type="file" id="s05file" accept="image/*,video/*" multiple style="display:none">
+    <input type="file" id="s05camfile" accept="image/*" capture="environment" style="display:none">
     <div class="sec-title">写感受</div>
     <textarea class="textarea" placeholder="写下此刻的感受…"></textarea>
     <div class="record-wrap"><div class="record-btn" id="recBtn"><svg width="26" height="26" viewBox="0 0 30 30" fill="none"><rect x="10" y="3" width="10" height="17" rx="5" fill="#fff"/><path d="M5.5 14a9.5 9.5 0 0019 0M15 23.5V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></div><div class="record-hint">长按录音 · 最多 60 秒</div></div>
@@ -659,8 +663,8 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="opt" data-timeopt="now"><div><div class="ot" id="s06nowLabel"></div><div class="od">按记忆创建时刻 · 选中即生效</div></div><div class="radio"></div></div>
     <div class="opt on" data-timeopt="custom"><div><div class="ot">自定义日期时间</div><div class="od">补录 / 回填任意年月日时分</div></div><div class="radio on"></div></div>
     <div class="precision-toggle" id="precToggle"><div class="pt-opt on" data-prec="ymd">年月日</div><div class="pt-opt" data-prec="hm">时分</div></div>
-    <div class="wheels" id="wheels3"><div class="wheel" id="wy"></div><div class="wheel" id="wm"></div><div class="wheel" id="wd"></div><div class="wheel-band"></div></div>
-    <div class="wheels wheels-5" id="wheels5" style="display:none"><div class="wheel" id="wy2"></div><div class="wheel" id="wm2"></div><div class="wheel" id="wd2"></div><div class="wheel" id="wh"></div><div class="wheel" id="wmi"></div><div class="wheel-band"></div></div>
+    <div class="date-panel" id="wheels3"><input type="date" id="s06date" class="date-input"></div>
+    <div class="date-panel" id="wheels5" style="display:none"><input type="date" id="s06date2" class="date-input"><input type="time" id="s06time" class="date-input"></div>
     <div class="opt" data-timeopt="fuzzy"><div><div class="ot">模糊时间</div><div class="od">自己输入大致时期，如：某个夏天的晚上</div></div><div class="radio"></div></div>
     <div class="fuzzy-panel" id="fuzzyPanel">
       <input class="input" id="fuzzyInput">
@@ -1062,14 +1066,12 @@ function renderS06(){
   var ts=APP_DATA.timeSettings;if(!ts)return;
   setT('s06nowLabel',ts.now.label);
   var fi=$('fuzzyInput');if(fi&&ts.fuzzy)fi.placeholder=ts.fuzzy.placeholder;
-  var w=ts.wheels,d=w.default,months=[],days=[],hours=[],mins=[],i;
-  for(i=1;i<=12;i++)months.push(i+'月');
-  for(i=1;i<=w.dayCount;i++)days.push(String(i));
-  for(i=0;i<24;i++)hours.push(('0'+i).slice(-2)+':00');
-  for(i=0;i<60;i++)mins.push(('0'+i).slice(-2));
-  buildWheel($('wy'),w.years,d.year);buildWheel($('wm'),months,d.month);buildWheel($('wd'),days,d.day);
-  buildWheel($('wy2'),w.years,d.year);buildWheel($('wm2'),months,d.month);buildWheel($('wd2'),days,d.day);
-  buildWheel($('wh'),hours,d.hour);buildWheel($('wmi'),mins,d.minute);
+  var w=ts.wheels,d=w.default;
+  var _dv=d.year+'-'+pad(d.month)+'-'+pad(d.day);
+  var _tm=d.hour.slice(0,2)+':'+d.minute;
+  var sd=$('s06date');if(sd)sd.value=_dv;
+  var sd2=$('s06date2');if(sd2)sd2.value=_dv;
+  var st=$('s06time');if(st)st.value=_tm;
 }
 /* v0.8.3：S07 编辑态（媒体增删本地暂存，保存时全量 PATCH 入库） */
 var S07_EDIT=null;
@@ -1303,6 +1305,13 @@ function initApp(D){
   renderMeta();
   renderS01();renderS03();renderS04();renderS06();renderS07();renderS09();renderS10();renderS11();renderS13();renderS14();renderS15();renderS16();
   if(typeof renderS12==='function')renderS12();
+  /* v0.9.4：「现在」时分实时同步（每秒刷新，仅启动一次） */
+  if(!window.__s06Clock){
+    window.__s06Clock=setInterval(function(){
+      var d=new Date();
+      setT('s06nowLabel','现在 · '+(d.getMonth()+1)+'月'+d.getDate()+'日 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2));
+    },1000);
+  }
 }
 /* ============ 真假数据源分离 ============
  * DATA_MODE='mock'：使用 test_data.js 的测试数据（模拟后端返回）
@@ -1733,6 +1742,7 @@ window.MC_DIALOG=(function(){
     return 'photo';
   }
   var s05file=document.getElementById('s05file');
+  var s05camfile=document.getElementById('s05camfile');
   ['s05cam','s05album'].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.addEventListener('click',function(e){
@@ -1743,30 +1753,31 @@ window.MC_DIALOG=(function(){
       ]).then(function(idx){
         if(idx===null)return;
         if(!s05file)return;
-        if(idx===0){s05file.setAttribute('capture','environment')}
-        else{s05file.removeAttribute('capture')}
-        s05file.click();
+        if(idx===0){if(s05camfile)s05camfile.click()}
+        else{if(s05file)s05file.click()}
       });
     });
   });
-  if(s05file)s05file.addEventListener('change',function(){
-    var files=s05file.files||[],i;
+  function handleS05Files(input){
+    var files=input.files||[],i;
     for(i=0;i<files.length;i++){
       var f=files[i];
       if(f.size>100*1024*1024){toast('「'+(f.name||'文件')+'」超过 100MB，已跳过');continue}
       S05_MEDIA.push({file:f,url:URL.createObjectURL(f),kind:s05KindOf(f)});
     }
-    s05file.value='';
+    input.value='';
     renderS05Grid();
     if(S05_MEDIA.length)toast('已选 '+S05_MEDIA.length+' 个文件');
-  });
+  }
+  if(s05file)s05file.addEventListener('change',function(){handleS05Files(s05file)});
+  if(s05camfile)s05camfile.addEventListener('change',function(){handleS05Files(s05camfile)});
   function renderS05Grid(){
     var g=document.getElementById('s05grid');if(!g)return;
     g.querySelectorAll('.cell.pick').forEach(function(x){x.remove()});
     var html=S05_MEDIA.map(function(m,i){
       var inner=(m.kind==='photo')
         ?'<img class="pp" src="'+m.url+'" alt="">'
-        :'<video class="pp" src="'+m.url+'" muted playsinline preload="metadata"></video>';
+        :'<video class="pp" src="'+m.url+'" muted playsinline preload="auto"></video>';
       var tag=m.kind==='live'?'实况':(m.kind==='video'?'视频':'照片');
       return '<div class="cell pick">'+inner+'<span class="pick-tag">'+tag+'</span><span class="pick-del" data-idx="'+i+'" title="移除">×</span></div>';
     }).join('');
@@ -1928,14 +1939,15 @@ window.MC_DIALOG=(function(){
       var isHM=!!pon&&pon.dataset.prec==='hm';
       var y,mo,d;
       if(isHM){
-        y=wv('wy2');mo=wv('wm2');d=wv('wd2');
-        var h=wv('wh')||'20:00';
-        body.custom_time=h.slice(0,2)+':'+(wv('wmi')||'00');
+        var dv2=($('s06date2')&&$('s06date2').value)||'';
+        var p2=dv2.split('-');y=p2[0];mo=p2[1];d=p2[2];
+        body.custom_time=($('s06time')&&$('s06time').value)||'';
       }else{
-        y=wv('wy');mo=wv('wm');d=wv('wd');
+        var dv=($('s06date')&&$('s06date').value)||'';
+        var p1=dv.split('-');y=p1[0];mo=p1[1];d=p1[2];
       }
       var now=new Date();
-      body.custom_date=(y||now.getFullYear())+'-'+pad((mo||'').replace('月',''))+'-'+pad((d||'').replace('日',''));
+      body.custom_date=(y||now.getFullYear())+'-'+pad(mo||(now.getMonth()+1))+'-'+pad(d||now.getDate());
       if(!body.custom_time)body.custom_time=pad(now.getHours())+':'+pad(now.getMinutes());
     }else if(mode==='fuzzy'){
       /* v0.9.3：模糊时间只保留手输文本，不再有预设 chips */
