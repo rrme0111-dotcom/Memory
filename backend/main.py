@@ -107,8 +107,8 @@ import uploads
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "data" / "test_data.json"
 STATIC_DIR = BASE_DIR / "static"          # 托管前端原型页面
-HOST = "127.0.0.1"
-PORT = 8000
+HOST = os.environ.get("HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", "8000"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -797,14 +797,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS：收窄到本机来源（同源托管页面实际不触发 CORS；"null" 兼容 file:// 直开）
+# CORS：v0.9.4 放开来源（部署后前端跨域访问后端；个人项目不校验 Origin）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:8000", "http://localhost:8000",
-        "http://127.0.0.1:8778", "http://localhost:8778",
-        "null",
-    ],
+    allow_origins=["*"],
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Token", "Authorization"],
 )

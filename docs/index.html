@@ -1327,7 +1327,7 @@ function initApp(D){
  * 切真实后端三步：①删除 test_data.js；②删除 HTML 中 <script src="test_data.js">；③DATA_MODE 改为 'api' 并按屏填入真实接口。
  */
 var DATA_MODE='api';
-var API_BASE=''; /* 后端就绪后填入，如 'https://api.example.com' */
+var API_BASE=''; /* 真实后端地址（部署后填入），如 'https://your-app.onrender.com'；留空=本地离线模式 */
 function loadAppData(){
   if(DATA_MODE==='mock'){
     if(typeof TEST_DATA==='undefined'||!TEST_DATA){
@@ -1354,6 +1354,15 @@ function loadAppData(){
     initApp(D);
     /* v0.9.3 登录态：URL hash 优先（原型调试）；已登录用户直接进主界面；
        未登录（含首次进入）先弹登录/注册页，也可选择游客模式进入 */
+    /* v0.9.4：扫码/点链接进入（?invite=CODE&space=xxx），自动跳到共建邀请接受 */
+    var invM=location.search.match(/[?&]invite=([^&]+)/);
+    if(invM){
+      window.__inviteCode=decodeURIComponent(invM[1]);
+      var spM=location.search.match(/[?&]space=([^&]+)/);
+      window.__inviteSpace=spM?decodeURIComponent(spM[1]):'couple';
+      show('s10');
+      return;
+    }
     var hashId=location.hash.slice(1);
     if(hashId&&document.getElementById(hashId)){
       show(hashId);
@@ -2687,16 +2696,19 @@ window.MC_DIALOG=(function(){
   window.MC_AUTH={showAuth:showAuth,submitAuth:submitAuth,logout:logout,renderS12:renderS12,setAuthMode:setAuthMode};
 
   /* ---------- S10 共建邀请交互（v0.9.4） ---------- */
+  function isApiMode(){ return !!window.API_BASE; }
   function currentInviteSpace(){
     var t=document.querySelector('#relToggle .rt-opt.on');
     return t&&t.dataset.rel==='friend'?'friend':'couple';
   }
   function inviteCodeOf(space){
+    if(isApiMode())return window.__curCollabCode||'';
     var inv=APP_DATA.invites||{};
     return space==='friend'?((inv.friend&&inv.friend.inviteCode)||''):((inv.couple&&inv.couple.inviteCode)||'');
   }
-  function inviteUrl(space){
-    return location.origin+location.pathname+'?invite='+encodeURIComponent(inviteCodeOf(space))+'&space='+space;
+  function inviteUrl(space,code){
+    var c=code||inviteCodeOf(space);
+    return location.origin+location.pathname+'?invite='+encodeURIComponent(c)+'&space='+space;
   }
   function copyText(t){
     if(navigator.clipboard&&navigator.clipboard.writeText){
@@ -2719,21 +2731,43 @@ window.MC_DIALOG=(function(){
         .then(apiOk).then(function(){toast('已邀请 '+name);return refreshApp();}).catch(function(e){toast('邀请失败：'+(e&&e.message||e))});
     });
   }
+  function doAccept(code,space){
+    if(isApiMode()){
+      return apiFetch('/api/v1/collaborations/accept',{method:'POST',body:JSON.stringify({invite_code:code})}).then(apiOk);
+    }
+    return apiFetch('/api/v1/invites/accept',{method:'POST',body:JSON.stringify({space:space,name:'伙伴'})}).then(apiOk);
+  }
   function acceptInviteFlow(){
+    var preset=window.__inviteCode||'';
+    if(preset){
+      window.__inviteCode='';
+      var pspace=window.__inviteSpace||currentInviteSpace();
+      window.__inviteSpace='';
+      MC_DIALOG.prompt('接受共建邀请','输入你的昵称加入共建',null,{placeholder:'你的昵称'}).then(function(){
+        doAccept(preset,pspace).then(function(){toast('已加入共建，去时间线看看吧');return refreshApp().then(function(){show('s11');});}).catch(function(e){toast('加入失败：'+(e&&e.message||e))});
+      });
+      return;
+    }
     MC_DIALOG.prompt('接受邀请','输入对方给你的邀请码',null,{placeholder:'如 MV-A1B2C3',icon:'plus'}).then(function(code){
       code=(code||'').trim();if(!code)return;
-      MC_DIALOG.prompt('你的昵称','以什么名字加入共建',null,{placeholder:'你的昵称'}).then(function(name){
-        name=(name||'').trim()||'伙伴';
-        var space=currentInviteSpace();
-        apiFetch('/api/v1/invites/accept',{method:'POST',body:JSON.stringify({space:space,name:name})})
-          .then(apiOk).then(function(){toast('已加入共建，去时间线看看吧');return refreshApp().then(function(){show('s11');});}).catch(function(e){toast('加入失败：'+(e&&e.message||e))});
-      });
+      doAccept(code,currentInviteSpace()).then(function(){toast('已加入共建，去时间线看看吧');return refreshApp().then(function(){show('s11');});}).catch(function(e){toast('加入失败：'+(e&&e.message||e))});
     });
   }
   function generateInvite(){
     var space=currentInviteSpace();
-    copyText(inviteUrl(space));
-    setTimeout(function(){show('s11');},600);
+    if(isApiMode()){
+      apiFetch('/api/v1/collaborations/invite',{method:'POST',body:JSON.stringify({space:space})})
+        .then(apiOk).then(function(res){
+          var code=res&&res.inviteCode;
+          if(!code)throw new Error('未返回邀请码');
+          window.__curCollabCode=code;
+          copyText(inviteUrl(space,code));
+          setTimeout(function(){show('s11');},600);
+        }).catch(function(e){toast('生成邀请失败：'+(e&&e.message||e))});
+    }else{
+      copyText(inviteUrl(space));
+      setTimeout(function(){show('s11');},600);
+    }
   }
   document.addEventListener('click',function(e){
     var act=e.target.closest('[data-act]');
