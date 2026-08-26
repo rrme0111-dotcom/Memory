@@ -244,6 +244,14 @@ function firstCover(m){
   var media=m.media||[];
   return media.length?media[0]:null;
 }
+function firstImageCover(m){
+  var media=m.media||[],i;
+  for(i=0;i<media.length;i++){
+    var k=(media[i].kind||'').toLowerCase();
+    if(/^(png|jpe?g|gif|webp)$/.test(k))return media[i];
+  }
+  return null;
+}
 function memoryMeta(m,pcount,ccount){
   if(m.meta_override)return m.meta_override;
   var parts=[];
@@ -346,7 +354,7 @@ function annivCoverMap(annivs){
     return p.then(function(){
       return txGet('memories',a.linked_memory_id);
     }).then(function(m){
-      cmap[a.linked_memory_id]=m?firstCover(m):null;
+      cmap[a.linked_memory_id]=m?firstImageCover(m):null;
     });
   },Promise.resolve()).then(function(){return cmap;});
 }
@@ -602,7 +610,11 @@ function composeBootstrap(owner,user){
       data.meta.apiToken='local-mode';
       data.meta.auth={loggedIn:!!user,owner:owner,user:user?{id:user.id,username:user.username,nickname:user.nickname,avatar:user.avatar}:null};
       data.meta.version='3.3';
-      return data;
+      return Promise.all([getOrCreateInviteCode('couple'),getOrCreateInviteCode('friend')]).then(function(codes){
+        data.invites.couple.inviteCode=codes[0];
+        data.invites.friend.inviteCode=codes[1];
+        return data;
+      });
     });
   });
 }
@@ -659,6 +671,14 @@ function getSessionUser(token){
 }
 function logout(token){
   return txDelete('sessions',token).then(function(){return true;});
+}
+function getOrCreateInviteCode(space){
+  var key='invite_'+space+'_code';
+  return txGet('meta',key).then(function(v){
+    if(v&&v.value)return v.value;
+    var code='MV'+randomHex(6).toUpperCase();
+    return txPut('meta',{key:key,value:code}).then(function(){return code;});
+  });
 }
 
 /* ---------- Mock Response 工厂 ---------- */
@@ -975,7 +995,30 @@ function localApiRouter(url,opts){
       return txPut('growth_milestones',m).then(function(){return mockResponse({});});
     });
   }
-  // invite members
+  // invite members：添加成员（邀请/接受共用，本地模拟共建）
+  if(path==='/api/v1/invites/members'&&method==='POST'){
+    return getSessionUser(token).then(function(user){
+      var owner=user?'user:'+user.id:LOCAL_OWNER;
+      return getNextId('invite_members').then(function(id){
+        var name=(body.name||'').trim()||'伙伴';
+        var nowISO=new Date().toISOString();
+        var m={id:id,space:body.space||'couple',name:name,avatar:name.slice(0,1),bg:body.bg||null,state:body.state||'待接受',note:body.note||null,sort_order:0,source:'user',owner_id:owner,created_at:nowISO,updated_at:nowISO,deleted_at:null};
+        return txPut('invite_members',m).then(function(){return mockResponse(m,201);});
+      });
+    });
+  }
+  // 接受邀请：输入邀请码加入共建（本地模拟，标记「已加入」）
+  if(path==='/api/v1/invites/accept'&&method==='POST'){
+    return getSessionUser(token).then(function(user){
+      var owner=user?'user:'+user.id:LOCAL_OWNER;
+      return getNextId('invite_members').then(function(id){
+        var name=(body.name||'').trim()||'伙伴';
+        var nowISO=new Date().toISOString();
+        var m={id:id,space:body.space||'couple',name:name,avatar:name.slice(0,1),bg:null,state:'已加入',note:body.note||null,sort_order:0,source:'user',owner_id:owner,created_at:nowISO,updated_at:nowISO,deleted_at:null};
+        return txPut('invite_members',m).then(function(){return mockResponse(m,201);});
+      });
+    });
+  }
   var imMatch=/^\/api\/v1\/invites\/members\/(\d+)$/.exec(path);
   if(imMatch&&method==='DELETE'){
     return txGet('invite_members',+imMatch[1]).then(function(m){

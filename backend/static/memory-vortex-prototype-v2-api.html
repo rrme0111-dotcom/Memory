@@ -623,6 +623,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="sheet-title">你想为谁记录？</div><div class="sheet-sub">不同场景进入不同的记录系统</div>
     <div class="scene-grid" id="s04grid"></div>
     <button class="btn-primary" data-go="s05">开始记录</button>
+    <button data-go="s10" style="margin-top:12px;width:100%;height:48px;background:#fff;border:1px solid var(--line);border-radius:24px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer">共建邀请 · 情侣 / 友情</button>
   </div>
   <div class="tabbar"><div class="pill">
     <div class="tab" data-tab="s03"><svg viewBox="0 0 20 20" fill="none"><path d="M3 17V6l7-3 7 3v11M3 17h14M8 17v-5h4v5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>时间轴</span></div>
@@ -745,32 +746,33 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div id="coupleMode">
       <h1>和重要的人一起记录</h1><div class="sub">邀请一位伙伴加入，共建专属时间线</div>
       <div class="card-gray">
-        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制邀请链接</span><span class="mini-btn">复制</span></div>
+        <div class="invite-row" data-act="copyLink" data-space="couple" style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制邀请链接</span><span class="mini-btn">复制</span></div>
         <div class="divider"></div>
-        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">显示二维码</span><span class="mini-btn">生成</span></div>
+        <div class="invite-row" data-act="qr" data-space="couple" style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">显示二维码</span><span class="mini-btn">生成</span></div>
         <div class="divider"></div>
-        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" stroke="#9B8271" stroke-width="1.6"/><path d="M5.5 7h9M5.5 11h9" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span class="txt">邀请码</span><span class="code" id="s10code" style="flex:1;text-align:right"></span><span class="mini-btn">复制</span></div>
+        <div class="invite-row" data-act="copyCode" style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" stroke="#9B8271" stroke-width="1.6"/><path d="M5.5 7h9M5.5 11h9" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg><span class="txt">邀请码</span><span class="code" id="s10code" style="flex:1;text-align:right"></span><span class="mini-btn">复制</span></div>
       </div>
       <div id="s10couplePending"></div>
     </div>
     <div id="friendMode" style="display:none">
       <h1>和朋友一起记录</h1><div class="sub">邀请最多 5 位好友，共建群组记忆线</div>
       <div class="card-gray">
-        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制群组邀请链接</span><span class="mini-btn">复制</span></div>
+        <div class="invite-row" data-act="copyLink" data-space="friend" style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 7l-4 3 4 3M12 7l4 3-4 3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">复制群组邀请链接</span><span class="mini-btn">复制</span></div>
         <div class="divider"></div>
-        <div class="invite-row"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">群组二维码</span><span class="mini-btn">生成</span></div>
+        <div class="invite-row" data-act="qr" data-space="friend" style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="1" width="6" height="6" rx="1" fill="#9B8271"/><rect x="1" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="13" y="13" width="6" height="6" rx="1" fill="#9B8271"/><rect x="7" y="7" width="6" height="6" rx="1" fill="#9B8271"/></svg><span class="txt">群组二维码</span><span class="mini-btn">生成</span></div>
       </div>
       <div id="s10friendMembers"></div>
-      <div class="member-slot"><div class="ms-add">+</div><div class="ms-t" id="s10remain"></div></div>
+      <div class="member-slot" data-act="addMember" data-space="friend" style="cursor:pointer"><div class="ms-add">+</div><div class="ms-t" id="s10remain"></div></div>
     </div>
-    <button class="btn-primary" data-go="s11">生成邀请</button>
+    <button class="btn-primary" data-act="generate">生成邀请 · 复制链接</button>
+    <button data-act="accept" style="margin-top:12px;width:100%;height:48px;background:#fff;border:1px solid var(--line);border-radius:24px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer">输入邀请码加入共建</button>
   </div>
 </section>
 
 <!-- S11 -->
 <section class="screen" id="s11">
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
-  <div class="navbar"><span class="back" data-go="s10"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建时间线</span><span class="right"></span></div>
+  <div class="navbar"><span class="back" data-go="s03"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">共建时间线</span><span class="right" style="min-width:44px;color:#3D2E24;font-weight:500;cursor:pointer" data-go="s10">共建</span></div>
   <div class="content">
     <div class="rel-toggle" id="s11toggle"><div class="rt-opt on" data-rel="couple"><span class="sdot c"></span>情侣</div><div class="rt-opt" data-rel="friend"><span class="sdot f"></span>友情</div></div>
     <!-- 情侣共建时间线 -->
@@ -2683,6 +2685,67 @@ window.MC_DIALOG=(function(){
   /* QA / 调试入口：暴露给浏览器控制台与外层 initApp，便于端到端验证 */
   window.renderS12=renderS12;
   window.MC_AUTH={showAuth:showAuth,submitAuth:submitAuth,logout:logout,renderS12:renderS12,setAuthMode:setAuthMode};
+
+  /* ---------- S10 共建邀请交互（v0.9.4） ---------- */
+  function currentInviteSpace(){
+    var t=document.querySelector('#relToggle .rt-opt.on');
+    return t&&t.dataset.rel==='friend'?'friend':'couple';
+  }
+  function inviteCodeOf(space){
+    var inv=APP_DATA.invites||{};
+    return space==='friend'?((inv.friend&&inv.friend.inviteCode)||''):((inv.couple&&inv.couple.inviteCode)||'');
+  }
+  function inviteUrl(space){
+    return location.origin+location.pathname+'?invite='+encodeURIComponent(inviteCodeOf(space))+'&space='+space;
+  }
+  function copyText(t){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){toast('已复制到剪贴板')},function(){toast('复制失败')});
+      return;
+    }
+    var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast('已复制到剪贴板')}catch(e){toast('复制失败')}
+    document.body.removeChild(ta);
+  }
+  function showInviteQr(space){
+    var url=inviteUrl(space),code=inviteCodeOf(space);
+    var img='<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url)+'" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:8px" onerror="this.outerHTML=\'<div style=&quot;text-align:center;padding:46px 0;color:#7A5E4E;font-size:14px&quot;>二维码加载失败<br>邀请码：<b>'+code+'</b></div>\'">';
+    MC_DIALOG.alert('邀请二维码',img+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+url+'</div>',{icon:'info'});
+  }
+  function addInviteMember(space){
+    MC_DIALOG.prompt('邀请成员','输入对方昵称（本地模拟对方接受）',null,{placeholder:'如：小苏',icon:'plus'}).then(function(name){
+      name=(name||'').trim();if(!name)return;
+      apiFetch('/api/v1/invites/members',{method:'POST',body:JSON.stringify({space:space,name:name,state:'待接受'})})
+        .then(apiOk).then(function(){toast('已邀请 '+name);return refreshApp();}).catch(function(e){toast('邀请失败：'+(e&&e.message||e))});
+    });
+  }
+  function acceptInviteFlow(){
+    MC_DIALOG.prompt('接受邀请','输入对方给你的邀请码',null,{placeholder:'如 MV-A1B2C3',icon:'plus'}).then(function(code){
+      code=(code||'').trim();if(!code)return;
+      MC_DIALOG.prompt('你的昵称','以什么名字加入共建',null,{placeholder:'你的昵称'}).then(function(name){
+        name=(name||'').trim()||'伙伴';
+        var space=currentInviteSpace();
+        apiFetch('/api/v1/invites/accept',{method:'POST',body:JSON.stringify({space:space,name:name})})
+          .then(apiOk).then(function(){toast('已加入共建，去时间线看看吧');return refreshApp().then(function(){show('s11');});}).catch(function(e){toast('加入失败：'+(e&&e.message||e))});
+      });
+    });
+  }
+  function generateInvite(){
+    var space=currentInviteSpace();
+    copyText(inviteUrl(space));
+    setTimeout(function(){show('s11');},600);
+  }
+  document.addEventListener('click',function(e){
+    var act=e.target.closest('[data-act]');
+    if(!act)return;
+    var a=act.dataset.act,space=act.dataset.space||currentInviteSpace();
+    if(a==='copyLink')copyText(inviteUrl(space));
+    else if(a==='qr')showInviteQr(space);
+    else if(a==='copyCode')copyText(inviteCodeOf('couple'));
+    else if(a==='addMember')addInviteMember(space);
+    else if(a==='accept')acceptInviteFlow();
+    else if(a==='generate')generateInvite();
+  });
 })();
 </script>
 <script>

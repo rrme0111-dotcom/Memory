@@ -267,6 +267,19 @@ def _first_cover(m: db.Memory) -> dict | None:
     return media[0] if media else None
 
 
+def _first_image_cover(m: db.Memory) -> dict | None:
+    """记忆的首张图片媒体（跳过视频/音频/实况）；无图片返回 None。
+
+    v0.9.4：纪念日卡片背景只用图片——若首个媒体是视频，背景会空白，
+    故取 media 中第一个图片类型（png/jpg/jpeg/gif/webp）。
+    """
+    for item in (m.media or []):
+        kind = (item.get("kind") or "").lower()
+        if kind in ("png", "jpg", "jpeg", "gif", "webp"):
+            return item
+    return None
+
+
 def _timeline_item(m: db.Memory, now: datetime,
                    pcount: int = 0, ccount: int = 0) -> dict:
     if m.precise_at is None:
@@ -399,7 +412,7 @@ def _anniv_cover_map(annivs: list[db.Anniversary]) -> dict[int, dict | None]:
     for a in annivs:
         if a.linked_memory_id:
             m = db.get_memory(a.linked_memory_id)
-            cmap[a.linked_memory_id] = _first_cover(m) if m else None
+            cmap[a.linked_memory_id] = _first_image_cover(m) if m else None
     return cmap
 
 
