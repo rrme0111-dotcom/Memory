@@ -45,7 +45,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .batt{width:25px;height:12px;border:1px solid var(--ink);border-radius:3.5px;position:relative;padding:1.5px;}
 .batt::after{content:'';position:absolute;right:-4px;top:3.5px;width:2px;height:4px;background:var(--ink);border-radius:0 1px 1px 0;}
 .batt i{display:block;height:100%;width:78%;background:var(--ink);border-radius:1.5px;}
-.navbar{height:46px;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;}
+.navbar{height:60px;display:flex;align-items:center;padding:16px 20px 0;gap:12px;flex-shrink:0;}
 .navbar .back{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 .navbar .title{flex:1;text-align:center;font-size:16px;font-weight:600;}
 .navbar .right{min-width:34px;text-align:right;font-size:14px;color:var(--muted);cursor:pointer;}
@@ -684,7 +684,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="meta-row"><span class="time-main" id="s07time"></span><span id="s07scene"></span><span class="chip" style="height:20px;font-size:10px;padding:0 7px">自定义时间戳</span></div>
     <div class="meta-row"><span class="emo-tag" id="s07emo"></span></div>
     <div class="feel" id="s07feel"></div>
-    <div class="voice-block"><div class="who"><span class="avatar" style="width:28px;height:28px;font-size:12px" id="s07vava"></span><span class="n">语音留言</span></div><div class="voice"><span class="play"></span><span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span><span class="dur" id="s07vdur"></span></div></div>
+    <div class="voice-block" id="s07voiceblock"><div class="who"><span class="avatar" style="width:28px;height:28px;font-size:12px" id="s07vava"></span><span class="n">语音留言</span></div><div class="voice" id="s07voiceStatic"><span class="play"></span><span class="wave"><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:6px"></i></span><span class="dur" id="s07vdur"></span></div><div id="s07voiceplayer"></div></div>
     <div class="persp-section">
       <div class="persp-collapsed" id="perspToggle"><div class="pl"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5.5" cy="5" r="2.5" stroke="#9B8271" stroke-width="1.4"/><circle cx="11" cy="5.5" r="2" stroke="#9B8271" stroke-width="1.4"/><path d="M1.5 13c.5-2 2-3 4-3M8.5 13c.5-1.5 1.5-2.5 3-2.5" stroke="#9B8271" stroke-width="1.2" stroke-linecap="round"/></svg><span><b id="s07pcount"></b> 条多视角记录</span></div><div class="chev" id="perspChev"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 5l3 3 3-3" stroke="#9B8271" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
       <div class="persp-expanded" id="perspExpanded"></div>
@@ -1083,11 +1083,16 @@ function renderS07(){
   var sc=$('s07scene');if(sc)sc.innerHTML=sceneTag(d.scene);
   setT('s07emo',d.emotion);
   var emEl=$('s07emo');if(emEl)emEl.style.display=d.emotion?'':'none';   /* v0.9.3：无情绪时隐藏标签 */
-  var vv=$('s07vava'),hasVoice=!!(d.voice&&d.voice.by);
-  if(vv){var vbox=vv.closest('.voice')||vv.parentElement;if(vbox)vbox.style.display=hasVoice?'':'none'}
-  setT('s07vava',hasVoice?d.voice.by:'');setT('s07vdur',hasVoice?d.voice.duration:'');
   /* v0.8.3：编辑态媒体列表来自 S07_EDIT（本地增删，保存时才 PATCH 入库） */
   var med=editing?S07_EDIT.media:(d.media||[]);
+  var audioItems=med.filter(function(m){return /^(m4a|mp3|webm)$/.test((m.kind||'').toLowerCase());});
+  var visualMedia=med.filter(function(m){return !/^(m4a|mp3|webm)$/.test((m.kind||'').toLowerCase());});
+  var vblock=$('s07voiceblock'),vstatic=$('s07voiceStatic'),vplayer=$('s07voiceplayer');
+  var hasAudio=audioItems.length>0;
+  if(vblock)vblock.style.display=hasAudio?'':'none';
+  if(vstatic)vstatic.style.display=hasAudio?'none':'';
+  if(vplayer)vplayer.innerHTML=hasAudio?audioItems.map(function(a){return '<audio src="'+esc(a.url)+'" controls style="width:100%;height:40px;display:block"></audio>';}).join(''):'';
+  setT('s07vava','我');setT('s07vdur',hasAudio?((d.voice&&d.voice.duration)||''):'');
   var feelBox=document.getElementById('s07feel');
   if(editing){
     var cur=S07_EDIT;
@@ -1105,7 +1110,7 @@ function renderS07(){
   }
   var hero=document.querySelector('#s07 .hero');
   if(hero){
-    var first=med[0],heroInner='<svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#D9CCBF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#D9CCBF" stroke-width="2.4"/><path d="M18 12l3.5-5h9L34 12" stroke="#D9CCBF" stroke-width="2.4"/></svg>';
+    var first=visualMedia[0],heroInner='<svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect x="5" y="12" width="42" height="31" rx="6" stroke="#D9CCBF" stroke-width="2.4"/><circle cx="26" cy="27.5" r="8.5" stroke="#D9CCBF" stroke-width="2.4"/><path d="M18 12l3.5-5h9L34 12" stroke="#D9CCBF" stroke-width="2.4"/></svg>';
     if(first&&first.url){
       var fext=(first.kind||'').toLowerCase();
       if(fext==='mov')heroInner='<video src="'+esc(first.url)+'" controls playsinline></video><span class="live-flag">LIVE 实况</span>';
@@ -1119,7 +1124,7 @@ function renderS07(){
   if(ms){
     ms.style.display=med.length||editing?'':'none';
     var strip='';
-    med.forEach(function(md,i){
+    visualMedia.forEach(function(md,i){
       var url=md.url||'',ext=(md.kind||'').toLowerCase();
       var inner;
       if(ext==='mov')inner='<div class="media-live"><video src="'+esc(url)+'" controls playsinline></video><span class="live-flag">LIVE 实况</span></div>';
@@ -1972,7 +1977,7 @@ window.MC_DIALOG=(function(){
       });
     }).then(function(r){
       if(!r.ok)return r.json().catch(function(){}).then(function(j){
-        throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+        throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
       });
       return r.json();
     }).then(function(){
@@ -2117,7 +2122,7 @@ window.MC_DIALOG=(function(){
         method:'POST',body:JSON.stringify({author_name:'我',content:content})
       }).then(function(r){
         if(!r.ok)return r.json().catch(function(){}).then(function(j){
-          throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+          throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
         });
         return r.json();
       }).then(function(){
@@ -2191,7 +2196,7 @@ window.MC_DIALOG=(function(){
       method:'PATCH',body:JSON.stringify(body)
     }).then(function(r){
       if(!r.ok)return r.json().catch(function(){}).then(function(j){
-        throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+        throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
       });
       return r.json();
     }).then(function(){
@@ -2274,7 +2279,7 @@ window.MC_DIALOG=(function(){
         apiFetch('/api/v1/anniversaries',{method:'POST',body:JSON.stringify(body)})
           .then(function(r){
             if(!r.ok)return r.json().catch(function(){}).then(function(j){
-              throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+              throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
             });
             return r.json();
           })
@@ -2304,7 +2309,7 @@ window.MC_DIALOG=(function(){
       apiFetch('/api/v1/memories/'+mid,{method:'DELETE'})
         .then(function(r){
           if(!r.ok)return r.json().catch(function(){}).then(function(j){
-            throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+            throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
           });
           return r.json();
         })
@@ -2326,7 +2331,7 @@ window.MC_DIALOG=(function(){
       apiFetch('/api/v1/anniversaries/'+aid,{method:'DELETE'})
         .then(function(r){
           if(!r.ok)return r.json().catch(function(){}).then(function(j){
-            throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+            throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
           });
           return r.json();
         })
@@ -2339,7 +2344,7 @@ window.MC_DIALOG=(function(){
   /* ---------- 5) 成长追踪：S13 主体 / S14 里程碑 ---------- */
   function apiOk(r){
     if(!r.ok)return r.json().catch(function(){}).then(function(j){
-      throw new Error((j&&j.message)||(j&&j.detail)||('HTTP '+r.status));
+      throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
     });
     return r.json();
   }
@@ -2574,7 +2579,7 @@ window.MC_DIALOG=(function(){
     return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){
         return r.json().catch(function(){return {message:'HTTP '+r.status}}).then(function(j){
-          if(!r.ok)throw new Error(j.detail||j.message||('HTTP '+r.status));
+          if(!r.ok)throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
           return j.data;
         });
       })
