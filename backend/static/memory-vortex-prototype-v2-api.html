@@ -1327,7 +1327,7 @@ function initApp(D){
  * 切真实后端三步：①删除 test_data.js；②删除 HTML 中 <script src="test_data.js">；③DATA_MODE 改为 'api' 并按屏填入真实接口。
  */
 var DATA_MODE='api';
-var API_BASE=''; /* 真实后端地址（部署后填入），如 'https://your-app.onrender.com'；留空=本地离线模式 */
+var API_BASE='https://memory.fastapicloud.dev'; /* 真实后端地址（已部署） */
 function loadAppData(){
   if(DATA_MODE==='mock'){
     if(typeof TEST_DATA==='undefined'||!TEST_DATA){
