@@ -89,6 +89,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+import os
 import re
 import secrets
 from datetime import date, datetime, timedelta
@@ -103,8 +104,8 @@ logger = logging.getLogger("memory-vortex.db")
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "data" / "memory_vortex.db"
 
-# 数据库连接串：升级 PostgreSQL 时只改这一行（并加装驱动 psycopg 或 asyncpg）
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+# 数据库连接串：优先读 DATABASE_URL 环境变量（部署 PostgreSQL 用），否则本地 SQLite
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
 SCENES = ("personal", "couple", "friend", "growth")
 TIME_MODES = ("now", "custom", "fuzzy")
@@ -392,12 +393,15 @@ engine = create_engine(
 # 轻量迁移：已有库补列 / 补索引（create_all 不会改已存在的表）
 # ---------------------------------------------------------------------------
 def _migrate() -> None:
+    is_sqlite = DATABASE_URL.startswith("sqlite")
     with engine.begin() as conn:
-        # 通用补列：模型里声明了、表里没有的列，自动 ALTER TABLE 补上
-        for model in (Memory, Perspective, Comment, Anniversary,
-                      GrowthSubject, GrowthMilestone, TimelineNode, InviteMember,
-                      User, AuthSession):
-            _ensure_columns(conn, model)
+        # 通用补列：仅 SQLite 旧库需要（PRAGMA table_info 是 SQLite 特有）；
+        # PostgreSQL 首次启动由 create_all 建全量表，无旧库补列场景
+        if is_sqlite:
+            for model in (Memory, Perspective, Comment, Anniversary,
+                          GrowthSubject, GrowthMilestone, TimelineNode, InviteMember,
+                          User, AuthSession):
+                _ensure_columns(conn, model)
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_memories_scene ON memories(scene)")
         conn.exec_driver_sql(

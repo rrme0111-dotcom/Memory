@@ -1,5 +1,5 @@
-# Render Blueprint：一键部署后端（实现真实用户间共建）
-# 用法：在 Render 里 New Blueprint Instance → 连接 GitHub 仓库 → 选此文件
+# Render Blueprint：部署后端 + 免费 PostgreSQL（实现真实用户间共建）
+# 用法：Render → New Blueprint Instance → 连接 GitHub 仓库 → 选此文件
 services:
   - type: web
     name: memory-vortex-api
@@ -8,10 +8,16 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    disk:
-      name: sqlite-data
-      mountPath: /opt/render/project/src/backend/data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: memory-vortex-db
+          property: connectionString
+
+databases:
+  - name: memory-vortex-db
+    plan: free
+    databaseName: memoryvortex
+    user: memoryvortex
