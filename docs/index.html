@@ -2576,9 +2576,13 @@ window.MC_DIALOG=(function(){
   function showAuth(mode,back){
     AUTH_BACK=back||'s12';
     setAuthMode(mode||'login');
-    var u=document.getElementById('authUsername'),p=document.getElementById('authPassword');
-    if(u)u.value='';if(p)p.value='';
-    var n=document.getElementById('authNickname');if(n)n.value='';
+    var act=document.querySelector('.screen.active');
+    var already=(act&&act.id==='s17');
+    if(!already){
+      var u=document.getElementById('authUsername'),p=document.getElementById('authPassword');
+      if(u)u.value='';if(p)p.value='';
+      var n=document.getElementById('authNickname');if(n)n.value='';
+    }
     show('s17');
   }
   function setAuthErr(msg){var e=document.getElementById('authErr');if(e)e.textContent=msg||''}
