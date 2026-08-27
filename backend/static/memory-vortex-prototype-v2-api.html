@@ -551,7 +551,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 <div class="phone" id="phone">
 
 <!-- S01 -->
-<section class="screen active" id="s01">
+<section class="screen" id="s01">
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
   <div class="wrap">
     <div class="logo-vortex"></div><h1 id="appTitle">记忆漩涡</h1><div class="en" id="appEn">MemoryVortex</div>
@@ -568,7 +568,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   <div class="top"><span class="skip" data-go="s03">跳过</span></div>
   <div class="wrap">
     <div class="hero ph"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="4" y="10" width="36" height="26" rx="6" stroke="#D4C6B9" stroke-width="2"/><circle cx="22" cy="23" r="7" stroke="#D4C6B9" stroke-width="2"/><path d="M16 10l3-4h6l3 4" stroke="#D4C6B9" stroke-width="2"/></svg></div>
-    <h1>30 秒，记下此刻的你</h1><div class="sub">选一张照片 · 录一句声音 · 写下一个时间戳</div>
+    <h1>记忆漩涡</h1><div class="sub">选一张照片 · 录一句声音 · 写下一个时间戳</div>
     <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1.5" y="3.5" width="15" height="11" rx="2.5" stroke="#9B8271" stroke-width="1.6"/><circle cx="9" cy="9" r="2.8" stroke="#9B8271" stroke-width="1.6"/></svg></div><div class="t">照片 / 视频</div></div>
     <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6" y="1.5" width="6" height="11" rx="3" stroke="#9B8271" stroke-width="1.6"/><path d="M3.5 8a5.5 5.5 0 0011 0M9 13.5v3" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">语音感受</div></div>
     <div class="feat"><div class="ic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#9B8271" stroke-width="1.6"/><path d="M9 5v4l2.5 2.5" stroke="#9B8271" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="t">自定义时间戳</div></div>
@@ -890,7 +890,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 </section>
 
 <!-- S17: 登录 / 注册 -->
-<section class="screen" id="s17">
+<section class="screen active" id="s17">
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
   <div class="navbar"><span class="back" id="authBack"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">账号</span><span class="right"></span></div>
   <div class="auth-wrap">
@@ -1369,7 +1369,7 @@ function loadAppData(){
     }else if(D&&D.meta&&D.meta.auth&&D.meta.auth.loggedIn){
       show('s03');
     }else if(window.MC_AUTH&&window.MC_AUTH.showAuth){
-      window.MC_AUTH.showAuth('login','s01');
+      window.MC_AUTH.showAuth('login','s02');
     }else{
       show('s17');
     }
@@ -2115,7 +2115,7 @@ window.MC_DIALOG=(function(){
         scene:d.scene,emotion:(d.emotions&&d.emotions[0])||'',
         feel:d.feel,voice:d.voice?{by:'我',duration:d.voice}:null,
         media:d.media||[],
-        perspectives:ps.length?ps:APP_DATA.memoryDetail.perspectives,
+        perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
       renderS07();renderComments();
