@@ -107,6 +107,13 @@ DB_PATH = BASE_DIR / "data" / "memory_vortex.db"
 # 数据库连接串：优先读 DATABASE_URL 环境变量（部署 PostgreSQL 用），否则本地 SQLite
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
+# PostgreSQL 驱动：部署环境（Python 3.14）用 psycopg3（psycopg），对最新 Python 支持最好；
+# SQLAlchemy 的 postgresql:// 默认 psycopg2，这里显式指到 +psycopg
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
+
 SCENES = ("personal", "couple", "friend", "growth")
 TIME_MODES = ("now", "custom", "fuzzy")
 
