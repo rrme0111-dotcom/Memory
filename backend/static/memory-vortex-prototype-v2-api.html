@@ -1200,7 +1200,7 @@ function memberCard(m){
 }
 function renderS10(){
   var inv=APP_DATA.invites;if(!inv)return;
-  setT('s10code',inviteCodeOf('couple')||inv.couple.inviteCode);
+  setT('s10code',isApiMode()?(window.__curCollabCode||''):(inv.couple.inviteCode||''));
   var cp=$('s10couplePending');if(cp)cp.innerHTML=(inv.couple.pending||[]).map(memberCard).join('');
   var fm=$('s10friendMembers');if(fm)fm.innerHTML=(inv.friend.members||[]).map(memberCard).join('');
   setT('s10remain','继续邀请（还可加 '+(inv.friend.capacity-(inv.friend.members||[]).length)+' 人）');
@@ -1254,7 +1254,12 @@ function renderS13(){
 }
 var s14Cur=null,s14Id=null;
 function renderS14Timeline(){
-  var t=APP_DATA.growth.timelines[s14Cur];if(!t)return;
+  var t=APP_DATA.growth.timelines[s14Cur];
+  if(!t){
+    setT('s14sub','');
+    var tl0=$('s14timeline');if(tl0)tl0.innerHTML='';
+    return;
+  }
   setT('s14sub',t.subtitle);
   if(t.id)s14Id=t.id;
   var tl=$('s14timeline');if(!tl)return;
@@ -1707,7 +1712,7 @@ window.MC_DIALOG=(function(){
     var opts={};
     var t=getToken();
     if(t)opts.headers={'Authorization':'Bearer '+t};
-    return fetch('/api/app/bootstrap',opts).then(function(r){
+    return fetch(API_BASE+'/api/app/bootstrap',opts).then(function(r){
       if(!r.ok)throw new Error('HTTP '+r.status);
       return r.json();
     }).then(function(D){initApp(D)});
@@ -1743,7 +1748,7 @@ window.MC_DIALOG=(function(){
   function apiFetch(url,opts){
     opts=opts||{};
     opts.headers=Object.assign({},opts.headers||{},apiHeaders(!!opts.body));
-    return fetch(url,opts).then(function(r){
+    return fetch(API_BASE+url,opts).then(function(r){
       if(r.status!==401)return r;
       if(getToken()){
         setToken('');
@@ -1755,7 +1760,7 @@ window.MC_DIALOG=(function(){
       }
       return refreshApp().then(function(){
         opts.headers=Object.assign({},opts.headers||{},apiHeaders(!!opts.body));
-        return fetch(url,opts);
+        return fetch(API_BASE+url,opts);
       });
     });
   }
@@ -2605,7 +2610,7 @@ window.MC_DIALOG=(function(){
     var old=btn?btn.textContent:'';
     if(btn){btn.disabled=true;btn.textContent='请稍候…'}
     setAuthErr('');
-    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    return fetch(API_BASE+url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){
         return r.json().catch(function(){return {message:'HTTP '+r.status}}).then(function(j){
           if(!r.ok)throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
@@ -2630,7 +2635,7 @@ window.MC_DIALOG=(function(){
     MC_DIALOG.confirm('退出登录','确定要退出当前账号吗？',{icon:'logout',okText:'退出'}).then(function(ok){
       if(!ok)return;
       var t=getToken();
-      if(t){fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
+      if(t){fetch(API_BASE+'/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
       setToken('');
       refreshApp().then(function(){
         toast('已退出登录');

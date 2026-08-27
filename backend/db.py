@@ -600,6 +600,13 @@ def create_perspective(memory_id: int, **kw: Any) -> Perspective:
         return p
 
 
+def get_perspective(pid: int) -> Perspective | None:
+    """按 id 取未删除的多视角（含 memory_id，供删除前归属校验）。"""
+    with Session(engine) as session:
+        p = session.get(Perspective, pid)
+        return None if (p is None or p.deleted_at is not None) else p
+
+
 def soft_delete_perspective(pid: int) -> bool:
     with Session(engine) as session:
         p = session.get(Perspective, pid)
@@ -627,6 +634,13 @@ def create_comment(memory_id: int, **kw: Any) -> Comment:
         session.commit()
         session.refresh(c)
         return c
+
+
+def get_comment(cid: int) -> Comment | None:
+    """按 id 取未删除的留言（含 memory_id，供删除前归属校验）。"""
+    with Session(engine) as session:
+        c = session.get(Comment, cid)
+        return None if (c is None or c.deleted_at is not None) else c
 
 
 def soft_delete_comment(cid: int) -> bool:

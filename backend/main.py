@@ -1310,10 +1310,13 @@ async def create_perspective_api(mid: int, req: PerspectiveCreate,
 
 
 @app.delete("/api/v1/perspectives/{pid}")
-async def delete_perspective_api(pid: int) -> JSONResponse:
-    """删除多视角（软删除）。"""
-    if not db.soft_delete_perspective(pid):
+async def delete_perspective_api(pid: int,
+                                 owner: str = Depends(current_owner)) -> JSONResponse:
+    """删除多视角（软删除；按父记忆归属校验，防 IDOR）。"""
+    p = db.get_perspective(pid)
+    if p is None or _memory_visible(p.memory_id, owner) is None:
         raise HTTPException(status_code=404, detail=f"视角不存在: {pid}")
+    db.soft_delete_perspective(pid)
     invalidate_bootstrap_cache()
     logger.info("删除视角 #%d（软删除）", pid)
     return ok({"id": pid, "deleted": True})
@@ -1356,10 +1359,13 @@ async def create_comment_api(mid: int, req: CommentCreate,
 
 
 @app.delete("/api/v1/comments/{cid}")
-async def delete_comment_api(cid: int) -> JSONResponse:
-    """删除留言（软删除）。"""
-    if not db.soft_delete_comment(cid):
+async def delete_comment_api(cid: int,
+                             owner: str = Depends(current_owner)) -> JSONResponse:
+    """删除留言（软删除；按父记忆归属校验，防 IDOR）。"""
+    c = db.get_comment(cid)
+    if c is None or _memory_visible(c.memory_id, owner) is None:
         raise HTTPException(status_code=404, detail=f"留言不存在: {cid}")
+    db.soft_delete_comment(cid)
     invalidate_bootstrap_cache()
     logger.info("删除留言 #%d（软删除）", cid)
     return ok({"id": cid, "deleted": True})
