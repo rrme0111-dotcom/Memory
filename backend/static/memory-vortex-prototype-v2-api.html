@@ -1200,7 +1200,7 @@ function memberCard(m){
 }
 function renderS10(){
   var inv=APP_DATA.invites;if(!inv)return;
-  setT('s10code',isApiMode()?(window.__curCollabCode||''):(inv.couple.inviteCode||''));
+  setT('s10code', window.API_BASE ? (window.__curCollabCode||'') : (inv.couple.inviteCode||''));
   var cp=$('s10couplePending');if(cp)cp.innerHTML=(inv.couple.pending||[]).map(memberCard).join('');
   var fm=$('s10friendMembers');if(fm)fm.innerHTML=(inv.friend.members||[]).map(memberCard).join('');
   setT('s10remain','继续邀请（还可加 '+(inv.friend.capacity-(inv.friend.members||[]).length)+' 人）');
