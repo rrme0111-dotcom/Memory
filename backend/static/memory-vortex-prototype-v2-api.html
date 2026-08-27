@@ -216,6 +216,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .overview .k{font-size:11px;color:#D9C8BA;}.overview .n{font-size:19px;font-weight:600;margin:8px 0 14px;}
 .overview .big{font-size:26px;font-weight:700;font-family:var(--font-num);}.overview .big small{font-size:14px;font-weight:500;margin-left:2px;}
 .overview .date{font-size:11px;color:#D9C8BA;margin-top:10px;}
+.overview .passed{font-size:11px;color:#D9C8BA;margin-top:4px;}
 /* v0.9.2：下一个纪念日大卡背景用关联记忆照片（深色渐变遮罩保证白字可读） */
 .overview.has-cover{background:linear-gradient(180deg,rgba(22,14,9,.18) 0%,rgba(22,14,9,.72) 100%),var(--cov-url) center/cover no-repeat;border:1px solid rgba(255,255,255,.14);}
 .overview.has-cover .k,.overview.has-cover .date{color:rgba(255,255,255,.88);}
@@ -724,7 +725,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
   <div class="scroll"><div class="content" style="padding-top:14px">
     <div class="head"><h1>纪念日</h1><div class="add" data-go="s08">+</div></div>
-    <div class="overview" id="s09overview"><div class="k">下一个纪念日</div><div class="n" id="s09name"></div><div class="big" id="s09days"></div><div class="date" id="s09date"></div></div>
+    <div class="overview" id="s09overview"><div class="k">下一个纪念日</div><div class="n" id="s09name"></div><div class="big" id="s09days"></div><div class="date" id="s09date"></div><div class="passed" id="s09passed"></div></div>
     <div class="rec-count" id="s09count"></div>
     <div id="s09list"></div>
     <div style="height:12px"></div>
@@ -1153,11 +1154,24 @@ function renderS09(){
     setT('s09date','点击右上角 + 标记第一条');
     setT('s09count','已记录 0 个纪念日');
     var l0=$('s09list');if(l0)l0.innerHTML='';
+    var ov0=$('s09overview');if(ov0){ov0.classList.remove('has-cover');ov0.style.removeProperty('--cov-url');}
+    var passed0=$('s09passed');if(passed0){passed0.textContent='';passed0.style.display='none';}
     return;
   }
   setT('s09name',a.next.name);
-  var big=$('s09days');if(big)big.innerHTML=a.next.daysLeft+'<small>天</small>';
+  var big=$('s09days');if(big){
+    if(a.next.passedDays!=null&&a.next.passedDays>=0){
+      big.innerHTML='已过 '+a.next.passedDays+'<small>天</small>';
+    }else{
+      big.innerHTML=a.next.daysLeft+'<small>天</small>';
+    }
+  }
   setT('s09date',a.next.date);
+  var passedEl=$('s09passed');
+  if(passedEl){
+    if(a.next.passedLabel){passedEl.textContent='已过去 '+a.next.passedLabel;passedEl.style.display='';}
+    else{passedEl.textContent='';passedEl.style.display='none';}
+  }
   setT('s09count','已记录 '+a.count+' 个纪念日');
   /* v0.9.2：下一个纪念日大卡背景用关联记忆照片（图片类型首媒体） */
   var nv=a.next&&a.next.cover,ov=$('s09overview');
@@ -2758,7 +2772,7 @@ window.MC_DIALOG=(function(){
     if(isApiMode()){
       apiFetch('/api/v1/collaborations/invite',{method:'POST',body:JSON.stringify({space:space})})
         .then(apiOk).then(function(res){
-          var code=res&&res.inviteCode;
+          var code=res&&res.data&&res.data.inviteCode;
           if(!code)throw new Error('未返回邀请码');
           window.__curCollabCode=code;
           copyText(inviteUrl(space,code));

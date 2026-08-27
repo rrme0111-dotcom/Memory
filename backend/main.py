@@ -416,6 +416,21 @@ def _anniv_cover_map(annivs: list[db.Anniversary]) -> dict[int, dict | None]:
     return cmap
 
 
+def _passed_label(days: int) -> str:
+    """已过天数 → 「X年Y个月」小字。"""
+    if days < 0:
+        days = 0
+    years, rem = divmod(days, 365)
+    months = rem // 30
+    if years and months:
+        return f"{years}年{months}个月"
+    if years:
+        return f"{years}年"
+    if months:
+        return f"{months}个月"
+    return "今天"
+
+
 def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
                         cover_map: dict[int, dict | None] | None = None) -> dict:
     """纪念日视图：下一个纪念日 + 全量列表（倒计时实时计算）。
@@ -439,10 +454,14 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
             days_left = (nxt.date() - today).days
             suffix = "就是今天" if days_left == 0 else f"还有 {days_left} 天"
             note = f"每年重复 · {suffix}" if a.is_recurring else suffix
+            passed_days = None
+            passed_label = None
         else:
             days_left = None
             passed = (today - this_year.date()).days if this_year else 0
             note = f"已过 {passed} 天"
+            passed_days = passed
+            passed_label = _passed_label(passed)
         if nxt is not None:
             date_label = f"{nxt.year}年{nxt.month}月{nxt.day}日"
         else:
@@ -459,6 +478,8 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
             "name": a.name,
             "note": note,
             "daysLeft": days_left,
+            "passedDays": passed_days,
+            "passedLabel": passed_label,
             "recurring": a.is_recurring,
             "dateLabel": date_label,
             "date": date_label,          # 兼容 next.date 契约
@@ -473,6 +494,8 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
     if next_item is not None:
         next_view = {"name": next_item["name"],
                      "daysLeft": next_item["daysLeft"] if next_item["daysLeft"] is not None else 0,
+                     "passedDays": next_item.get("passedDays"),
+                     "passedLabel": next_item.get("passedLabel"),
                      "date": next_item["dateLabel"],
                      "cover": next_item["cover"]}   # v0.9.2：下一个纪念日大卡背景照片
     else:
