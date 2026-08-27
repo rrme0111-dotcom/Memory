@@ -1200,7 +1200,7 @@ function memberCard(m){
 }
 function renderS10(){
   var inv=APP_DATA.invites;if(!inv)return;
-  setT('s10code',inv.couple.inviteCode);
+  setT('s10code',inviteCodeOf('couple')||inv.couple.inviteCode);
   var cp=$('s10couplePending');if(cp)cp.innerHTML=(inv.couple.pending||[]).map(memberCard).join('');
   var fm=$('s10friendMembers');if(fm)fm.innerHTML=(inv.friend.members||[]).map(memberCard).join('');
   setT('s10remain','继续邀请（还可加 '+(inv.friend.capacity-(inv.friend.members||[]).length)+' 人）');
@@ -2766,7 +2766,7 @@ window.MC_DIALOG=(function(){
       });
       return;
     }
-    MC_DIALOG.prompt('接受邀请','输入对方给你的邀请码',null,{placeholder:'如 MV-A1B2C3',icon:'plus'}).then(function(code){
+    MC_DIALOG.prompt('接受邀请','输入对方给你的邀请码',null,{placeholder:'如 MV9C43D2BB',icon:'plus'}).then(function(code){
       code=(code||'').trim();if(!code)return;
       doAccept(code,currentInviteSpace()).then(function(){toast('已加入共建，去时间线看看吧');return refreshApp().then(function(){show('s11');});}).catch(function(e){toast('加入失败：'+(e&&e.message||e))});
     });
@@ -2779,6 +2779,7 @@ window.MC_DIALOG=(function(){
           var code=res&&res.data&&res.data.inviteCode;
           if(!code)throw new Error('未返回邀请码');
           window.__curCollabCode=code;
+          setT('s10code',code);
           copyText(inviteUrl(space,code));
           setTimeout(function(){show('s11');},600);
         }).catch(function(e){toast('生成邀请失败：'+(e&&e.message||e))});
