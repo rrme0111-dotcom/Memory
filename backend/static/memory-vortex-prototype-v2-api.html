@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -750,7 +750,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     </div>
     <div class="act-bar" style="margin-top:20px">
       <div class="a" id="s07editBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="a-label">编辑</span></div>
-      <div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M12 15V3M8 7l4-4 4 4"/></svg><span class="a-label">分享</span></div>
+      <div class="a" id="s07shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M12 15V3M8 7l4-4 4 4"/></svg><span class="a-label">分享</span></div>
       <div class="a dark" data-go="s08"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg><span class="a-label">标记纪念日</span></div>
     </div>
   </div>
@@ -2372,7 +2372,7 @@ window.MC_DIALOG=(function(){
         feel:d.feel,
         voice:d.voice?{by:'我',duration:d.voice}:null,
         media:(d.media||[]).map(function(m){return {key:m.key,url:absMedia(m.url),kind:m.kind}}),
-        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,
+        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,shareCode:d.shareCode,
         perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
@@ -2420,7 +2420,7 @@ window.MC_DIALOG=(function(){
         scene:d.scene,emotion:(d.emotions&&d.emotions[0])||'',
         feel:d.feel,voice:d.voice?{by:'我',duration:d.voice}:null,
         media:(d.media||[]).map(function(m){return {key:m.key,url:absMedia(m.url),kind:m.kind}}),
-        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,
+        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,shareCode:d.shareCode,
         perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
@@ -2708,6 +2708,56 @@ window.MC_DIALOG=(function(){
         .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
     });
   },true);
+
+  /* ---------- 2f) 分享记忆（v1.6：生成分享链接 → 复制/二维码，可取消分享） ---------- */
+  var shareBtn=document.getElementById('s07shareBtn');
+  function showShareQr(url){
+    var img='<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url)+'" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:8px" onerror="this.outerHTML=\'<div style=&quot;text-align:center;padding:46px 0;color:#7A5E4E;font-size:14px&quot;>二维码加载失败<br>请直接复制链接</div>\'">';
+    MC_DIALOG.alert('分享二维码',img+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+esc(url)+'</div>',{icon:'info'});
+  }
+  if(shareBtn)shareBtn.addEventListener('click',function(e){
+    e.stopPropagation();e.preventDefault();
+    var d=APP_DATA&&APP_DATA.memoryDetail;
+    if(!d||!d.mid){toast('请先从时间轴选择一条记忆');return}
+    if(!window.API_BASE){toast('本地演示模式不支持分享');return}
+    toast('正在生成分享链接…');
+    apiFetch('/api/v1/memories/'+d.mid+'/share',{method:'POST'})
+      .then(function(r){
+        if(!r.ok)return r.json().catch(function(){}).then(function(j){
+          throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
+        });
+        return r.json();
+      })
+      .then(function(res){
+        var code=res&&res.data&&res.data.shareCode;
+        if(!code)throw new Error('分享响应异常');
+        d.shareCode=code;   /* 回写：再次点分享可看到「取消分享」 */
+        var url=window.API_BASE+'/share/'+code;
+        var opts=[
+          {label:'复制链接',icon:'info'},
+          {label:'二维码',icon:'cam'}
+        ];
+        if(d.shareCode)opts.push({label:'取消分享',icon:'trash',danger:true});
+        return MC_DIALOG.actionSheet('分享这条记忆',opts).then(function(idx){
+          if(idx===0){copyText(url);}
+          else if(idx===1){showShareQr(url);}
+          else if(idx===2){
+            return apiFetch('/api/v1/memories/'+d.mid+'/share',{method:'DELETE'})
+              .then(function(r){
+                if(!r.ok)return r.json().catch(function(){}).then(function(j){
+                  throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
+                });
+                return r.json();
+              })
+              .then(function(){
+                d.shareCode=null;
+                toast('已取消分享，链接已失效');
+              });
+          }
+        });
+      })
+      .catch(function(err){toast('分享失败：'+(err&&err.message||err))});
+  });
 
   /* ---------- 2c) 纪念日：S08 表单 → POST /api/v1/anniversaries → S09 ---------- */
   function annSwitchOn(id){

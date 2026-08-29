@@ -84,6 +84,7 @@ import re
 import secrets
 import threading
 import time
+import html as html_mod
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from copy import deepcopy
@@ -93,7 +94,7 @@ from typing import Any, Dict
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -1334,6 +1335,109 @@ async def update_memory_api(mid: int, req: MemoryUpdate,
 
 
 # ---------------------------------------------------------------------------
+# 记忆分享（v1.6）：share_code 公开访问链接 /share/{code}
+# ---------------------------------------------------------------------------
+SCENE_LABELS = {"personal": "个人", "couple": "情侣", "friend": "友情", "growth": "成长"}
+
+
+def _share_payload(mem: db.Memory, now: datetime) -> dict:
+    """公开分享视图：记忆本体内容（场景/时间/感受/媒体），不含留言与多视角。"""
+    return {
+        "scene": mem.scene,
+        "sceneLabel": SCENE_LABELS.get(mem.scene, mem.scene),
+        "timeLabel": _time_label(mem, now),
+        "feel": mem.feel,
+        "emotions": list(mem.emotions or []),
+        "media": [m for m in (mem.media or []) if m.get("url")],
+        "sharedAt": now.strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+@app.post("/api/v1/memories/{mid}/share")
+async def create_share_api(mid: int, owner: str = Depends(current_owner)) -> JSONResponse:
+    """生成/取回记忆的分享码（幂等：重复调用返回同一码）。"""
+    code = db.ensure_share_code(mid, owner)
+    if code is None:
+        raise HTTPException(status_code=404, detail=f"记忆不存在或无权分享: {mid}")
+    invalidate_bootstrap_cache()
+    logger.info("分享记忆 #%d（code=%s）", mid, code)
+    return ok({"shareCode": code, "sharePath": f"/share/{code}"})
+
+
+@app.delete("/api/v1/memories/{mid}/share")
+async def delete_share_api(mid: int, owner: str = Depends(current_owner)) -> JSONResponse:
+    """取消分享（分享链接立即失效）。"""
+    if not db.clear_share_code(mid, owner):
+        raise HTTPException(status_code=404, detail=f"记忆不存在或无权操作: {mid}")
+    invalidate_bootstrap_cache()
+    logger.info("取消分享记忆 #%d", mid)
+    return ok({"revoked": True})
+
+
+@app.get("/api/v1/share/{code}")
+async def share_view_api(code: str) -> JSONResponse:
+    """公开访问分享内容（无需登录；仅未删除的记忆）。"""
+    mem = db.get_memory_by_share(code)
+    if mem is None:
+        raise HTTPException(status_code=404, detail="分享不存在或已取消")
+    return ok(_share_payload(mem, datetime.now()))
+
+
+def _share_media_html(media: list[dict]) -> str:
+    """分享页媒体块：图片/视频/音频按类型渲染。"""
+    parts: list[str] = []
+    for m in media:
+        url = html_mod.escape(str(m.get("url") or ""), quote=True)
+        kind = str(m.get("kind") or "").lower()
+        if kind in ("png", "jpg", "jpeg", "gif", "webp"):
+            parts.append(f'<img src="{url}" alt="">')
+        elif kind in ("mp4", "webm", "mov"):
+            parts.append(f'<video src="{url}" controls playsinline></video>')
+        elif kind in ("m4a", "mp3", "webm"):
+            parts.append(f'<audio src="{url}" controls></audio>')
+    return "".join(parts)
+
+
+@app.get("/share/{code}", response_class=HTMLResponse)
+async def share_page_api(code: str) -> HTMLResponse:
+    """分享落地页：任何浏览器直接打开即可查看这条记忆（无需登录/无需装 App）。"""
+    mem = db.get_memory_by_share(code)
+    if mem is None:
+        return HTMLResponse(
+            "<!DOCTYPE html><meta charset='utf-8'>"
+            "<p style='font-family:sans-serif;padding:48px 24px;text-align:center;color:#7A5E4E'>"
+            "分享不存在或已取消</p>", status_code=404)
+    v = _share_payload(mem, datetime.now())
+    emo = " · ".join(v["emotions"])
+    feel = html_mod.escape(v["feel"] or "")
+    page = (
+        "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>"
+        "<title>一条记忆 · 记忆漩涡</title><style>"
+        "body{margin:0;background:#FBF8F4;color:#3D2E24;font-family:'PingFang SC','Microsoft YaHei',sans-serif;}"
+        ".wrap{max-width:480px;margin:0 auto;padding:28px 20px 40px;}"
+        ".tag{display:inline-block;font-size:11px;color:#8A5B41;background:rgba(176,122,94,.14);border-radius:9px;padding:3px 9px;}"
+        ".time{font-size:12px;color:#9B8271;margin-left:8px;}"
+        ".emo{font-size:11px;color:#9B8271;margin-top:8px;}"
+        ".feel{font-size:16px;line-height:1.8;margin-top:14px;white-space:pre-wrap;word-break:break-all;}"
+        ".media{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}"
+        ".media img,.media video{width:100%;border-radius:10px;display:block;}"
+        ".media audio{width:100%;grid-column:1/-1;}"
+        ".foot{margin-top:40px;text-align:center;font-size:11px;color:#B5A293;line-height:1.8;}"
+        ".foot b{color:#7A5E4E;}"
+        "</style></head><body><div class='wrap'>"
+        f"<div><span class='tag'>{html_mod.escape(v['sceneLabel'])}</span>"
+        f"<span class='time'>{html_mod.escape(v['timeLabel'])}</span></div>"
+        + (f"<div class='emo'>{html_mod.escape(emo)}</div>" if emo else "")
+        + f"<div class='feel'>{feel}</div>"
+        + (f"<div class='media'>{_share_media_html(v['media'])}</div>" if v["media"] else "")
+        + "<div class='foot'>来自 <b>记忆漩涡 MemoryVortex</b><br>记录你的人生瞬间</div>"
+        + "</div></body></html>"
+    )
+    return HTMLResponse(page)
+
+
+# ---------------------------------------------------------------------------
 # 多视角（阶段⑤：解锁「2条多视角」核心卖点）
 # ---------------------------------------------------------------------------
 class PerspectiveCreate(BaseModel):
@@ -2042,6 +2146,7 @@ def _memory_brief(m: db.Memory, pcount: int = 0, ccount: int = 0) -> dict:
         "fuzzyLabel": m.fuzzy_label,
         "fuzzyNote": m.fuzzy_note,
         "media": list(m.media or []),
+        "shareCode": m.share_code,
         "source": m.source,
         "ownerId": m.owner_id,
         "perspectiveCount": pcount,

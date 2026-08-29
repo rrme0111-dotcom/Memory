@@ -151,6 +151,7 @@ class Memory(Base):
     fuzzy_note: Mapped[str | None] = mapped_column(default=None, comment="模糊时间补充描述")
     meta_override: Mapped[str | None] = mapped_column(default=None, comment="种子数据展示meta")
     media: Mapped[list] = mapped_column(JSON, default=list, comment="媒体附件: [{key, url, kind}]")
+    share_code: Mapped[str | None] = mapped_column(default=None, comment="分享码（v1.6：公开分享链接 /share/{code}；空=未分享）")
     source: Mapped[str] = mapped_column(default="user", comment="seed/user")
     owner_id: Mapped[str] = mapped_column(default=LOCAL_OWNER, comment="数据所有者（多用户铺路）")
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
@@ -528,6 +529,57 @@ def get_memory(mid: int) -> Memory | None:
     with Session(engine) as session:
         mem = session.get(Memory, mid)
         return None if (mem is None or mem.deleted_at is not None) else mem
+
+
+# ---------------------------------------------------------------------------
+# 分享（v1.6）：share_code 公开访问码
+# ---------------------------------------------------------------------------
+def ensure_share_code(mid: int, owner: str) -> str | None:
+    """取记忆的分享码；没有则生成（8 位 hex，冲突重试）。
+
+    所有权校验与编辑同一套（owner 或 seed）；返回 None 表示不存在/越权。
+    """
+    with Session(engine) as session:
+        mem = session.get(Memory, mid)
+        if mem is None or mem.deleted_at is not None:
+            return None
+        if mem.owner_id not in (owner, SEED_OWNER):
+            return None
+        if mem.share_code:
+            return mem.share_code
+        for _ in range(5):
+            code = secrets.token_hex(4)
+            exists = session.execute(
+                select(Memory.id).where(Memory.share_code == code)).first()
+            if not exists:
+                mem.share_code = code
+                session.commit()
+                return code
+    return None
+
+
+def clear_share_code(mid: int, owner: str) -> bool:
+    """取消分享（置空分享码）。"""
+    with Session(engine) as session:
+        mem = session.get(Memory, mid)
+        if mem is None or mem.deleted_at is not None:
+            return False
+        if mem.owner_id not in (owner, SEED_OWNER):
+            return False
+        mem.share_code = None
+        session.commit()
+        return True
+
+
+def get_memory_by_share(code: str) -> Memory | None:
+    """按分享码取记忆（公开访问；仅未删除的）。"""
+    if not code:
+        return None
+    with Session(engine) as session:
+        mem = session.execute(
+            select(Memory).where(Memory.share_code == code,
+                                 Memory.deleted_at.is_(None))).scalars().first()
+        return mem
 
 
 def create_memory(**kw: Any) -> Memory:
