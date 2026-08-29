@@ -99,7 +99,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 try:
-    import qrcode   # 二维码生成（v1.6：分享/邀请码；缺库时接口返回 503，前端有兜底文案）
+    import qrcode
+    import qrcode.image.svg   # v1.6：SVG 工厂（纯 Python，无需 pillow，云构建兼容性好）
     _HAS_QRCODE = True
 except Exception:   # pragma: no cover
     _HAS_QRCODE = False
@@ -1392,14 +1393,14 @@ async def share_view_api(code: str) -> JSONResponse:
 @app.get("/api/v1/qr.png")
 async def qr_png_api(text: str = Query(min_length=1, max_length=512),
                      size: int = Query(default=240, ge=64, le=1024)) -> Response:
-    """服务端生成二维码 PNG（v1.6：替代第三方 qrserver，国内访问稳定）。"""
+    """服务端生成二维码（v1.6：SVG，纯 Python 实现替代第三方 qrserver，国内访问稳定）。"""
     if not _HAS_QRCODE:
         raise HTTPException(status_code=503, detail="二维码服务未启用（未安装 qrcode 库）")
+    img = qrcode.make(text, image_factory=qrcode.image.svg.SvgPathImage, box_size=10, border=2)
     import io
-    img = qrcode.make(text, box_size=max(4, size // 40), border=2)
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return Response(content=buf.getvalue(), media_type="image/png",
+    img.save(buf)
+    return Response(content=buf.getvalue(), media_type="image/svg+xml",
                     headers={"Cache-Control": "public, max-age=86400"})
 
 
