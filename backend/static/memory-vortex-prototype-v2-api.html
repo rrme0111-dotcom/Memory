@@ -1270,6 +1270,8 @@ function renderS09(){
     if(a.next.elapsedLabel&&a.next.elapsedLabel!=='今天'){
       elTxt='已过去 <b>'+esc(a.next.elapsedLabel)+'</b>';
       if(a.next.originalDate)elTxt='从 '+esc(a.next.originalDate)+' 起 · '+elTxt;
+      /* v1.4：附总天数（「共 N 天」），设为当天的（0 天）不显示 */
+      if(a.next.elapsedDays!=null&&a.next.elapsedDays>0)elTxt+=' · 共 <b>'+a.next.elapsedDays+'</b> 天';
     }else if(a.next.passedLabel){
       elTxt='已过去 '+esc(a.next.passedLabel);
     }

@@ -397,7 +397,7 @@ function buildAnniversaries(annivs,now,coverMap){
     else if(a.is_recurring)nxt=annivDate(today.getFullYear()+1,a.month,a.day);
     var daysLeft,note,dateLabel;
     /* 「已经过去 X年X个月X天」：优先原始年份（精确），旧数据退化为今年锚点 */
-    var elapsed=null,originalDate=null,elapsedStart=null;
+    var elapsed=null,elapsedDays=null,originalDate=null,elapsedStart=null;
     if(a.original_year&&thisYear){
       var s0=annivDate(a.original_year,a.month,a.day);
       if(s0&&s0<=today){elapsedStart=s0;originalDate=a.original_year+'年'+a.month+'月'+a.day+'日'}
@@ -406,6 +406,7 @@ function buildAnniversaries(annivs,now,coverMap){
     if(elapsedStart){
       var e=elapsedYmd(elapsedStart,today);
       elapsed=elapsedLabel(e[0],e[1],e[2]);
+      elapsedDays=Math.round((today-elapsedStart)/86400000);
     }
     if(nxt){
       daysLeft=daysBetween(today,nxt);
@@ -424,7 +425,7 @@ function buildAnniversaries(annivs,now,coverMap){
     return {
       id:a.id,mid:a.linked_memory_id,day:String(a.day),month:a.month+'月',
       name:a.name,note:note,daysLeft:daysLeft,recurring:a.is_recurring,
-      elapsedLabel:elapsed,originalDate:originalDate,
+      elapsedLabel:elapsed,originalDate:originalDate,elapsedDays:elapsedDays,
       dateLabel:dateLabel,date:dateLabel,
       cover:a.linked_memory_id?(coverMap[a.linked_memory_id]?fixCover(coverMap[a.linked_memory_id]):null):null
     };
@@ -437,7 +438,7 @@ function buildAnniversaries(annivs,now,coverMap){
   var nextItem=items.find(function(x){return x.daysLeft!==null;});
   if(!nextItem&&items.length)nextItem=items[0];
   var nextView=nextItem?{name:nextItem.name,daysLeft:nextItem.daysLeft||0,date:nextItem.dateLabel,cover:nextItem.cover,
-      elapsedLabel:nextItem.elapsedLabel,originalDate:nextItem.originalDate}
+      elapsedLabel:nextItem.elapsedLabel,originalDate:nextItem.originalDate,elapsedDays:nextItem.elapsedDays}
     :{name:'还没有纪念日',daysLeft:0,date:'点击右上角 + 标记第一条'};
   return {next:nextView,count:items.length,list:items};
 }

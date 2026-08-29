@@ -501,7 +501,9 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
         if elapsed_start is None and this_year is not None and this_year.date() <= today:
             elapsed_start = this_year.date()   # 旧数据无年份：从今年这个日子起算
         elapsed_label = None
+        elapsed_days = None
         if elapsed_start is not None:
+            elapsed_days = (today - elapsed_start).days
             ey, emo, ed = _elapsed_ymd(elapsed_start, today)
             elapsed_label = _elapsed_label(ey, emo, ed)
         if nxt is not None:
@@ -527,6 +529,7 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
             "daysLeft": days_left,
             "passedDays": passed_days,
             "elapsedLabel": elapsed_label,
+            "elapsedDays": elapsed_days,
             "originalDate": original_date,
             "recurring": a.is_recurring,
             "dateLabel": date_label,
@@ -544,6 +547,7 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
                      "daysLeft": next_item["daysLeft"] if next_item["daysLeft"] is not None else 0,
                      "passedDays": next_item.get("passedDays"),
                      "elapsedLabel": next_item.get("elapsedLabel"),
+                     "elapsedDays": next_item.get("elapsedDays"),
                      "originalDate": next_item.get("originalDate"),
                      "date": next_item["dateLabel"],
                      "cover": next_item["cover"]}   # v0.9.2：下一个纪念日大卡背景照片
