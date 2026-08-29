@@ -55,3 +55,6 @@ Thumbs.db
 
 # 本地联调页（API_BASE 指向本地后端的临时副本）
 backend/static/__qa_local.html
+
+# FastAPI Cloud 本地部署关联配置
+backend/.fastapicloud/
