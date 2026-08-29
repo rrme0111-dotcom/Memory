@@ -2085,7 +2085,9 @@ window.MC_DIALOG=(function(){
         }).then(apiOk).then(function(res){
           var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
           var putUrl=absMedia(cred.uploadUrl);   /* 相对路径直传在 App 里会打到本机 origin，必须拼后端域名 */
+          /* 双令牌：登录用户带 Bearer，游客带 X-API-Token（任一有效即可过写鉴权） */
           var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+          var tk=getToken();if(tk)headers['Authorization']='Bearer '+tk;
           return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:m.file}).then(function(r){
             if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
             return cred.fileKey;
@@ -2194,7 +2196,9 @@ window.MC_DIALOG=(function(){
     }).then(apiOk).then(function(res){
       var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
       var putUrl=absMedia(cred.uploadUrl);   /* 相对路径直传在 App 里会打到本机 origin，必须拼后端域名 */
+      /* 双令牌：登录用户带 Bearer，游客带 X-API-Token（任一有效即可过写鉴权） */
       var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+      var tk=getToken();if(tk)headers['Authorization']='Bearer '+tk;
       return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
         if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
         return cred.fileKey;
@@ -2599,7 +2603,9 @@ window.MC_DIALOG=(function(){
     }).then(apiOk).then(function(res){
       var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
       var putUrl=absMedia(cred.uploadUrl);
+      /* 双令牌：登录用户带 Bearer，游客带 X-API-Token（任一有效即可过写鉴权） */
       var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+      var tk=getToken();if(tk)headers['Authorization']='Bearer '+tk;
       return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
         if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
         return cred.fileKey;
@@ -2621,7 +2627,9 @@ window.MC_DIALOG=(function(){
     }).then(function(){
       toast('✦ 语音留言已添加');
     }).catch(function(err){
-      toast('语音添加失败：'+(err&&err.message||err));
+      var msg=(err&&err.message||err)||'';
+      if(/Failed to fetch|NetworkError|Load failed/i.test(msg))msg='网络连接失败，请检查网络后重试';
+      toast('语音添加失败：'+msg);
     }).then(s07VoiceBtnReset);
   }
   if(s07VoiceBtn)s07VoiceBtn.addEventListener('click',function(e){
