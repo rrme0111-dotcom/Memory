@@ -213,7 +213,6 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .edit-time-row .et-val{flex:1;font-size:13px;color:var(--ink);font-family:var(--font-num);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .edit-time-row .et-btn{font-size:12px;color:#fff;background:var(--ink);border-radius:14px;height:26px;padding:0 12px;display:flex;align-items:center;flex-shrink:0;cursor:pointer;}
 .edit-time-row .et-btn:active{opacity:.85;}
-.act-bar .a.recording{background:var(--danger);color:#fff;border-color:var(--danger);font-family:var(--font-num);}
 /* 日期时间选择器：5 列滚轮（年月日时分）字号略小 */
 .mc-dp-5col .mc-dp-opt{font-size:13px;}
 .persp-section{margin-top:20px;}
@@ -464,6 +463,12 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .cmt-empty{font-size:12px;color:var(--sub);text-align:center;padding:14px 0;}
 .cmt-input-row{display:flex;gap:10px;margin-top:14px;}
 .cmt-input-row .input{height:44px;flex:1;}
+/* 留言框旁的语音入口：麦克风圆钮（录音态变红、显示计时） */
+.cmt-mic{width:44px;height:44px;border-radius:22px;background:var(--fill);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--muted);}
+.cmt-mic svg{width:20px;height:20px;}
+.cmt-mic:active{opacity:.8;}
+.cmt-mic.recording{background:var(--danger);color:#fff;}
+.cmt-mic .mic-time{font-family:var(--font-num);font-size:10px;font-weight:600;}
 .cmt-send{height:44px;min-width:72px;padding:0 18px;background:var(--ink);color:#fff;border:none;border-radius:22px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);flex-shrink:0;}
 .cmt-send:disabled{opacity:.5;cursor:default;}
 .cmt-del{margin-left:6px;font-size:11px;color:var(--sub);cursor:pointer;user-select:none;}
@@ -732,13 +737,13 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
       <div class="cmt-head"><b id="cmtCount">0</b> 条留言</div>
       <div class="cmt-list" id="cmtList"></div>
       <div class="cmt-input-row" id="cmtInputRow">
+        <div class="cmt-mic" id="s07voiceBtn" title="添加语音留言"><svg class="mic-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg><span class="mic-time" style="display:none">0:00</span></div>
         <input class="input" id="cmtInput" placeholder="写下一条留言…" maxlength="1000">
         <button class="cmt-send" id="cmtSend">发送</button>
       </div>
     </div>
     <div class="act-bar" style="margin-top:20px">
       <div class="a" id="s07editBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="a-label">编辑</span></div>
-      <div class="a" id="s07voiceBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg><span class="a-label">语音</span></div>
       <div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M12 15V3M8 7l4-4 4 4"/></svg><span class="a-label">分享</span></div>
       <div class="a dark" data-go="s08"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/></svg><span class="a-label">标记纪念日</span></div>
     </div>
@@ -2528,7 +2533,14 @@ window.MC_DIALOG=(function(){
   var s07VoiceBtn=document.getElementById('s07voiceBtn');
   var s07RecActive=false,s07RecStream=null,s07Recorder=null,s07RecChunks=[],s07RecTimer=null,s07RecSec=0;
   function s07RecFmt(s){return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
-  function s07VoiceLabel(t){var l=s07VoiceBtn&&s07VoiceBtn.querySelector('.a-label');if(l)l.textContent=t}
+  function s07VoiceLabel(t){
+    /* 留言框旁圆钮：t='语音' 复位显示麦克风图标，否则显示计时/上传文案 */
+    if(!s07VoiceBtn)return;
+    var ic=s07VoiceBtn.querySelector('.mic-ic'),tm=s07VoiceBtn.querySelector('.mic-time');
+    if(!ic||!tm)return;
+    if(t==='语音'){ic.style.display='';tm.style.display='none';return}
+    tm.textContent=t;tm.style.display='';ic.style.display='none';
+  }
   function s07VoiceBtnReset(){if(s07VoiceBtn){s07VoiceBtn.classList.remove('recording');s07VoiceLabel('语音')}}
   function s07RecStart(){
     if(s07RecActive)return;
@@ -2553,14 +2565,14 @@ window.MC_DIALOG=(function(){
           s07UploadVoice(blob,type,dur);
         };
         s07RecActive=true;s07RecSec=0;
-        if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceLabel('停止 0:00')}
+        if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceLabel('0:00')}
         s07RecTimer=setInterval(function(){
           s07RecSec++;
           if(s07RecSec>=60){s07RecStop();toast('最长录音 60 秒，已自动停止')}
-          else s07VoiceLabel('停止 '+s07RecFmt(s07RecSec));
+          else s07VoiceLabel(s07RecFmt(s07RecSec));
         },1000);
         s07Recorder.start();
-        toast('开始录音，再次点「语音」结束');
+        toast('开始录音，再点麦克风结束');
       }).catch(function(err){
         var name=(err&&err.name)||'';
         var msg=name==='NotAllowedError'?'麦克风权限被拒绝，请在系统设置中允许。':
@@ -2578,7 +2590,7 @@ window.MC_DIALOG=(function(){
   }
   /* 上传语音并 PATCH 追加到当前记忆（media 全量=现有+新语音；voice 记时长展示） */
   function s07UploadVoice(blob,mime,dur){
-    if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceLabel('上传中…')}
+    if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceLabel('上传中')}
     var ext=/mp4/.test(mime)?'m4a':(/webm/.test(mime)?'webm':'m4a');
     var file=new File([blob],'voice-memo.'+ext,{type:mime||'audio/mp4'});
     toast('正在上传语音…');
