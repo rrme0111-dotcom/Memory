@@ -124,8 +124,8 @@ OWNER_PREFIX = "user:"   # 登录用户的数据所有者前缀：user:{id}
 # 密码哈希：PBKDF2-HMAC-SHA256（Python 内置，无第三方依赖）
 PBKDF2_ITERATIONS = 200_000
 
-# 会话有效期：默认 30 天
-SESSION_TTL_DAYS = 30
+# 会话有效期：默认 365 天（每次活跃访问自动顺延，长期用户免登录）
+SESSION_TTL_DAYS = 365
 
 
 # ---------------------------------------------------------------------------
@@ -1192,7 +1192,11 @@ def create_session(user_id: int) -> str:
 
 
 def get_session_user(token: str) -> User | None:
-    """按令牌取有效会话对应的用户（校验过期 + 用户未注销）。"""
+    """按令牌取有效会话对应的用户（校验过期 + 用户未注销）。
+
+    v1.5：滑动续期——每次有效访问把过期时间顺延 SESSION_TTL_DAYS，
+    活跃用户不再被登出（配合前端「记住账号」实现免登录）。
+    """
     if not token:
         return None
     with Session(engine) as session:
@@ -1200,7 +1204,12 @@ def get_session_user(token: str) -> User | None:
         if s is None or s.expires_at < datetime.now():
             return None
         u = session.get(User, s.user_id)
-        return None if (u is None or u.deleted_at is not None) else u
+        if u is None or u.deleted_at is not None:
+            return None
+        s.expires_at = datetime.now() + timedelta(days=SESSION_TTL_DAYS)
+        session.commit()
+        session.refresh(u)   # commit 使属性过期，脱管前重新加载（否则外层读取报 DetachedInstanceError）
+        return u
 
 
 def delete_session(token: str) -> bool:

@@ -1493,6 +1493,17 @@ function loadAppData(){
       show(hashId);
     }else if(D&&D.meta&&D.meta.auth&&D.meta.auth.loggedIn){
       show('s03');
+    }else if(window.MC_AUTH&&window.MC_AUTH.savedCredentials&&window.MC_AUTH.savedCredentials()){
+      /* v1.5：本机记住了账号（会话过期/后端重启/版本更替）→ 静默重登直接进主界面 */
+      window.MC_AUTH.silentRestore().then(function(ok){
+        if(ok){
+          var u=window.APP_DATA&&window.APP_DATA.meta&&window.APP_DATA.meta.auth&&window.APP_DATA.meta.auth.user;
+          show('s03');
+          toast('欢迎回来：'+((u&&(u.nickname||u.username))||''));
+        }
+        else if(window.MC_AUTH.showAuth){window.MC_AUTH.showAuth('login','s02');}
+        else{show('s17');}
+      });
     }else if(window.MC_AUTH&&window.MC_AUTH.showAuth){
       window.MC_AUTH.showAuth('login','s02');
     }else{
@@ -2006,6 +2017,20 @@ window.MC_DIALOG=(function(){
       if(r.status!==401)return r;
       if(getToken()){
         setToken('');
+        if(savedCredentials()){
+          /* v1.5：会话失效但本机记住了账号 → 静默重登并重放原请求（用户无感） */
+          return silentRestore().then(function(ok){
+            if(ok){
+              opts.headers=Object.assign({},opts.headers||{},apiHeaders(!!opts.body));
+              return fetch(API_BASE+url,opts);
+            }
+            toast('登录已过期，请重新登录');
+            return refreshApp().then(function(){
+              showAuth('login',(currentScreen()||'s12'));
+              return expiredResponse();
+            });
+          });
+        }
         toast('登录已过期，请重新登录');
         return refreshApp().then(function(){
           showAuth('login',(currentScreen()||'s12'));
@@ -2993,6 +3018,42 @@ window.MC_DIALOG=(function(){
   /* ---------- 6) 登录/注册（S17）+ 「我的」页（S12）登录态 ---------- */
   var AUTH_MODE='login';      /* login | register */
   var AUTH_BACK='s12';        /* 打开登录页前所在屏，成功后返回 */
+  /* v1.5 记住账号：本机保存最近登录的账号密码（base64 轻混淆），会话失效时静默重登，
+   * 实现「版本更替/会话过期免登录」。主动退出登录会清除记忆。 */
+  function savedCredentials(){
+    try{
+      var u=localStorage.getItem('mc_saved_user'),p=localStorage.getItem('mc_saved_pass');
+      if(!u||!p)return null;
+      return {username:decodeURIComponent(atob(u)),password:decodeURIComponent(atob(p))};
+    }catch(_){return null}
+  }
+  function saveCredentials(u,p){
+    try{
+      if(u&&p){
+        localStorage.setItem('mc_saved_user',btoa(encodeURIComponent(u)));
+        localStorage.setItem('mc_saved_pass',btoa(encodeURIComponent(p)));
+      }else{
+        localStorage.removeItem('mc_saved_user');
+        localStorage.removeItem('mc_saved_pass');
+      }
+    }catch(_){}
+  }
+  /* 静默重登：用记住的账号密码换新令牌；账号/密码被服务端拒绝时清除记忆 */
+  function silentRestore(creds){
+    var c=creds||savedCredentials();
+    if(!c||!c.username||!c.password)return Promise.resolve(false);
+    return fetch(API_BASE+'/api/auth/login',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(c)})
+      .then(function(r){
+        if(!r.ok){if(r.status===401||r.status===404||r.status===422)saveCredentials(null);return false;}
+        return r.json().then(function(j){
+          var data=j&&j.data;
+          if(data&&data.token){setToken(data.token);return refreshApp().then(function(){renderS12();return true;});}
+          return false;
+        });
+      })
+      .catch(function(){return false;});
+  }
   function setAuthMode(mode){
     AUTH_MODE=(mode==='register')?'register':'login';
     document.querySelectorAll('#s17 .auth-tab').forEach(function(t){
@@ -3049,6 +3110,7 @@ window.MC_DIALOG=(function(){
       })
       .then(function(data){
         setToken(data&&data.token);
+        saveCredentials(username,password);   /* v1.5：记住账号，会话失效时静默重登 */
         return refreshApp();
       })
       .then(function(){
@@ -3067,6 +3129,7 @@ window.MC_DIALOG=(function(){
       var t=getToken();
       if(t){fetch(API_BASE+'/api/auth/logout',{method:'POST',headers:{'Authorization':'Bearer '+t}}).catch(function(){})}
       setToken('');
+      saveCredentials(null);   /* 主动退出：清除记住的账号，不再静默重登 */
       refreshApp().then(function(){
         toast('已退出登录');
         show('s12');
@@ -3146,7 +3209,8 @@ window.MC_DIALOG=(function(){
 
   /* QA / 调试入口：暴露给浏览器控制台与外层 initApp，便于端到端验证 */
   window.renderS12=renderS12;
-  window.MC_AUTH={showAuth:showAuth,submitAuth:submitAuth,logout:logout,renderS12:renderS12,setAuthMode:setAuthMode};
+  window.MC_AUTH={showAuth:showAuth,submitAuth:submitAuth,logout:logout,renderS12:renderS12,setAuthMode:setAuthMode,
+    silentRestore:silentRestore,savedCredentials:savedCredentials};
 
   /* ---------- S10 共建邀请交互（v0.9.4） ---------- */
   function isApiMode(){ return !!window.API_BASE; }
