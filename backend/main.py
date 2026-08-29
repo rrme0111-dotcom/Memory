@@ -416,19 +416,47 @@ def _anniv_cover_map(annivs: list[db.Anniversary]) -> dict[int, dict | None]:
     return cmap
 
 
-def _passed_label(days: int) -> str:
-    """已过天数 → 「X年Y个月」小字。"""
+def _days_in_month(year: int, month: int) -> int:
+    if month == 12:
+        nxt = date(year + 1, 1, 1)
+    else:
+        nxt = date(year, month + 1, 1)
+    return (nxt - date(year, month, 1)).days
+
+
+def _elapsed_ymd(start: date, end: date) -> tuple[int, int, int]:
+    """两个日期间的（周年, 整月, 余天），日历精确而非 30 天近似；要求 end >= start。
+
+    月内天数按「上一个月的同一天」对齐计算（小月 30/大月 31/2 月 28-29），
+    例：5月20日 → 8月29日 = 3个月9天；1月31日 → 3月1日 = 1个月1天。
+    """
+    years = end.year - start.year
+    months = end.month - start.month
+    days = end.day - start.day
     if days < 0:
-        days = 0
-    years, rem = divmod(days, 365)
-    months = rem // 30
-    if years and months:
-        return f"{years}年{months}个月"
+        months -= 1
+        py, pm = (end.year, end.month - 1) if end.month > 1 else (end.year - 1, 12)
+        days = (end - date(py, pm, min(start.day, _days_in_month(py, pm)))).days
+    if months < 0:
+        years -= 1
+        months += 12
+    return years, months, days
+
+
+def _elapsed_label(years: int, months: int, days: int) -> str:
+    """（周年, 整月, 余天）→ 「X年X个月X天」；整年整月带「整/零」衔接。"""
+    if years == 0 and months == 0 and days == 0:
+        return "今天"
+    if years and not months and days:
+        return f"{years}年零{days}天"
+    parts: list[str] = []
     if years:
-        return f"{years}年"
+        parts.append(f"{years}年")
     if months:
-        return f"{months}个月"
-    return "今天"
+        parts.append(f"{months}个月")
+    if days:
+        parts.append(f"{days}天")
+    return "".join(parts)
 
 
 def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
@@ -437,9 +465,13 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
 
     规则（公历月/日锚点）：
     - 每年重复：取未来最近一次周年日，daysLeft = 距今天数（0 = 今天）；
-    - 一次性：今年周年日未到 → daysLeft 倒计时；已过 → daysLeft 置空、note 记「已过 N 天」；
+    - 一次性：今年周年日未到 → daysLeft 倒计时；已过 → daysLeft 置空、note 记「已过」；
     - 列表排序：未过的在前（daysLeft 升序），已过的一次性在后；
       next 取第一个未过的条目，全都已经过则取列表第一项（展示「已过」）。
+
+    v1.2：新增「已经过去几年几月几天」——存了原始年份（original_year）的条目
+    从原始日期起精确计算（如 2020-05-20 → 6年3个月9天）；旧数据无年份时退化为
+    从今年锚点算（最多 11 个月，无「几年」）。
     """
     items: list[dict] = []
     today = now.date()
@@ -455,13 +487,28 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
             suffix = "就是今天" if days_left == 0 else f"还有 {days_left} 天"
             note = f"每年重复 · {suffix}" if a.is_recurring else suffix
             passed_days = None
-            passed_label = None
         else:
             days_left = None
-            passed = (today - this_year.date()).days if this_year else 0
-            note = f"已过 {passed} 天"
-            passed_days = passed
-            passed_label = _passed_label(passed)
+            passed_days = (today - this_year.date()).days if this_year else 0
+        # ---- 「已经过去 X年X个月X天」：优先用原始年份（日历精确），旧数据退化为今年锚点 ----
+        elapsed_start: date | None = None
+        original_date = None
+        if a.original_year and this_year is not None:
+            s = _anniv_date(a.original_year, a.month, a.day)
+            if s is not None and s.date() <= today:
+                elapsed_start = s.date()
+                original_date = f"{a.original_year}年{a.month}月{a.day}日"
+        if elapsed_start is None and this_year is not None and this_year.date() <= today:
+            elapsed_start = this_year.date()   # 旧数据无年份：从今年这个日子起算
+        elapsed_label = None
+        if elapsed_start is not None:
+            ey, emo, ed = _elapsed_ymd(elapsed_start, today)
+            elapsed_label = _elapsed_label(ey, emo, ed)
+        if nxt is not None:
+            if elapsed_label and elapsed_label != "今天":
+                note += f" · 已过 {elapsed_label}"   # 倒计时同时展示「已经过去多久」
+        else:
+            note = f"已过 {elapsed_label}" if elapsed_label else f"已过 {passed_days} 天"
         if nxt is not None:
             date_label = f"{nxt.year}年{nxt.month}月{nxt.day}日"
         else:
@@ -479,7 +526,8 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
             "note": note,
             "daysLeft": days_left,
             "passedDays": passed_days,
-            "passedLabel": passed_label,
+            "elapsedLabel": elapsed_label,
+            "originalDate": original_date,
             "recurring": a.is_recurring,
             "dateLabel": date_label,
             "date": date_label,          # 兼容 next.date 契约
@@ -490,12 +538,13 @@ def build_anniversaries(annivs: list[db.Anniversary], now: datetime,
                               x["daysLeft"] if x["daysLeft"] is not None else 10 ** 6))
     next_item = next((x for x in items if x["daysLeft"] is not None), None)
     if next_item is None and items:
-        next_item = items[0]             # 全部已过：仍展示最近一条（「已过 N 天」）
+        next_item = items[0]             # 全部已过：仍展示最近一条（「已过」）
     if next_item is not None:
         next_view = {"name": next_item["name"],
                      "daysLeft": next_item["daysLeft"] if next_item["daysLeft"] is not None else 0,
                      "passedDays": next_item.get("passedDays"),
-                     "passedLabel": next_item.get("passedLabel"),
+                     "elapsedLabel": next_item.get("elapsedLabel"),
+                     "originalDate": next_item.get("originalDate"),
                      "date": next_item["dateLabel"],
                      "cover": next_item["cover"]}   # v0.9.2：下一个纪念日大卡背景照片
     else:
@@ -1374,13 +1423,16 @@ async def delete_comment_api(cid: int,
 # ---------------------------------------------------------------------------
 # 纪念日（v0.6：标记 → 倒计时 → 列表全链路入库）
 # ---------------------------------------------------------------------------
-def _parse_anniv_date(date_s: str) -> tuple[int, int]:
-    """YYYY-MM-DD → (month, day)；非法日期（含2月30日）抛 422。"""
+def _parse_anniv_date(date_s: str) -> tuple[int, int, int]:
+    """YYYY-MM-DD → (year, month, day)；非法日期（含2月30日）抛 422。
+
+    v1.2：年份不再丢弃——original_year 用于「已经过去几年几月几天」的精确计算。
+    """
     try:
         dt = datetime.strptime(date_s, "%Y-%m-%d")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"日期格式非法（应为 YYYY-MM-DD）: {date_s}") from exc
-    return dt.month, dt.day
+    return dt.year, dt.month, dt.day
 
 
 class AnniversaryCreate(BaseModel):
@@ -1407,13 +1459,14 @@ async def list_anniversaries_api(owner: str = Depends(current_owner)) -> JSONRes
 async def create_anniversary_api(req: AnniversaryCreate,
                                  owner: str = Depends(current_owner)) -> JSONResponse:
     """新建纪念日（标记一条记忆的重要日期）。"""
-    month, day = _parse_anniv_date(req.date)
+    y, month, day = _parse_anniv_date(req.date)
     if (req.linked_memory_id is not None
             and _memory_visible(req.linked_memory_id, owner) is None):
         raise HTTPException(status_code=422, detail=f"关联记忆不存在: {req.linked_memory_id}")
     ann = db.create_anniversary(
         name=req.name.strip(),
         month=month, day=day,
+        original_year=y,
         is_lunar=req.is_lunar, is_recurring=req.is_recurring,
         remind_days_before=req.remind_days_before,
         note=(req.note or "").strip() or None,
@@ -1421,7 +1474,7 @@ async def create_anniversary_api(req: AnniversaryCreate,
         source="user", owner_id=owner,
     )
     invalidate_bootstrap_cache()
-    logger.info("新建纪念日 #%d（%s，%d月%d日）", ann.id, ann.name, month, day)
+    logger.info("新建纪念日 #%d（%s，%d年%d月%d日）", ann.id, ann.name, y, month, day)
     return ok(_anniv_brief(ann), status=201)
 
 
@@ -1445,8 +1498,8 @@ async def update_anniversary_api(aid: int, req: AnniversaryUpdate,
     if req.name is not None:
         patch["name"] = req.name.strip()
     if req.date is not None:
-        month, day = _parse_anniv_date(req.date)
-        patch.update(month=month, day=day)
+        y, mo, d = _parse_anniv_date(req.date)
+        patch.update(month=mo, day=d, original_year=y)
     if req.is_lunar is not None:
         patch["is_lunar"] = req.is_lunar
     if req.is_recurring is not None:

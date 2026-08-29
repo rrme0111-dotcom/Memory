@@ -207,6 +207,8 @@ class Anniversary(Base):
     name: Mapped[str] = mapped_column(comment="纪念日名称")
     month: Mapped[int] = mapped_column(comment="公历月份 1-12")
     day: Mapped[int] = mapped_column(comment="公历日期 1-31")
+    original_year: Mapped[int | None] = mapped_column(
+        default=None, comment="原始年份（v1.2：计算「已过几年几月几天」）；旧数据为空")
     is_lunar: Mapped[bool] = mapped_column(default=False, comment="农历纪念日（展示标记）")
     lunar_label: Mapped[str | None] = mapped_column(default=None, comment="农历展示标签，如 农历七月初七")
     is_recurring: Mapped[bool] = mapped_column(default=True, comment="每年重复")
@@ -402,13 +404,12 @@ engine = create_engine(
 def _migrate() -> None:
     is_sqlite = DATABASE_URL.startswith("sqlite")
     with engine.begin() as conn:
-        # 通用补列：仅 SQLite 旧库需要（PRAGMA table_info 是 SQLite 特有）；
-        # PostgreSQL 首次启动由 create_all 建全量表，无旧库补列场景
-        if is_sqlite:
-            for model in (Memory, Perspective, Comment, Anniversary,
-                          GrowthSubject, GrowthMilestone, TimelineNode, InviteMember,
-                          User, AuthSession):
-                _ensure_columns(conn, model)
+        # 通用补列：旧库与模型对齐（create_all 不会改已存在的表）。
+        # SQLite 用 PRAGMA table_info；PostgreSQL 查 information_schema（v1.2 起 PG 旧库也自动补列）
+        for model in (Memory, Perspective, Comment, Anniversary,
+                      GrowthSubject, GrowthMilestone, TimelineNode, InviteMember,
+                      User, AuthSession):
+            _ensure_columns(conn, model, is_sqlite=is_sqlite)
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_memories_scene ON memories(scene)")
         conn.exec_driver_sql(
@@ -450,9 +451,16 @@ def _migrate() -> None:
         logger.info("迁移检查完成：模型列与索引已对齐（历史种子数据已清除）")
 
 
-def _ensure_columns(conn, model: type) -> None:
+def _ensure_columns(conn, model: type, is_sqlite: bool = True) -> None:
     table = model.__tablename__
-    cols = [r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")]
+    if is_sqlite:
+        cols = [r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")]
+    else:
+        cols = [r[0] for r in conn.exec_driver_sql(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = :t",
+            {"t": table},
+        )]
     if not cols:
         return  # 表尚未创建（首次启动由 create_all 负责）
     for col in model.__table__.columns:
