@@ -205,6 +205,15 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .voice-block .who .n{font-size:12px;color:var(--sub);}
 .act-bar{display:flex;gap:10px;}.act-bar .a{flex:1;height:44px;border-radius:22px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:#fff;}
 .act-bar .a.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+/* S07 编辑态：时间行 + 录音态按钮 */
+.edit-time-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line-light);border-radius:12px;padding:10px 14px;margin-bottom:10px;}
+.edit-time-row .et-label{font-size:12px;color:var(--sub);flex-shrink:0;}
+.edit-time-row .et-val{flex:1;font-size:13px;color:var(--ink);font-family:var(--font-num);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edit-time-row .et-btn{font-size:12px;color:#fff;background:var(--ink);border-radius:14px;height:26px;padding:0 12px;display:flex;align-items:center;flex-shrink:0;cursor:pointer;}
+.edit-time-row .et-btn:active{opacity:.85;}
+.act-bar .a.recording{background:var(--danger);color:#fff;border-color:var(--danger);font-family:var(--font-num);}
+/* 日期时间选择器：5 列滚轮（年月日时分）字号略小 */
+.mc-dp-5col .mc-dp-opt{font-size:13px;}
 .persp-section{margin-top:20px;}
 .persp-collapsed{background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
 .persp-collapsed .pl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);}
@@ -725,7 +734,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
         <button class="cmt-send" id="cmtSend">发送</button>
       </div>
     </div>
-    <div class="act-bar" style="margin-top:20px"><div class="a" id="s07editBtn">编辑</div><div class="a">分享</div><div class="a dark" data-go="s08">标记纪念日</div></div>
+    <div class="act-bar" style="margin-top:20px"><div class="a" id="s07editBtn">编辑</div><div class="a" id="s07voiceBtn">语音</div><div class="a">分享</div><div class="a dark" data-go="s08">标记纪念日</div></div>
   </div>
 </section>
 
@@ -1122,6 +1131,13 @@ function renderS06(){
 }
 /* v0.8.3：S07 编辑态（媒体增删本地暂存，保存时全量 PATCH 入库） */
 var S07_EDIT=null;
+/* v1.3：编辑态时间行展示文案（S07_EDIT.time = {mode:keep|custom|fuzzy, date, time, fuzzy}） */
+function s07TimeLabel(ts){
+  if(!ts)return '此刻';
+  if(ts.mode==='fuzzy')return '记不清 · '+(ts.fuzzy||'记不清了');
+  if(ts.date)return ts.date.replace(/-/g,'/')+' '+ts.time;
+  return '此刻';
+}
 function renderS07(){
   var d=APP_DATA.memoryDetail;if(!d)return;
   var editing=!!S07_EDIT;
@@ -1140,19 +1156,31 @@ function renderS07(){
   if(vplayer)vplayer.innerHTML=hasAudio?audioItems.map(function(a){return '<audio src="'+esc(a.url)+'" controls style="width:100%;height:40px;display:block"></audio>';}).join(''):'';
   setT('s07vava','我');setT('s07vdur',hasAudio?((d.voice&&d.voice.duration)||''):'');
   var feelBox=document.getElementById('s07feel');
+  /* v1.3 编辑态精简：隐藏留言区/多视角/操作栏（编辑/分享/语音/标记纪念日），只留编辑本体 */
+  var cmtSec=$('cmtSection');
+  var perspSec=document.querySelector('#s07 .persp-section');
+  var actBar=document.querySelector('#s07 .act-bar');
   if(editing){
     var cur=S07_EDIT;
+    if(cmtSec)cmtSec.style.display='none';
+    if(perspSec)perspSec.style.display='none';
+    if(actBar)actBar.style.display='none';
     if(feelBox){
-      feelBox.innerHTML='<textarea class="input" id="s07editArea" style="min-height:88px;resize:vertical;line-height:1.6" maxlength="2000">'+esc(cur.feel||'')+'</textarea>'
+      feelBox.innerHTML='<div class="edit-time-row"><span class="et-label">时间</span><span class="et-val" id="s07editTimeVal">'+esc(s07TimeLabel(cur.time))+'</span><span class="et-btn" id="s07editTimeBtn">修改</span></div>'
+        +'<textarea class="input" id="s07editArea" style="min-height:88px;resize:vertical;line-height:1.6" maxlength="2000">'+esc(cur.feel||'')+'</textarea>'
         +'<div style="display:flex;gap:10px;margin-top:10px">'
         +'<button class="cmt-send" id="s07editSave" style="min-width:72px">保存</button>'
         +'<button class="cmt-send" id="s07editCancel" style="min-width:72px;background:#fff;color:var(--ink);border:1px solid var(--line)">取消</button>'
         +'</div>'
-        +'<div class="edit-hint">点击媒体右上角 × 可移除；点「+ 添加」补充照片/视频/实况</div>';
+        +'<div class="edit-hint">可修改文字、时间、媒体（点 × 移除，「+ 添加」补充）</div>';
       var area=document.getElementById('s07editArea');if(area)area.focus();
     }
   }else{
     setT('s07feel',d.feel);
+    /* CUR_MID 在下方 API IIFE 内部，顶层取不到；API 详情恒有 d.mid，模板演示详情无 mid → 隐藏留言区 */
+    if(cmtSec)cmtSec.style.display=d.mid?'':'none';
+    if(perspSec)perspSec.style.display='';
+    if(actBar)actBar.style.display='';
   }
   var hero=document.querySelector('#s07 .hero');
   if(hero){
@@ -1745,6 +1773,148 @@ window.MC_DIALOG=(function(){
           setTimeout(function(){isProgScroll=false},200);
         });
       });
+    },
+    /* 日期时间选择器（v1.3：编辑记忆时间用）→ Promise<{date:'YYYY-MM-DD', time:'HH:MM'}|null> */
+    dateTime:function(title,dateValue,timeValue,opts){
+      opts=opts||{};
+      return new Promise(function(resolve){
+        var resolved=false;
+        function done(val){if(resolved)return;resolved=true;
+          ov.classList.remove('show');
+          setTimeout(function(){if(ov.parentElement)ov.remove()},220);
+          resolve(val);}
+        var now=new Date();
+        var d=dateValue?new Date(dateValue+'T00:00:00'):new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        if(isNaN(d.getTime()))d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        var curY=d.getFullYear(),curM=d.getMonth()+1,curD=d.getDate();
+        var tm=/^(\d{1,2}):(\d{2})$/.exec(String(timeValue||''));
+        var curH=tm?parseInt(tm[1],10):now.getHours();
+        var curMi=tm?parseInt(tm[2],10):now.getMinutes();
+        var yearMin=opts.minYear||(now.getFullYear()-80);
+        var yearMax=opts.maxYear||(now.getFullYear()+5);
+        ov=document.createElement('div');
+        ov.className='mc-overlay';
+        ov.innerHTML='<div class="mc-dialog">'+
+          '<div class="mc-dlg-icon ic-info"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>'+
+          '<div class="mc-dlg-title">'+(title||'选择日期和时间')+'</div>'+
+          '<div class="mc-dp"><div class="mc-dp-wheel mc-dp-5col">'+
+            '<div class="mc-dp-col" data-col="year"></div>'+
+            '<div class="mc-dp-col" data-col="month"></div>'+
+            '<div class="mc-dp-col" data-col="day"></div>'+
+            '<div class="mc-dp-col" data-col="hour"></div>'+
+            '<div class="mc-dp-col" data-col="minute"></div>'+
+            '</div><div class="mc-dp-line"></div></div>'+
+            '<div class="mc-dlg-btns" style="margin-top:16px">'+
+              '<button class="mc-dlg-btn mc-dlg-cancel" data-act="cancel">'+(opts.cancelText||'取消')+'</button>'+
+              '<button class="mc-dlg-btn mc-dlg-ok" data-act="ok">'+(opts.okText||'确定')+'</button>'+
+            '</div></div>';
+        var isProgScroll=false;
+        function fillCol(col,vals,sel){
+          isProgScroll=true;
+          col.innerHTML=vals.map(function(v){
+            return '<div class="mc-dp-opt'+(v==sel?' sel':'')+'" data-val="'+v+'">'+v+'</div>';
+          }).join('');
+          var idx=vals.indexOf(String(sel));
+          if(idx<0)col.scrollTop=0;
+          if(col.isConnected&&col.scrollHeight>col.clientHeight){
+            col.scrollTop=Math.max(0,idx)*40;
+          }
+          setTimeout(function(){isProgScroll=false},150);
+        }
+        var yearCol=ov.querySelector('[data-col="year"]');
+        var monthCol=ov.querySelector('[data-col="month"]');
+        var dayCol=ov.querySelector('[data-col="day"]');
+        var hourCol=ov.querySelector('[data-col="hour"]');
+        var minuteCol=ov.querySelector('[data-col="minute"]');
+        var years=[];for(var y=yearMin;y<=yearMax;y++)years.push(String(y));
+        var months=[];for(var m=1;m<=12;m++)months.push(m+'月');
+        var hours=[];for(var h=0;h<24;h++)hours.push(h+'时');
+        var minutes=[];for(var mi=0;mi<60;mi++)minutes.push(mi+'分');
+        function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+        function getDayVals(){
+          var max=daysInMonth(curY,curM);
+          var ds=[];for(var dd=1;dd<=max;dd++)ds.push(String(dd));
+          if(curD>max)curD=max;
+          return ds;
+        }
+        function syncAll(){
+          fillCol(yearCol,years,curY);
+          fillCol(monthCol,months,curM+'月');
+          fillCol(dayCol,getDayVals(),curD);
+          fillCol(hourCol,hours,curH+'时');
+          fillCol(minuteCol,minutes,curMi+'分');
+        }
+        syncAll();
+        function onScroll(col,cb){
+          var timer=null;
+          col.addEventListener('scroll',function(){
+            if(isProgScroll)return;
+            if(timer)clearTimeout(timer);
+            timer=setTimeout(function(){
+              var idx=Math.round(col.scrollTop/40);
+              var opts_=col.querySelectorAll('.mc-dp-opt');
+              if(opts_.length===0)return;
+              if(idx<0)idx=0;if(idx>=opts_.length)idx=opts_.length-1;
+              opts_.forEach(function(o,i){o.classList.toggle('sel',i===idx)});
+              var val=opts_[idx].dataset.val;
+              cb(val);
+              if(col.scrollTop!==idx*40){
+                isProgScroll=true;
+                col.scrollTop=idx*40;
+                setTimeout(function(){isProgScroll=false},120);
+              }
+            },100);
+          });
+        }
+        onScroll(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
+        onScroll(monthCol,function(v){curM=parseInt(v.replace('月',''),10);fillCol(dayCol,getDayVals(),curD)});
+        onScroll(dayCol,function(v){curD=parseInt(v,10)});
+        onScroll(hourCol,function(v){curH=parseInt(v.replace('时',''),10)});
+        onScroll(minuteCol,function(v){curMi=parseInt(v.replace('分',''),10)});
+        function tapToCenter(col,cb){
+          col.addEventListener('click',function(e){
+            var opt=e.target.closest('.mc-dp-opt');
+            if(!opt)return;
+            var idx=Array.prototype.indexOf.call(col.querySelectorAll('.mc-dp-opt'),opt);
+            if(idx<0)return;
+            isProgScroll=true;
+            col.scrollTop=idx*40;
+            col.querySelectorAll('.mc-dp-opt').forEach(function(o,i){o.classList.toggle('sel',i===idx)});
+            if(cb)cb(opt.dataset.val);
+            setTimeout(function(){isProgScroll=false},120);
+          });
+        }
+        tapToCenter(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
+        tapToCenter(monthCol,function(v){curM=parseInt(v.replace('月',''),10);fillCol(dayCol,getDayVals(),curD)});
+        tapToCenter(dayCol,function(v){curD=parseInt(v,10)});
+        tapToCenter(hourCol,function(v){curH=parseInt(v.replace('时',''),10)});
+        tapToCenter(minuteCol,function(v){curMi=parseInt(v.replace('分',''),10)});
+        ov.addEventListener('click',function(e){
+          var act=e.target.closest('[data-act]');
+          if(!act)return;
+          if(act.dataset.act==='ok'){
+            var mm=String(curM).padStart(2,'0');
+            var dd=String(curD).padStart(2,'0');
+            var hh=String(curH).padStart(2,'0');
+            var mi2=String(curMi).padStart(2,'0');
+            done({date:curY+'-'+mm+'-'+dd,time:hh+':'+mi2});
+          }else{done(null);}
+        });
+        ov.addEventListener('click',function(e){
+          if(e.target===ov)done(null);
+        });
+        document.body.appendChild(ov);
+        requestAnimationFrame(function(){
+          ov.classList.add('show');
+          isProgScroll=true;
+          [[yearCol,years,String(curY)],[monthCol,months,curM+'月'],[dayCol,getDayVals(),String(curD)],
+           [hourCol,hours,curH+'时'],[minuteCol,minutes,curMi+'分']].forEach(function(t){
+            var idx=t[1].indexOf(t[2]);
+            if(idx>=0)t[0].scrollTop=idx*40;
+          });
+          setTimeout(function(){isProgScroll=false},200);
+        });
+      });
     }
   };
 })();
@@ -2148,6 +2318,7 @@ window.MC_DIALOG=(function(){
         feel:d.feel,
         voice:d.voice?{by:'我',duration:d.voice}:null,
         media:(d.media||[]).map(function(m){return {key:m.key,url:absMedia(m.url),kind:m.kind}}),
+        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,
         perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
@@ -2194,7 +2365,8 @@ window.MC_DIALOG=(function(){
         mid:CUR_MID,time:t,
         scene:d.scene,emotion:(d.emotions&&d.emotions[0])||'',
         feel:d.feel,voice:d.voice?{by:'我',duration:d.voice}:null,
-        media:d.media||[],
+        media:(d.media||[]).map(function(m){return {key:m.key,url:absMedia(m.url),kind:m.kind}}),
+        timestampType:d.timestampType,preciseAt:d.preciseAt,fuzzyLabel:d.fuzzyLabel,
         perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
@@ -2251,7 +2423,7 @@ window.MC_DIALOG=(function(){
     });
   },true);
 
-  /* ---------- 2c) 编辑记忆（v0.8.3：feel + 媒体增删 → PATCH 全量替换） ---------- */
+  /* ---------- 2c) 编辑记忆（v1.3：feel + 时间 + 媒体增删 → PATCH 全量替换） ---------- */
   var editBtn=document.getElementById('s07editBtn');
   if(editBtn){
     editBtn.addEventListener('click',function(e){
@@ -2262,10 +2434,33 @@ window.MC_DIALOG=(function(){
         S07_EDIT=null;renderS07();
         return;
       }
-      S07_EDIT={feel:d.feel||'',media:(d.media||[]).map(function(m){return {key:m.key,url:m.url,kind:m.kind}})}
+      /* 时间编辑态：precise → 保留当前值；fuzzy → 保持模糊（可改选具体时间转自定义） */
+      var ts={mode:'keep',date:'',time:'',fuzzy:''};
+      if(d.timestampType==='fuzzy'){
+        ts.mode='fuzzy';ts.fuzzy=d.fuzzyLabel||'记不清了';
+      }else if(d.preciseAt){
+        var pp=String(d.preciseAt).split(' ');
+        ts.date=pp[0]||'';ts.time=pp[1]||'00:00';
+      }
+      S07_EDIT={feel:d.feel||'',media:(d.media||[]).map(function(m){return {key:m.key,url:m.url,kind:m.kind}}),time:ts};
       renderS07();
     });
   }
+  /* 编辑态「修改时间」→ 日期时间滚轮选择器（事件委托，编辑区为动态渲染） */
+  document.addEventListener('click',function(e){
+    var tbtn=e.target.closest('#s07editTimeBtn');
+    if(!tbtn)return;
+    e.stopPropagation();e.preventDefault();
+    if(!S07_EDIT)return;
+    var ts=S07_EDIT.time;
+    MC_DIALOG.dateTime('修改记忆时间',ts.date||'',ts.time||'').then(function(val){
+      if(!val)return;
+      ts.mode='custom';ts.date=val.date;ts.time=val.time;
+      var valEl=document.getElementById('s07editTimeVal');
+      if(valEl)valEl.textContent=s07TimeLabel(ts);
+      toast('时间已改为 '+val.date.replace(/-/g,'/')+' '+val.time+'，记得保存');
+    });
+  },true);
   /* 保存 / 取消（编辑态动态渲染，事件委托） */
   document.addEventListener('click',function(e){
     if(e.target.closest('#s07editCancel')){
@@ -2282,6 +2477,13 @@ window.MC_DIALOG=(function(){
     if(!nv){toast('感受不能为空');return}
     var body={feel:nv};
     body.media=(S07_EDIT&&S07_EDIT.media||[]).map(function(m){return {file_key:m.key||m.file_key}});
+    /* v1.3：时间被修改过才随 PATCH 提交（mode=keep 表示保持原时间戳） */
+    var ts=S07_EDIT&&S07_EDIT.time;
+    if(ts&&ts.mode==='custom'){
+      body.time_mode='custom';body.custom_date=ts.date;body.custom_time=ts.time;
+    }else if(ts&&ts.mode==='fuzzy'&&ts.fuzzyEdited){
+      body.time_mode='fuzzy';body.fuzzy_label=ts.fuzzy||'记不清了';
+    }
     save.disabled=true;save.textContent='…';
     apiFetch('/api/v1/memories/'+d.mid,{
       method:'PATCH',body:JSON.stringify(body)
@@ -2314,6 +2516,98 @@ window.MC_DIALOG=(function(){
     S07_EDIT.media.splice(idx,1);
     renderS07();
   },true);
+
+  /* ---------- 2d) 详情页添加语音（v1.3：录音 → 预签名直传 → PATCH 追加媒体+voice） ---------- */
+  var s07VoiceBtn=document.getElementById('s07voiceBtn');
+  var s07RecActive=false,s07RecStream=null,s07Recorder=null,s07RecChunks=[],s07RecTimer=null,s07RecSec=0;
+  function s07RecFmt(s){return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+  function s07VoiceBtnReset(){if(s07VoiceBtn){s07VoiceBtn.classList.remove('recording');s07VoiceBtn.textContent='语音'}}
+  function s07RecStart(){
+    if(s07RecActive)return;
+    if(!CUR_MID){toast('请先从时间轴选择一条记忆');return}
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==='undefined'){
+      MC_DIALOG.alert('不支持录音','当前浏览器环境不支持录音功能。',{icon:'info'});
+      return;
+    }
+    MC_DIALOG.permission('麦克风权限','录制语音留言需要访问你的麦克风。','mic').then(function(granted){
+      if(granted)navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        s07RecStream=stream;s07RecChunks=[];
+        var mime=['audio/mp4','audio/webm'].filter(function(m){return MediaRecorder.isTypeSupported(m)})[0]||'';
+        s07Recorder=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+        s07Recorder.ondataavailable=function(ev){if(ev.data&&ev.data.size)s07RecChunks.push(ev.data)};
+        s07Recorder.onstop=function(){
+          try{if(s07RecStream)s07RecStream.getTracks().forEach(function(t){t.stop()})}catch(_){}
+          var type=s07Recorder.mimeType||mime||'audio/mp4';
+          var blob=new Blob(s07RecChunks,{type:type});
+          s07VoiceBtnReset();
+          if(blob.size<200){toast('录音太短，未保存');return}
+          var dur=s07RecSec;
+          s07UploadVoice(blob,type,dur);
+        };
+        s07RecActive=true;s07RecSec=0;
+        if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceBtn.textContent='停止 0:00'}
+        s07RecTimer=setInterval(function(){
+          s07RecSec++;
+          if(s07RecSec>=60){s07RecStop();toast('最长录音 60 秒，已自动停止')}
+          else if(s07VoiceBtn)s07VoiceBtn.textContent='停止 '+s07RecFmt(s07RecSec);
+        },1000);
+        s07Recorder.start();
+        toast('开始录音，再次点「语音」结束');
+      }).catch(function(err){
+        var name=(err&&err.name)||'';
+        var msg=name==='NotAllowedError'?'麦克风权限被拒绝，请在系统设置中允许。':
+          name==='NotFoundError'?'未找到麦克风设备。':
+          '无法访问麦克风：'+(name||'请检查权限');
+        MC_DIALOG.alert('录音失败',msg,{icon:'mic'});
+      });
+    });
+  }
+  function s07RecStop(){
+    if(!s07RecActive)return;
+    s07RecActive=false;
+    clearInterval(s07RecTimer);
+    try{if(s07Recorder&&s07Recorder.state!=='inactive')s07Recorder.stop()}catch(_){}
+  }
+  /* 上传语音并 PATCH 追加到当前记忆（media 全量=现有+新语音；voice 记时长展示） */
+  function s07UploadVoice(blob,mime,dur){
+    if(s07VoiceBtn){s07VoiceBtn.classList.add('recording');s07VoiceBtn.textContent='上传中…'}
+    var ext=/mp4/.test(mime)?'m4a':(/webm/.test(mime)?'webm':'m4a');
+    var file=new File([blob],'voice-memo.'+ext,{type:mime||'audio/mp4'});
+    toast('正在上传语音…');
+    apiFetch('/api/v1/uploads/presign',{
+      method:'POST',body:JSON.stringify({filename:file.name,contentType:file.type})
+    }).then(apiOk).then(function(res){
+      var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+      var putUrl=absMedia(cred.uploadUrl);
+      var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+      return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
+        if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
+        return cred.fileKey;
+      });
+    }).then(function(newKey){
+      var d=APP_DATA&&APP_DATA.memoryDetail;
+      var media=(d&&d.media||[]).map(function(m){return {file_key:m.key||m.file_key}});
+      media.push({file_key:newKey});
+      return apiFetch('/api/v1/memories/'+d.mid,{
+        method:'PATCH',body:JSON.stringify({media:media,voice:s07RecFmt(dur)})
+      }).then(function(r){
+        if(!r.ok)return r.json().catch(function(){}).then(function(j){
+          throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
+        });
+        return r.json();
+      });
+    }).then(function(){
+      return refreshApp().then(refetchDetail);
+    }).then(function(){
+      toast('✦ 语音留言已添加');
+    }).catch(function(err){
+      toast('语音添加失败：'+(err&&err.message||err));
+    }).then(s07VoiceBtnReset);
+  }
+  if(s07VoiceBtn)s07VoiceBtn.addEventListener('click',function(e){
+    e.stopPropagation();e.preventDefault();
+    if(s07RecActive)s07RecStop();else s07RecStart();
+  });
 
   /* ---------- 2c) 纪念日：S08 表单 → POST /api/v1/anniversaries → S09 ---------- */
   function annSwitchOn(id){

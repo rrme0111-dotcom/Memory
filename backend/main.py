@@ -1255,6 +1255,7 @@ class MemoryUpdate(BaseModel):
     scene: str | None = Field(default=None, description="场景")
     feel: str | None = Field(default=None, min_length=1, max_length=2000, description="感受文字")
     emotion: str | None = Field(default=None, description="情绪标签（单选，传空串清空）")
+    voice: str | None = Field(default=None, max_length=16, description="语音留言时长展示（如 0:07；传空串清空）")
     time_mode: str | None = Field(default=None, description="时间模式: now/custom/fuzzy")
     custom_date: str | None = Field(default=None, description="自定义日期 YYYY-MM-DD")
     custom_time: str | None = Field(default=None, description="自定义时刻 HH:MM")
@@ -1280,6 +1281,8 @@ async def update_memory_api(mid: int, req: MemoryUpdate,
         patch["feel"] = req.feel.strip()
     if req.emotion is not None:
         patch["emotions"] = [req.emotion] if req.emotion else []
+    if req.voice is not None:
+        patch["voice"] = req.voice.strip() or None
 
     # 媒体全量替换：客户端传完整数组（保持与详情页所见一致）；空数组=清空全部媒体
     if req.media is not None:
@@ -1291,6 +1294,10 @@ async def update_memory_api(mid: int, req: MemoryUpdate,
             media_items.append({"key": key, "url": uploads.resolve_url(key),
                                 "kind": key.rsplit(".", 1)[-1]})
         patch["media"] = media_items
+        # 音频媒体全部移除且未显式传 voice 时，同步清掉时长占位（避免孤儿时长文案）
+        if req.voice is None and not any(
+                m["kind"] in ("m4a", "mp3", "webm") for m in media_items):
+            patch["voice"] = None
 
     # 时间戳归一化（与新建同规则）
     if req.time_mode is not None:

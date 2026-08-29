@@ -548,7 +548,10 @@ def update_memory(mid: int, owner: str = LOCAL_OWNER, **fields: Any) -> Memory |
     """
     allowed = {"scene", "feel", "emotions", "voice", "media",
                "timestamp_type", "precise_at", "fuzzy_label", "fuzzy_note"}
-    patch = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    # 这些字段允许显式置 None（清空语义）：语音时长/媒体/时间戳归一化互相覆盖时需要
+    nullable = {"voice", "media", "precise_at", "fuzzy_label", "fuzzy_note"}
+    patch = {k: v for k, v in fields.items()
+             if k in allowed and (v is not None or k in nullable)}
     if not patch:
         return None
     with Session(engine) as session:
