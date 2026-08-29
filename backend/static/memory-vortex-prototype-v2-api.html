@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="记忆漩涡">
@@ -24,6 +24,25 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 .stage{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:32px 16px;}
 .phone{width:390px;height:844px;background:var(--white);border-radius:44px;border:1px solid var(--line-strong);
   box-shadow:0 24px 60px rgba(0,0,0,.12);overflow:hidden;position:relative;flex-shrink:0;}
+/* 真机全屏：手机上去掉原型模拟边框，App 铺满整屏并适配刘海/手势条安全区 */
+@media (max-width:560px){
+  html,body{overflow:hidden;}
+  .stage{padding:0;gap:0;min-height:100vh;min-height:100dvh;align-items:stretch;}
+  .phone{width:100%;height:100vh;height:100dvh;border-radius:0;border:none;box-shadow:none;flex-shrink:1;}
+  .navbar{padding-top:max(16px, env(safe-area-inset-top));}
+  #s02 .top{padding-top:max(14px, calc(env(safe-area-inset-top) + 6px));}
+  .tabbar{padding-bottom:max(22px, env(safe-area-inset-bottom));}
+  #s17 .auth-wrap{padding-bottom:max(26px, env(safe-area-inset-bottom));}
+}
+/* 启动闪屏：数据/登录态就绪前不暴露中间态界面，避免「先登录页几秒后跳别页」 */
+.boot-splash{position:fixed;inset:0;z-index:3000;background:var(--white);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;transition:opacity .25s ease;}
+.boot-splash .bs-name{font-size:22px;font-weight:700;letter-spacing:2px;}
+.boot-splash .bs-en{font-family:var(--font-num);font-size:11px;color:var(--sub);letter-spacing:3px;}
+.boot-splash .bs-spin{width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--ink);
+  border-radius:50%;margin-top:18px;animation:bs-spin .9s linear infinite;}
+@keyframes bs-spin{to{transform:rotate(360deg)}}
+.boot-splash.hide{opacity:0;pointer-events:none;}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--white);}
 .screen.active{display:flex;}
 .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;}.scroll::-webkit-scrollbar{display:none;}
@@ -519,6 +538,12 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 </style>
 </head>
 <body>
+<div class="boot-splash" id="bootSplash">
+  <div class="logo-vortex"></div>
+  <div class="bs-name">记忆漩涡</div>
+  <div class="bs-en">MEMORYVORTEX</div>
+  <div class="bs-spin"></div>
+</div>
 <div class="stage">
 <div class="proto-nav" id="protoNav">
   <h3 id="navPanelTitle">记忆漩涡 · 16屏 v2.2</h3>
@@ -890,8 +915,8 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   </div></div>
 </section>
 
-<!-- S17: 登录 / 注册 -->
-<section class="screen active" id="s17">
+<!-- S17: 登录 / 注册（初始不带 active：登录态由 boot 就绪后一次性决定，避免先见登录页几秒后又切换） -->
+<section class="screen" id="s17">
   <div class="statusbar"><span class="time">9:41</span><span class="icons"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"><i></i></span></span></div>
   <div class="navbar"><span class="back" id="authBack"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 5l-6 6 6 6" stroke="#3D2E24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="title">账号</span><span class="right"></span></div>
   <div class="auth-wrap">
@@ -920,7 +945,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 <script>
 var screens=document.querySelectorAll('.screen');
 function recenterWheels(){document.querySelectorAll('.wheel').forEach(function(w){var val=w.dataset.wheelValue;var items=w.querySelectorAll('.it');var target=null;items.forEach(function(it){if(it.textContent===val)target=it});if(target){w.scrollTop=Math.max(0,target.offsetTop-50);items.forEach(function(it){it.classList.remove('cur')});target.classList.add('cur');w.dispatchEvent(new Event('scroll'))}})}
-function show(id){screens.forEach(function(s){s.classList.remove('active')});var el=document.getElementById(id);if(el){el.classList.add('active');el.querySelectorAll('.scroll,.content').forEach(function(c){if(c.scrollTo)c.scrollTop=0})}if(id==='s04')syncS04Scene();if(id==='s05')syncS05Scene();if(id==='s06'){setTimeout(recenterWheels,60)}document.querySelectorAll('#protoNav button').forEach(function(b){b.classList.toggle('on',b.dataset.s===id)});document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)})}
+function show(id){var _bs=document.getElementById('bootSplash');if(_bs){_bs.classList.add('hide');setTimeout(function(){if(_bs.parentElement)_bs.remove()},260)}screens.forEach(function(s){s.classList.remove('active')});var el=document.getElementById(id);if(el){el.classList.add('active');el.querySelectorAll('.scroll,.content').forEach(function(c){if(c.scrollTo)c.scrollTop=0})}if(id==='s04')syncS04Scene();if(id==='s05')syncS05Scene();if(id==='s06'){setTimeout(recenterWheels,60)}document.querySelectorAll('#protoNav button').forEach(function(b){b.classList.toggle('on',b.dataset.s===id)});document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)})}
 function openTimeline(rel){var t=document.getElementById('s11toggle');if(t){t.querySelectorAll('.rt-opt').forEach(function(x){x.classList.toggle('on',x.dataset.rel===rel)});var isF=rel==='friend';var ct=document.getElementById('coupleTimeline'),ft=document.getElementById('friendTimeline');if(ct)ct.style.display=isF?'none':'';if(ft)ft.style.display=isF?'':'none'}show('s11')}
 document.addEventListener('click',function(e){var tl=e.target.closest('[data-timeline]');if(tl){openTimeline(tl.dataset.timeline);return}var go=e.target.closest('[data-go]');if(go){show(go.dataset.go);return}var tab=e.target.closest('[data-tab]');if(tab){var id=tab.dataset.tab;document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)});show(id);return}})
 document.querySelectorAll('#protoNav button').forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s)})})
@@ -951,6 +976,23 @@ var popClose2=document.getElementById('popClose2');if(popClose2)popClose2.addEve
 var APP_DATA=null;
 var CUR_SCENE=null; /* 当前选中场景（S01 入口选择后全局记住，S04/S05 同步） */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+/* API 模式下后端返回的媒体地址是相对路径（/uploads/…、/api/…）：
+ * 手机 App（Capacitor WebView，origin 为本地 https://localhost）里必须拼上后端域名才能加载/直传 */
+function absMedia(u){return (u&&window.API_BASE&&String(u).charAt(0)==='/')?window.API_BASE+u:u}
+/* 递归归一化：把数据对象里所有以 / 开头的 url 字段补全为绝对地址（bootstrap/详情响应入口各调用一次） */
+function normalizeMediaUrls(obj,depth){
+  if(!obj||typeof obj!=='object'||(depth||0)>6)return obj;
+  if(Object.prototype.toString.call(obj)==='[object Array]'){
+    for(var i=0;i<obj.length;i++)normalizeMediaUrls(obj[i],(depth||0)+1);
+    return obj;
+  }
+  for(var k in obj){
+    if(!Object.prototype.hasOwnProperty.call(obj,k))continue;
+    if(k==='url'&&typeof obj[k]==='string')obj[k]=absMedia(obj[k]);
+    else if(typeof obj[k]==='object')normalizeMediaUrls(obj[k],(depth||0)+1);
+  }
+  return obj;
+}
 function $(id){return document.getElementById(id)}
 function setT(id,t){var e=$(id);if(e)e.textContent=t}
 var SCENE_NAMES={personal:'个人',couple:'情侣',friend:'友情',growth:'成长'};
@@ -1329,6 +1371,7 @@ function renderMeta(){
 }
 function initApp(D){
   APP_DATA=D;
+  if(window.API_BASE)normalizeMediaUrls(D,0);   /* 手机 App：媒体相对地址补全为后端绝对地址 */
   renderMeta();
   renderS01();renderS03();renderS04();renderS06();renderS07();renderS09();renderS10();renderS11();renderS13();renderS14();renderS15();renderS16();
   if(typeof renderS12==='function')renderS12();
@@ -1394,11 +1437,17 @@ function loadAppData(){
     }
   }).catch(function(err){
     console.error('数据加载失败：',err);
+    var _bs=document.getElementById('bootSplash');if(_bs)_bs.remove();
     var d=document.createElement('div');
     d.className='data-error';
     d.innerHTML='<div class="box"><h2>数据加载失败</h2>'+(DATA_MODE==='mock'?'未能读取测试数据 <code>test_data.js</code><br>请确认该文件与本页面在同一目录':'后端接口请求失败：<code>'+String(err&&err.message||err)+'</code><br>请确认后端服务已启动')+'</div>';
     document.body.appendChild(d)
-  })
+  });
+  /* 兜底：启动链路异常挂起时（如后端长时间无响应），20s 后放行到登录页，避免闪屏永久遮挡 */
+  setTimeout(function(){
+    var bs=document.getElementById('bootSplash');
+    if(bs&&!document.querySelector('.screen.active')){bs.remove();show('s17')}
+  },20000);
 })();
 </script>
 <script>
@@ -1843,8 +1892,9 @@ window.MC_DIALOG=(function(){
           method:'POST',body:JSON.stringify({filename:m.file.name||'upload',contentType:m.file.type||''})
         }).then(apiOk).then(function(res){
           var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+          var putUrl=absMedia(cred.uploadUrl);   /* 相对路径直传在 App 里会打到本机 origin，必须拼后端域名 */
           var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
-          return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:m.file}).then(function(r){
+          return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:m.file}).then(function(r){
             if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
             return cred.fileKey;
           });
@@ -1951,8 +2001,9 @@ window.MC_DIALOG=(function(){
       method:'POST',body:JSON.stringify({filename:file.name,contentType:file.type})
     }).then(apiOk).then(function(res){
       var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+      var putUrl=absMedia(cred.uploadUrl);   /* 相对路径直传在 App 里会打到本机 origin，必须拼后端域名 */
       var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
-      return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
+      return fetch(putUrl,{method:cred.method||'PUT',headers:headers,body:file}).then(function(r){
         if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
         return cred.fileKey;
       });
@@ -2086,7 +2137,7 @@ window.MC_DIALOG=(function(){
         emotion:(d.emotions&&d.emotions[0])||'',
         feel:d.feel,
         voice:d.voice?{by:'我',duration:d.voice}:null,
-        media:d.media||[],
+        media:(d.media||[]).map(function(m){return {key:m.key,url:absMedia(m.url),kind:m.kind}}),
         perspectives:ps.length?ps:[{name:'我',avatar:'我',feel:d.feel,time:t}],
         comments:d.comments||[]
       };
