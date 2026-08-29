@@ -2711,9 +2711,15 @@ window.MC_DIALOG=(function(){
 
   /* ---------- 2f) 分享记忆（v1.6：生成分享链接 → 复制/二维码，可取消分享） ---------- */
   var shareBtn=document.getElementById('s07shareBtn');
+  function qrImgHtml(url){
+    /* v1.6：二维码由自家后端生成（/api/v1/qr.png），不再依赖第三方 qrserver */
+    var isLocal=/localhost|127\.0\.0\.1/.test(url);
+    var img='<img src="'+window.API_BASE+'/api/v1/qr.png?text='+encodeURIComponent(url)+'" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:8px" onerror="this.outerHTML=\'<div style=&quot;text-align:center;padding:46px 0;color:#7A5E4E;font-size:14px&quot;>二维码生成失败<br>请直接复制链接</div>\'">';
+    var tip=isLocal?'<div style="text-align:center;font-size:11px;color:#B03A3A;margin-top:8px">⚠ 本地测试链接，手机扫不开；部署到线上后即可扫码访问</div>':'';
+    return img+tip;
+  }
   function showShareQr(url){
-    var img='<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url)+'" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:8px" onerror="this.outerHTML=\'<div style=&quot;text-align:center;padding:46px 0;color:#7A5E4E;font-size:14px&quot;>二维码加载失败<br>请直接复制链接</div>\'">';
-    MC_DIALOG.alert('分享二维码',img+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+esc(url)+'</div>',{icon:'info'});
+    MC_DIALOG.alert('分享二维码',qrImgHtml(url)+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+esc(url)+'</div>',{icon:'info'});
   }
   if(shareBtn)shareBtn.addEventListener('click',function(e){
     e.stopPropagation();e.preventDefault();
@@ -3288,8 +3294,8 @@ window.MC_DIALOG=(function(){
   }
   function showInviteQr(space){
     var url=inviteUrl(space),code=inviteCodeOf(space);
-    var img='<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url)+'" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:8px" onerror="this.outerHTML=\'<div style=&quot;text-align:center;padding:46px 0;color:#7A5E4E;font-size:14px&quot;>二维码加载失败<br>邀请码：<b>'+code+'</b></div>\'">';
-    MC_DIALOG.alert('邀请二维码',img+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+url+'</div>',{icon:'info'});
+    var img=qrImgHtml(url).replace('请直接复制链接','请直接复制链接<br>邀请码：<b>'+esc(code)+'</b>');
+    MC_DIALOG.alert('邀请二维码',img+'<div style="text-align:center;font-size:11px;color:#9B8271;margin-top:10px;word-break:break-all">'+esc(url)+'</div>',{icon:'info'});
   }
   function addInviteMember(space){
     MC_DIALOG.prompt('邀请成员','输入对方昵称（本地模拟对方接受）',null,{placeholder:'如：小苏',icon:'plus'}).then(function(name){
