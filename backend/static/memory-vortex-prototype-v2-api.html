@@ -201,6 +201,11 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 #s07 .feel{font-size:15px;line-height:24px;margin:14px 0 18px;}
 .voice-block{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
 .voice-block .who{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+/* 语音条目：播放器 + 删除键 */
+.voice-item{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.voice-item audio{flex:1;min-width:0;height:40px;}
+.voice-del{width:26px;height:26px;border-radius:13px;background:rgba(61,46,36,.08);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0;line-height:1;}
+.voice-del:active{background:var(--danger);color:#fff;}
 .avatar{border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex-shrink:0;}
 .voice-block .who .n{font-size:12px;color:var(--sub);}
 .act-bar{display:flex;gap:10px;}.act-bar .a{flex:1;height:56px;border-radius:18px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:var(--ink);cursor:pointer;background:#fff;}
@@ -1159,13 +1164,20 @@ function renderS07(){
   var emEl=$('s07emo');if(emEl)emEl.style.display=d.emotion?'':'none';   /* v0.9.3：无情绪时隐藏标签 */
   /* v0.8.3：编辑态媒体列表来自 S07_EDIT（本地增删，保存时才 PATCH 入库） */
   var med=editing?S07_EDIT.media:(d.media||[]);
-  var audioItems=med.filter(function(m){return /^(m4a|mp3|webm)$/.test((m.kind||'').toLowerCase());});
-  var visualMedia=med.filter(function(m){return !/^(m4a|mp3|webm)$/.test((m.kind||'').toLowerCase());});
+  /* 音频/视觉媒体分组：携带在 med 中的原始索引（删除按原索引定位，避免错位） */
+  var audioItems=[],visualMedia=[];
+  med.forEach(function(m,i){
+    if(/^(m4a|mp3|webm)$/.test((m.kind||'').toLowerCase()))audioItems.push({idx:i,url:m.url,kind:m.kind});
+    else visualMedia.push({idx:i,url:m.url,kind:m.kind});
+  });
   var vblock=$('s07voiceblock'),vstatic=$('s07voiceStatic'),vplayer=$('s07voiceplayer');
   var hasAudio=audioItems.length>0;
   if(vblock)vblock.style.display=hasAudio?'':'none';
   if(vstatic)vstatic.style.display=hasAudio?'none':'';
-  if(vplayer)vplayer.innerHTML=hasAudio?audioItems.map(function(a){return '<audio src="'+esc(a.url)+'" controls style="width:100%;height:40px;display:block"></audio>';}).join(''):'';
+  /* v1.3：每条语音带删除键（编辑态从本地暂存删，浏览态确认后 PATCH 删） */
+  if(vplayer)vplayer.innerHTML=hasAudio?audioItems.map(function(a){
+    return '<div class="voice-item"><audio src="'+esc(a.url)+'" controls></audio><span class="voice-del" data-vid="'+a.idx+'" title="删除这条语音">×</span></div>';
+  }).join(''):'';
   setT('s07vava','我');setT('s07vdur',hasAudio?((d.voice&&d.voice.duration)||''):'');
   var feelBox=document.getElementById('s07feel');
   /* v1.3 编辑态精简：隐藏留言区/多视角/操作栏（编辑/分享/语音/标记纪念日），只留编辑本体 */
@@ -1203,7 +1215,7 @@ function renderS07(){
       else if(fext==='mp4'||fext==='webm')heroInner='<video src="'+esc(first.url)+'" controls playsinline></video>';
       else if(fext!=='m4a'&&fext!=='mp3')heroInner='<img src="'+esc(first.url)+'" alt="" loading="lazy">';
     }
-    if(editing&&first)heroInner+='<span class="hero-rm" data-s07-rm="0" title="移除首图">×</span>';
+    if(editing&&first)heroInner+='<span class="hero-rm" data-s07-rm="'+first.idx+'" title="移除首图">×</span>';
     hero.innerHTML=heroInner;
   }
   var ms=$('s07media');
@@ -1218,7 +1230,7 @@ function renderS07(){
       else if(ext==='m4a'||ext==='mp3'||ext==='webm')inner='<audio src="'+esc(url)+'" controls></audio>';
       else inner='<img src="'+esc(url)+'" alt="" loading="lazy">';
       strip+='<div class="m-item" style="'+(ext==='mp4'||ext==='mov'||ext==='m4a'||ext==='mp3'||ext==='webm'?'width:100%':'')+'">'+inner
-        +(editing?'<span class="media-rm" data-s07-rm="'+i+'" title="移除">×</span>':'')+'</div>';
+        +(editing?'<span class="media-rm" data-s07-rm="'+md.idx+'" title="移除">×</span>':'')+'</div>';
     });
     if(editing)strip+='<div class="media-add" id="s07AddMedia"><b>+</b><span>添加</span></div>';
     ms.innerHTML=strip;
@@ -2636,6 +2648,40 @@ window.MC_DIALOG=(function(){
     e.stopPropagation();e.preventDefault();
     if(s07RecActive)s07RecStop();else s07RecStart();
   });
+
+  /* ---------- 2e) 删除语音留言（v1.3：语音条目 × → 确认 → PATCH 全量媒体） ----------
+   * 编辑态：直接从 S07_EDIT 本地暂存移除（随保存一起提交）；
+   * 浏览态：确认后 PATCH 剩余媒体（后端在无音频媒体时自动清空 voice 时长） */
+  document.addEventListener('click',function(e){
+    var vd=e.target.closest('.voice-del');
+    if(!vd)return;
+    e.stopPropagation();e.preventDefault();
+    var idx=parseInt(vd.dataset.vid,10);
+    if(isNaN(idx)||idx<0)return;
+    if(S07_EDIT){
+      if(idx>=S07_EDIT.media.length)return;
+      S07_EDIT.media.splice(idx,1);
+      renderS07();
+      return;
+    }
+    var d=APP_DATA&&APP_DATA.memoryDetail;
+    if(!d||!d.mid||idx>=d.media.length)return;
+    MC_DIALOG.confirm('删除语音','确定删除这条语音留言吗？删除后不可恢复。',{icon:'trash',danger:true,okText:'删除'}).then(function(ok){
+      if(!ok)return;
+      var media=d.media.filter(function(m,i){return i!==idx})
+        .map(function(m){return {file_key:m.key||m.file_key}});
+      apiFetch('/api/v1/memories/'+d.mid,{method:'PATCH',body:JSON.stringify({media:media})})
+        .then(function(r){
+          if(!r.ok)return r.json().catch(function(){}).then(function(j){
+            throw new Error((j&&j.data&&j.data.message)||(j&&j.detail)||(j&&j.message)||('HTTP '+r.status));
+          });
+          return r.json();
+        })
+        .then(function(){return refreshApp().then(refetchDetail)})
+        .then(function(){toast('语音已删除')})
+        .catch(function(err){toast('删除失败：'+(err&&err.message||err))});
+    });
+  },true);
 
   /* ---------- 2c) 纪念日：S08 表单 → POST /api/v1/anniversaries → S09 ---------- */
   function annSwitchOn(id){
