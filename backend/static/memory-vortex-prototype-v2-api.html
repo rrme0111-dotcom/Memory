@@ -2059,6 +2059,29 @@ window.MC_DIALOG=(function(){
     if(/\.(mp4|webm)$/.test(n))return 'video';
     return 'photo';
   }
+  /* v1.9：图片压缩——照片经隧道上传前先本地压到长边≤1920/JPEG q0.85（视觉无损，体积降 5-10 倍）；
+   * GIF（动图会变静图）与压不动的小图保留原文件；解码失败（如 HEIC）回退原文件 */
+  function compressImageFile(file,cb){
+    if(!/^image\//.test(file.type||'')||/gif/i.test(file.type||'')){cb(file);return}
+    var url=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){
+      URL.revokeObjectURL(url);
+      var w=img.naturalWidth||0,h=img.naturalHeight||0;
+      if(!w||!h){cb(file);return}
+      var scale=Math.min(1,1920/Math.max(w,h));
+      if(scale>=1&&file.size<600*1024){cb(file);return}
+      var cv=document.createElement('canvas');
+      cv.width=Math.round(w*scale);cv.height=Math.round(h*scale);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      cv.toBlob(function(b){
+        if(b&&b.size<file.size){
+          cb(new File([b],(file.name||'photo').replace(/\.\w+$/,'')+'.jpg',{type:'image/jpeg',lastModified:file.lastModified}));
+        }else{cb(file)}
+      },'image/jpeg',0.85);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);cb(file)};
+    img.src=url;
+  }
   var s05file=document.getElementById('s05file');
   var s05camfile=document.getElementById('s05camfile');
   ['s05cam','s05album'].forEach(function(id){
@@ -2077,15 +2100,18 @@ window.MC_DIALOG=(function(){
     });
   });
   function handleS05Files(input){
-    var files=input.files||[],i;
-    for(i=0;i<files.length;i++){
-      var f=files[i];
-      if(f.size>100*1024*1024){toast('「'+(f.name||'文件')+'」超过 100MB，已跳过');continue}
-      S05_MEDIA.push({file:f,url:URL.createObjectURL(f),kind:s05KindOf(f)});
-    }
+    var files=Array.prototype.slice.call(input.files||[]);
     input.value='';
-    renderS05Grid();
-    if(S05_MEDIA.length)toast('已选 '+S05_MEDIA.length+' 个文件');
+    /* v1.9：逐张压缩后入列（大图先本地压到长边≤1920/JPEG q0.85，隧道上传速度提升数倍） */
+    (function next(idx){
+      if(idx>=files.length){renderS05Grid();if(S05_MEDIA.length)toast('已选 '+S05_MEDIA.length+' 个文件');return}
+      var f=files[idx];
+      if(f.size>100*1024*1024){toast('「'+(f.name||'文件')+'」超过 100MB，已跳过');next(idx+1);return}
+      compressImageFile(f,function(cf){
+        S05_MEDIA.push({file:cf,url:URL.createObjectURL(cf),kind:s05KindOf(cf)});
+        next(idx+1);
+      });
+    })(0);
   }
   if(s05file)s05file.addEventListener('change',function(){handleS05Files(s05file)});
   if(s05camfile)s05camfile.addEventListener('change',function(){handleS05Files(s05camfile)});
@@ -3024,23 +3050,26 @@ window.MC_DIALOG=(function(){
       fileInput.click();
     });
   }
-  /* 串行直传一批文件 → [{key,url,kind}] */
+  /* 串行直传一批文件 → [{key,url,kind}]；图片先本地压缩（v1.9） */
   function uploadS07Files(files){
     var idx=0;
     function next(){
       if(idx>=files.length)return Promise.resolve([]);
       var file=files[idx++];
       if(file.size>100*1024*1024){toast('跳过超大文件（上限 100MB）：'+(file.name||''));return next()}
-      return apiFetch('/api/v1/uploads/presign',{
-        method:'POST',body:JSON.stringify({filename:file.name||'upload',contentType:file.type||''})
-      }).then(apiOk).then(function(res){
-        var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
-        var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
-        return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:file})
-          .then(function(r){
-            if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
-            return cred.fileKey;
-          });
+      return new Promise(function(res){compressImageFile(file,res)}).then(function(cf){
+        file=cf;
+        return apiFetch('/api/v1/uploads/presign',{
+          method:'POST',body:JSON.stringify({filename:file.name||'upload',contentType:file.type||''})
+        }).then(apiOk).then(function(res){
+          var cred=res&&res.data;if(!cred||!cred.uploadUrl||!cred.fileKey)throw new Error('预签名响应异常');
+          var headers=Object.assign({},cred.headers||{},{'X-API-Token':apiToken()});
+          return fetch(cred.uploadUrl,{method:cred.method||'PUT',headers:headers,body:file})
+            .then(function(r){
+              if(!r.ok)throw new Error('直传失败（HTTP '+r.status+'）');
+              return cred.fileKey;
+            });
+        });
       }).then(function(fileKey){
         return next().then(function(rest){
           return [{key:fileKey,url:'/uploads/'+fileKey,kind:(fileKey.split('.').pop()||'').toLowerCase()}].concat(rest);
