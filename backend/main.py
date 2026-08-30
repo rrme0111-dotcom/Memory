@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 记忆漩涡 MemoryVortex · 后端服务（v0.9 · 登录注册体系）
 ================================================
@@ -853,7 +853,7 @@ def compose_bootstrap(owner: str = db.LOCAL_OWNER,
         "owner": owner,
         "user": _user_brief(user) if user else None,
     }
-    data["meta"]["version"] = "3.3"   # v0.9.3：登录引导/种子清除/真录音/100MB/时间修复
+    data["meta"]["version"] = "3.4"   # v0.9.3：登录引导/种子清除/真录音/100MB/时间修复
 
     _BOOTSTRAP_CACHE[owner] = {"data": data, "ts": now_mono}
     return data
