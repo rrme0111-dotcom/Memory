@@ -449,6 +449,18 @@ def _migrate() -> None:
         for _table in ("memories", "anniversaries", "growth_milestones",
                        "growth_subjects", "timeline_nodes", "invite_members"):
             conn.exec_driver_sql(f"DELETE FROM {_table} WHERE owner_id='seed'")
+        # v1.7：Postgres（Supabase 等）为所有 public 表启用行级安全（RLS）。
+        # 不建任何策略 = Supabase Data API（PostgREST）一律拒绝，
+        # 堵住「anon key 公开 + 绕过应用鉴权直捅数据库」的旁路；
+        # 应用自身以表 owner 连接，天然绕过 RLS，读写不受影响。
+        # SQLite 无 RLS 概念，跳过；单表失败（非 owner 连接等）降级为警告，不阻断启动。
+        if not is_sqlite:
+            for table in Base.metadata.tables.values():
+                try:
+                    conn.exec_driver_sql(
+                        f'ALTER TABLE public."{table.name}" ENABLE ROW LEVEL SECURITY')
+                except Exception as exc:
+                    logger.warning("RLS 启用跳过 %s：%s", table.name, exc)
         logger.info("迁移检查完成：模型列与索引已对齐（历史种子数据已清除）")
 
 
@@ -457,9 +469,10 @@ def _ensure_columns(conn, model: type, is_sqlite: bool = True) -> None:
     if is_sqlite:
         cols = [r[1] for r in conn.exec_driver_sql(f"PRAGMA table_info({table})")]
     else:
+        # psycopg3 原生占位符是 %(name)s（exec_driver_sql 直传驱动，不认 SQLAlchemy 的 :name）
         cols = [r[0] for r in conn.exec_driver_sql(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_schema = 'public' AND table_name = :t",
+            "WHERE table_schema = 'public' AND table_name = %(t)s",
             {"t": table},
         )]
     if not cols:
