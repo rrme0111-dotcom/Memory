@@ -34,6 +34,11 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
   .tabbar{padding-bottom:max(22px, env(safe-area-inset-bottom));}
   #s17 .auth-wrap{padding-bottom:max(26px, env(safe-area-inset-bottom));}
 }
+/* v1.9：Capacitor 原生壳内整体下移 34px——边缘到边缘模式下 WebView 顶到屏幕，
+ * 系统状态栏（约 24-40px）会盖住顶栏导致点不到；env(safe-area-inset-top) 在
+ * 部分安卓 WebView 恒为 0，故用固定值兜底。网页版不受影响。 */
+body.in-cap .screen{padding-top:34px;}
+body.in-cap .boot-splash{padding-top:34px;}
 /* 启动闪屏：数据/登录态就绪前不暴露中间态界面，避免「先登录页几秒后跳别页」 */
 .boot-splash{position:fixed;inset:0;z-index:3000;background:var(--white);display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:6px;transition:opacity .25s ease;}
@@ -962,6 +967,7 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
     <div class="auth-err" id="authErr"></div>
     <button class="btn-primary" id="authSubmit">登录</button>
     <div class="auth-guest" id="authGuest"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#9B8271" stroke-width="1.4"/><path d="M8 5.5a1.8 1.8 0 100 3.6 1.8 1.8 0 000-3.6zM4 11.5c.6-1.7 2-2.5 4-2.5s3.4.8 4 2.5" stroke="#9B8271" stroke-width="1.2" stroke-linecap="round"/></svg>游客模式进入（不登录也能体验）</div>
+    <div class="auth-guest" id="authServerRow" style="margin-top:10px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="2" stroke="#9B8271" stroke-width="1.3"/><path d="M5 6.5h6M5 9.5h4" stroke="#9B8271" stroke-width="1.2" stroke-linecap="round"/></svg>服务器：<span id="authServerVal">默认</span> · 点按修改</div>
     <div class="auth-foot">登录后你的记忆将绑定到账号，<br>换设备也能找回 · 演示环境数据仅保存在本机</div>
   </div>
 </section>
@@ -975,6 +981,8 @@ html,body{background:#ECE5DD;font-family:var(--font);color:var(--ink);}
 <script src="localdb.js"></script>
 <script>
 var screens=document.querySelectorAll('.screen');
+/* v1.9：Capacitor 原生壳内加 in-cap 类（整体下移避开系统状态栏，见 CSS） */
+try{if(window.Capacitor&&window.Capacitor.isNativePlatform){document.body.classList.add('in-cap')}}catch(_){}
 function recenterWheels(){document.querySelectorAll('.wheel').forEach(function(w){var val=w.dataset.wheelValue;var items=w.querySelectorAll('.it');var target=null;items.forEach(function(it){if(it.textContent===val)target=it});if(target){w.scrollTop=Math.max(0,target.offsetTop-50);items.forEach(function(it){it.classList.remove('cur')});target.classList.add('cur');w.dispatchEvent(new Event('scroll'))}})}
 function show(id){var _bs=document.getElementById('bootSplash');if(_bs){_bs.classList.add('hide');setTimeout(function(){if(_bs.parentElement)_bs.remove()},260)}screens.forEach(function(s){s.classList.remove('active')});var el=document.getElementById(id);if(el){el.classList.add('active');el.querySelectorAll('.scroll,.content').forEach(function(c){if(c.scrollTo)c.scrollTop=0})}if(id==='s04')syncS04Scene();if(id==='s05')syncS05Scene();if(id==='s06'){setTimeout(recenterWheels,60)}document.querySelectorAll('#protoNav button').forEach(function(b){b.classList.toggle('on',b.dataset.s===id)});document.querySelectorAll('.tabbar .tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===id)})}
 function openTimeline(rel){var t=document.getElementById('s11toggle');if(t){t.querySelectorAll('.rt-opt').forEach(function(x){x.classList.toggle('on',x.dataset.rel===rel)});var isF=rel==='friend';var ct=document.getElementById('coupleTimeline'),ft=document.getElementById('friendTimeline');if(ct)ct.style.display=isF?'none':'';if(ft)ft.style.display=isF?'':'none'}show('s11')}
@@ -1866,22 +1874,23 @@ window.MC_DIALOG=(function(){
         var hourCol=ov.querySelector('[data-col="hour"]');
         var minuteCol=ov.querySelector('[data-col="minute"]');
         var years=[];for(var y=yearMin;y<=yearMax;y++)years.push(String(y));
-        var months=[];for(var m=1;m<=12;m++)months.push(m+'月');
-        var hours=[];for(var h=0;h<24;h++)hours.push(h+'时');
-        var minutes=[];for(var mi=0;mi<60;mi++)minutes.push(mi+'分');
+        var months=[];for(var m=1;m<=12;m++)months.push((m<10?'0':'')+m+'月');
+        var hours=[];for(var h=0;h<24;h++)hours.push((h<10?'0':'')+h+'时');
+        var minutes=[];for(var mi=0;mi<60;mi++)minutes.push((mi<10?'0':'')+mi+'分');
         function daysInMonth(y,m){return new Date(y,m,0).getDate();}
         function getDayVals(){
           var max=daysInMonth(curY,curM);
-          var ds=[];for(var dd=1;dd<=max;dd++)ds.push(String(dd));
-          if(curD>max)curD=max;
+          var ds=[];for(var dd=1;dd<=max;dd++)ds.push((dd<10?'0':'')+dd+'日');
           return ds;
         }
+        function fmtDay(){return (curD<10?'0':'')+curD+'日'}
+        function clampDay(){var max=daysInMonth(curY,curM);if(curD>max)curD=max}
         function syncAll(){
-          fillCol(yearCol,years,curY);
-          fillCol(monthCol,months,curM+'月');
-          fillCol(dayCol,getDayVals(),curD);
-          fillCol(hourCol,hours,curH+'时');
-          fillCol(minuteCol,minutes,curMi+'分');
+          fillCol(yearCol,years,String(curY));
+          fillCol(monthCol,months,(curM<10?'0':'')+curM+'月');
+          fillCol(dayCol,getDayVals(),fmtDay());
+          fillCol(hourCol,hours,(curH<10?'0':'')+curH+'时');
+          fillCol(minuteCol,minutes,(curMi<10?'0':'')+curMi+'分');
         }
         syncAll();
         function onScroll(col,cb){
@@ -1905,8 +1914,8 @@ window.MC_DIALOG=(function(){
             },100);
           });
         }
-        onScroll(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
-        onScroll(monthCol,function(v){curM=parseInt(v.replace('月',''),10);fillCol(dayCol,getDayVals(),curD)});
+        onScroll(yearCol,function(v){curY=parseInt(v,10);clampDay();fillCol(dayCol,getDayVals(),fmtDay())});
+        onScroll(monthCol,function(v){curM=parseInt(v.replace('月',''),10);clampDay();fillCol(dayCol,getDayVals(),fmtDay())});
         onScroll(dayCol,function(v){curD=parseInt(v,10)});
         onScroll(hourCol,function(v){curH=parseInt(v.replace('时',''),10)});
         onScroll(minuteCol,function(v){curMi=parseInt(v.replace('分',''),10)});
@@ -1923,8 +1932,8 @@ window.MC_DIALOG=(function(){
             setTimeout(function(){isProgScroll=false},120);
           });
         }
-        tapToCenter(yearCol,function(v){curY=parseInt(v,10);fillCol(dayCol,getDayVals(),curD)});
-        tapToCenter(monthCol,function(v){curM=parseInt(v.replace('月',''),10);fillCol(dayCol,getDayVals(),curD)});
+        tapToCenter(yearCol,function(v){curY=parseInt(v,10);clampDay();fillCol(dayCol,getDayVals(),fmtDay())});
+        tapToCenter(monthCol,function(v){curM=parseInt(v.replace('月',''),10);clampDay();fillCol(dayCol,getDayVals(),fmtDay())});
         tapToCenter(dayCol,function(v){curD=parseInt(v,10)});
         tapToCenter(hourCol,function(v){curH=parseInt(v.replace('时',''),10)});
         tapToCenter(minuteCol,function(v){curMi=parseInt(v.replace('分',''),10)});
@@ -1943,15 +1952,23 @@ window.MC_DIALOG=(function(){
           if(e.target===ov)done(null);
         });
         document.body.appendChild(ov);
+        /* v1.9：多轮定位（新弹窗布局未就绪时部分列 scrollTop 会被浏览器丢弃，0/120/260ms 各校准一次） */
+        function alignWheels(){
+          isProgScroll=true;
+          [[yearCol,years,String(curY)],[monthCol,months,(curM<10?'0':'')+curM+'月'],[dayCol,getDayVals(),fmtDay()],
+           [hourCol,hours,(curH<10?'0':'')+curH+'时'],[minuteCol,minutes,(curMi<10?'0':'')+curMi+'分']].forEach(function(t){
+            var idx=t[1].indexOf(t[2]);
+            if(idx<0)return;
+            t[0].scrollTop=idx*40;
+            t[0].querySelectorAll('.mc-dp-opt').forEach(function(o,i){o.classList.toggle('sel',i===idx)});
+          });
+          setTimeout(function(){isProgScroll=false},120);
+        }
         requestAnimationFrame(function(){
           ov.classList.add('show');
-          isProgScroll=true;
-          [[yearCol,years,String(curY)],[monthCol,months,curM+'月'],[dayCol,getDayVals(),String(curD)],
-           [hourCol,hours,curH+'时'],[minuteCol,minutes,curMi+'分']].forEach(function(t){
-            var idx=t[1].indexOf(t[2]);
-            if(idx>=0)t[0].scrollTop=idx*40;
-          });
-          setTimeout(function(){isProgScroll=false},200);
+          alignWheels();
+          setTimeout(alignWheels,120);
+          setTimeout(alignWheels,260);
         });
       });
     }
@@ -3272,6 +3289,20 @@ window.MC_DIALOG=(function(){
   if(authSubmitBtn)authSubmitBtn.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();submitAuth()});
   var authGuest=document.getElementById('authGuest');
   if(authGuest)authGuest.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();show(AUTH_BACK||'s12')});
+  /* v1.9：登录页可直接修改服务器地址（先选对后端再登录，避免换后端后重复登录） */
+  var authServerRow=document.getElementById('authServerRow');
+  if(authServerRow)authServerRow.addEventListener('click',function(e){
+    e.stopPropagation();e.preventDefault();
+    MC_DIALOG.prompt('服务器地址','登录前请先确认后端地址；清空并确定 = 恢复默认',window.API_BASE,{placeholder:'https://…',icon:'info'}).then(function(v){
+      if(v===null)return;
+      v=(v||'').trim().replace(/\/+$/,'');
+      if(v&&!/^https?:\/\//.test(v)){setAuthErr('地址必须以 http(s):// 开头');return}
+      try{if(v)localStorage.setItem('mc_api_base',v);else localStorage.removeItem('mc_api_base');}catch(_){}
+      toast(v?'服务器地址已保存，页面即将刷新…':'已恢复默认，页面即将刷新…');
+      setTimeout(function(){location.reload()},900);
+    });
+  });
+  (function(){var el=document.getElementById('authServerVal');if(el)el.textContent=String(window.API_BASE).replace(/^https?:\/\//,'')})();
   ['authUsername','authPassword','authNickname'].forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submitAuth()}});
