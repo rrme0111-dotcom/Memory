@@ -1,5 +1,7 @@
-# Render Blueprint：部署后端 + 免费 PostgreSQL（实现真实用户间共建）
-# 用法：Render → New Blueprint Instance → 连接 GitHub 仓库 → 选此文件
+# Render Blueprint：部署后端（免费 Web Service + 你现有的 Supabase PostgreSQL）
+# 用法：Render → New → Blueprint → 连接 GitHub 仓库 rrme0111-dotcom/Memory → Apply
+# 部署时在弹出的 DATABASE_URL 里粘贴 Supabase 连接串（Project Settings → Database →
+# Connection string → Session pooler，把 [YOUR-PASSWORD] 换成你的数据库密码）
 services:
   - type: web
     name: memory-vortex-api
@@ -12,12 +14,4 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DATABASE_URL
-        fromDatabase:
-          name: memory-vortex-db
-          property: connectionString
-
-databases:
-  - name: memory-vortex-db
-    plan: free
-    databaseName: memoryvortex
-    user: memoryvortex
+        sync: false   # 部署时手动填入 Supabase 连接串（数据与现有 App 完全一致）
