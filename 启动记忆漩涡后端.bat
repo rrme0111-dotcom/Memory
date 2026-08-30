@@ -3,6 +3,9 @@ chcp 65001 >nul
 title MemoryVortex Backend
 cd /d E:\Ai-Lab\07-notebook\backend
 
+rem 数据库连接串（Supabase）：从本地私密文件读取（此文件不入 git）
+set /p DATABASE_URL=<E:\Ai-Lab\07-notebook\database_url.secret.txt
+
 echo [1/2] 启动本地后端 (localhost:8000)...
 start "memory-backend" cmd /c "py -3.13 main.py"
 
